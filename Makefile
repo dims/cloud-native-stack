@@ -7,10 +7,10 @@ YAML_FILES         := $(shell find . -type f \( -iname "*.yml" -o -iname "*.yaml
 COMMIT             := $(shell git rev-parse HEAD)
 BRANCH             := $(shell git rev-parse --abbrev-ref HEAD)
 REGISTRY           := gitlab-master.nvidia.com:5005
-GO_VERSION	       := $(shell go version | awk '{print $$3}' | sed 's/go//')
-GOLINT_VERSION     := $(shell golangci-lint --version | awk '{print $$4}' | sed 's/golangci-lint version //')
-KO_VERSION         := $(shell ko version)
-GORELEASER_VERSION := $(shell goreleaser --version | sed -n 's/^GitVersion:[[:space:]]*//p')
+GO_VERSION	       := $(shell go version 2>/dev/null | awk '{print $$3}' | sed 's/go//')
+GOLINT_VERSION     = $(shell golangci-lint --version 2>/dev/null | awk '{print $$4}' | sed 's/golangci-lint version //' || echo "not installed")
+KO_VERSION         = $(shell ko version 2>/dev/null || echo "not installed")
+GORELEASER_VERSION = $(shell goreleaser --version 2>/dev/null | sed -n 's/^GitVersion:[[:space:]]*//p' || echo "not installed")
 
 
 # Default target
