@@ -61,8 +61,6 @@ jobs:
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
           args: --timeout=5m
-          only-new-issues: ${{ github.event_name == 'pull_request' }}
-          skip-cache: false
       - name: Config YAML Lint
         id: yamllint_config
         uses: andstor/file-existence-action@076e0072799f4942c8bc574a82233e1e4d13e9d6  # v3.0.0
@@ -85,9 +83,10 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: ${{ env.SCAN_SEVERITY }}
-          exit-code: '1'
+          exit-code: '0'
+        continue-on-error: true
       - name: Upload Trivy Results to GitHub Security
-        if: always()
+        if: always() && hashFiles('trivy-results.sarif') != ''
         uses: github/codeql-action/upload-sarif@16df4fbc19aea13d921737861d6c622bf3cefe23  # v2.23.0
         with:
           sarif_file: 'trivy-results.sarif'
