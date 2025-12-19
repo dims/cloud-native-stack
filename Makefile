@@ -88,6 +88,18 @@ release: ## Runs the release process
 	@set -e; \
 	goreleaser release --clean --config .goreleaser.yaml --fail-fast --timeout 10m0s
 
+.PHONY: bump-major
+bump-major: ## Bumps major version (1.2.3 → 2.0.0)
+	tools/bump major
+
+.PHONY: bump-minor
+bump-minor: ## Bumps minor version (1.2.3 → 1.3.0)
+	tools/bump minor
+
+.PHONY: bump-patch
+bump-patch: ## Bumps patch version (1.2.3 → 1.2.4)
+	tools/bump patch
+
 .PHONY: clean
 clean: ## Cleans directories
 	@set -e; \
