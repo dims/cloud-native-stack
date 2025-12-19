@@ -15,6 +15,13 @@ func (n *NodeSnapshotter) Run(config any) error {
 
 	snapshot := []collectors.Configuraion{}
 
+	km := collectors.KModCollector{}
+	kMod, err := km.Collect(nil)
+	if err != nil {
+		return fmt.Errorf("failed to collect kMod info: %w", err)
+	}
+	snapshot = append(snapshot, kMod...)
+
 	sd := collectors.SystemDCollector{}
 	systemd, err := sd.Collect(nil)
 	if err != nil {
