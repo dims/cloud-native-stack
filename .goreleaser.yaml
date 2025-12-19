@@ -16,9 +16,9 @@ builds:
       -w
       -s
       -extldflags "-static"
-      -X github.com/NVIDIA/cloud-native-stack/cmd/eidos.version={{.Version}}
-      -X github.com/NVIDIA/cloud-native-stack/cmd/eidos.commit={{.ShortCommit}}
-      -X github.com/NVIDIA/cloud-native-stack/cmd/eidos.date={{.Date}}
+      -X github.com/NVIDIA/cloud-native-stack/pkg/cli.version={{.Version}}
+      -X github.com/NVIDIA/cloud-native-stack/pkg/cli.commit={{.ShortCommit}}
+      -X github.com/NVIDIA/cloud-native-stack/pkg/cli.date={{.Date}}
     goos:
       - darwin
       - linux
@@ -50,7 +50,7 @@ metadata:
 
 release:
   github:
-    owner: NVIDIA
+    owner: mchmarny # NVIDIA
     name: cloud-native-stack
   prerelease: auto
 
