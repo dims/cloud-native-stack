@@ -36,20 +36,24 @@ func (s *SystemDCollector) Collect(ctx context.Context) ([]Measurement, error) {
 	}
 	defer conn.Close()
 
+	list := make([]SystemDConfig, 0)
+
 	for _, service := range services {
 		data, err := conn.GetAllPropertiesContext(ctx, service)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get unit properties: %w", err)
 		}
 
-		res = append(res, Measurement{
-			Type: SystemDType,
-			Data: SystemDConfig{
-				Unit:       service,
-				Properties: data,
-			},
+		list = append(list, SystemDConfig{
+			Unit:       service,
+			Properties: data,
 		})
 	}
+
+	res = append(res, Measurement{
+		Type: SystemDType,
+		Data: list,
+	})
 
 	return res, nil
 }

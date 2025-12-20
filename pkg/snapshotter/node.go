@@ -23,6 +23,7 @@ type Snapshot struct {
 
 // NodeSnapshotter is a snapshotter that collects configuration from the current node.
 type NodeSnapshotter struct {
+	Version    string
 	Factory    collectors.CollectorFactory
 	Serializer serializers.Serializer
 	Logger     *slog.Logger
@@ -61,8 +62,8 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 			return fmt.Errorf("failed to get node info: %w", err)
 		}
 		mu.Lock()
+		snap.Metadata["snapshot-version"] = n.Version
 		snap.Metadata["source-node"] = nd.Name
-		snap.Metadata["source-namespace"] = nd.Namespace
 		snap.Metadata["snapshot-timestamp"] = time.Now().UTC().Format(time.RFC1123Z)
 		mu.Unlock()
 		n.Logger.Debug("obtained node metadata", slog.String("name", nd.Name), slog.String("namespace", nd.Namespace))
@@ -178,6 +179,22 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 		snap.Measurements = append(snap.Measurements, sysctl...)
 		mu.Unlock()
 		n.Logger.Debug("collected sysctl parameters", slog.Int("count", len(sysctl)))
+		return nil
+	})
+
+	// Collect SMI
+	g.Go(func() error {
+		n.Logger.Debug("collecting SMI configuration")
+		smi := n.Factory.CreateSMICollector()
+		smiConfigs, err := smi.Collect(ctx)
+		if err != nil {
+			n.Logger.Error("failed to collect SMI", slog.String("error", err.Error()))
+			return fmt.Errorf("failed to collect SMI info: %w", err)
+		}
+		mu.Lock()
+		snap.Measurements = append(snap.Measurements, smiConfigs...)
+		mu.Unlock()
+		n.Logger.Debug("collected SMI configurations", slog.Int("count", len(smiConfigs)))
 		return nil
 	})
 

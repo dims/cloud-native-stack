@@ -10,6 +10,7 @@ type CollectorFactory interface {
 	CreateHelmCollector() Collector
 	CreateKubernetesCollector() Collector
 	CreateImageCollector() Collector
+	CreateSMICollector() Collector
 }
 
 // DefaultCollectorFactory creates collectors with production dependencies.
@@ -20,13 +21,20 @@ type DefaultCollectorFactory struct {
 // NewDefaultCollectorFactory creates a factory with default settings.
 func NewDefaultCollectorFactory() *DefaultCollectorFactory {
 	return &DefaultCollectorFactory{
-		SystemDServices: []string{"containerd.service"},
+		SystemDServices: []string{
+			"containerd.service",
+		},
 	}
 }
 
 // ComponentCollector creates a component collector.
 func (f *DefaultCollectorFactory) CreateKModCollector() Collector {
 	return &KModCollector{}
+}
+
+// CreateSMICollector creates an SMI collector.
+func (f *DefaultCollectorFactory) CreateSMICollector() Collector {
+	return &SMICollector{}
 }
 
 // CreateSystemDCollector creates a systemd collector.

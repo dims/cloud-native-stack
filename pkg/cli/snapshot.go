@@ -49,6 +49,7 @@ The snapshot can be output in JSON, YAML, or table format.`,
 
 		// Create and run snapshotter
 		ns := snapshotter.NodeSnapshotter{
+			Version:    version,
 			Factory:    factory,
 			Serializer: serializers.NewWriter(format, nil),
 			Logger:     logger,

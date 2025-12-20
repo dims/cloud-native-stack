@@ -3,6 +3,7 @@ package collectors
 import (
 	"context"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"os/exec"
 )
@@ -47,7 +48,8 @@ func executeCommand(ctx context.Context, name string, args ...string) ([]byte, e
 	output, err := cmd.Output()
 	if err != nil {
 		// Include stderr in the error message if available
-		if exitErr, ok := err.(*exec.ExitError); ok {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
 			return nil, fmt.Errorf("failed to execute command %s: %w (stderr: %s)", name, err, string(exitErr.Stderr))
 		}
 		return nil, fmt.Errorf("failed to execute command %s: %w", name, err)
