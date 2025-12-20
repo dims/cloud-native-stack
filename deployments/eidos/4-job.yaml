@@ -42,7 +42,7 @@ spec:
         fsGroupChangePolicy: "OnRootMismatch"
       containers:
         - name: eidos
-          image: ghcr.io/mchmarny/cloud-native-stack:v0.4.0
+          image: ghcr.io/mchmarny/cloud-native-stack:v0.4.1
           command: ["/bin/sh", "-c"]
           env:
             - name: NODE_NAME
@@ -56,9 +56,6 @@ spec:
 
               # Run eidos directly (reads from mounted host paths)
               if /ko-app/eidos snapshot -o yaml > /tmp/eidos-snapshot.yaml; then
-                echo "Snapshot collected successfully"
-
-                # Output to stdout for logs
                 cat /tmp/eidos-snapshot.yaml
               else
                 echo "Error: Failed to collect snapshot" >&2

@@ -1,9 +1,9 @@
 kind: Snapshot
 apiVersion: snapshot.dgxc.io/v1
 metadata:
-  snapshot-timestamp: Fri, 19 Dec 2025 23:49:30 +0000
-  source-namespace: ""
-  source-node: ip-10-0-142-19.ec2.internal
+  snapshot-timestamp: Sat, 20 Dec 2025 01:04:32 +0000
+  snapshot-version: 0.4.1
+  source-node: ip-10-0-157-11.ec2.internal
 measurements:
   - type: KMod
     data:
@@ -56,8 +56,8 @@ measurements:
       - sm4
       - sm3_ce
       - sm3
-      - raid0
       - sha3_ce
+      - raid0
       - sha2_ce
       - sha256_arm64
       - sha1_ce
@@ -71,8 +71,8 @@ measurements:
       - rc_core
       - i2c_algo_bit
       - ena
-      - sch_fq_codel
       - qemu_fw_cfg
+      - sch_fq_codel
       - nf_conntrack
       - nf_defrag_ipv6
       - nf_defrag_ipv4
@@ -110,1369 +110,1365 @@ measurements:
       security: apparmor
   - type: SystemD
     data:
-      unit: containerd.service
-      properties:
-        ActiveEnterTimestamp: 1764981217015704
-        ActiveEnterTimestampMonotonic: 162174856
-        ActiveExitTimestamp: 1764981211525569
-        ActiveExitTimestampMonotonic: 156684721
-        ActiveState: active
-        After:
-          - local-fs.target
-          - network.target
-          - system.slice
-          - sysinit.target
-          - basic.target
-          - systemd-journald.socket
-          - dbus.service
-        AllowIsolate: false
-        AllowedCPUs: []
-        AllowedMemoryNodes: []
-        AmbientCapabilities: 0
-        AppArmorProfile:
-          - false
-          - ""
-        AssertResult: true
-        AssertTimestamp: 1764981216564232
-        AssertTimestampMonotonic: 161723384
-        Asserts: []
-        BPFProgram: []
-        Before:
-          - shutdown.target
-          - multi-user.target
-        BindPaths: []
-        BindReadOnlyPaths: []
-        BindsTo: []
-        BlockIOAccounting: false
-        BlockIODeviceWeight: []
-        BlockIOReadBandwidth: []
-        BlockIOWeight: 18446744073709551615
-        BlockIOWriteBandwidth: []
-        BoundBy: []
-        BusName: ""
-        CPUAccounting: true
-        CPUAffinity: []
-        CPUAffinityFromNUMA: false
-        CPUQuotaPerSecUSec: 18446744073709551615
-        CPUQuotaPeriodUSec: 18446744073709551615
-        CPUSchedulingPolicy: 0
-        CPUSchedulingPriority: 0
-        CPUSchedulingResetOnFork: false
-        CPUShares: 18446744073709551615
-        CPUUsageNSec: 436584212852000
-        CPUWeight: 18446744073709551615
-        CacheDirectory: []
-        CacheDirectoryMode: 493
-        CanClean: []
-        CanFreeze: true
-        CanIsolate: false
-        CanReload: false
-        CanStart: true
-        CanStop: true
-        CapabilityBoundingSet: 18446744073709551615
-        CleanResult: success
-        CollectMode: inactive
-        ConditionResult: true
-        ConditionTimestamp: 1764981216564229
-        ConditionTimestampMonotonic: 161723382
-        Conditions: []
-        ConfigurationDirectory: []
-        ConfigurationDirectoryMode: 493
-        ConflictedBy: []
-        Conflicts:
-          - shutdown.target
-        ConsistsOf: []
-        ControlGroup: /system.slice/containerd.service
-        ControlPID: 0
-        CoredumpFilter: 51
-        DefaultDependencies: true
-        DefaultMemoryLow: 0
-        DefaultMemoryMin: 0
-        Delegate: true
-        DelegateControllers:
-          - cpu
-          - cpuacct
-          - cpuset
-          - io
-          - blkio
-          - memory
-          - devices
-          - pids
-          - bpf-firewall
-          - bpf-devices
-          - bpf-foreign
-          - bpf-socket-bind
-        Description: containerd container runtime
-        DeviceAllow: []
-        DevicePolicy: auto
-        DisableControllers: []
-        Documentation:
-          - https://containerd.io
-        DropInPaths:
-          - /etc/systemd/system/containerd.service.d/10-compat-symlink.conf
-          - /etc/systemd/system/containerd.service.d/999-tuning-tuning.conf
-        DynamicUser: false
-        EffectiveCPUs:
-          - 255
-          - 255
-          - 255
-          - 255
-          - 255
-          - 255
-          - 255
-          - 255
-          - 255
-          - 255
-          - 255
-          - 255
-          - 255
-          - 255
-          - 255
-          - 255
-          - 255
-          - 255
-          - 0
-          - 0
-          - 0
-          - 0
-          - 0
-          - 0
-        EffectiveMemoryNodes:
-          - 3
-          - 0
-          - 0
-          - 0
-          - 0
-          - 0
-          - 0
-          - 0
-        Environment: []
-        EnvironmentFiles: []
-        ExecCondition: []
-        ExecConditionEx: []
-        ExecMainCode: 0
-        ExecMainExitTimestamp: 0
-        ExecMainExitTimestampMonotonic: 0
-        ExecMainPID: 28126
-        ExecMainStartTimestamp: 1764981216580704
-        ExecMainStartTimestampMonotonic: 161739856
-        ExecMainStatus: 0
-        ExecPaths: []
-        ExecReload: []
-        ExecReloadEx: []
-        ExecStart:
-          - - /usr/bin/containerd
-            - - /usr/bin/containerd
+      - unit: containerd.service
+        properties:
+          ActiveEnterTimestamp: 1764981216847740
+          ActiveEnterTimestampMonotonic: 161005505
+          ActiveExitTimestamp: 1764981211336890
+          ActiveExitTimestampMonotonic: 155494655
+          ActiveState: active
+          After:
+            - system.slice
+            - dbus.service
+            - network.target
+            - sysinit.target
+            - basic.target
+            - local-fs.target
+            - systemd-journald.socket
+          AllowIsolate: false
+          AllowedCPUs: []
+          AllowedMemoryNodes: []
+          AmbientCapabilities: 0
+          AppArmorProfile:
             - false
-            - 1764981216580664
-            - 161739816
+            - ""
+          AssertResult: true
+          AssertTimestamp: 1764981216360654
+          AssertTimestampMonotonic: 160518419
+          Asserts: []
+          BPFProgram: []
+          Before:
+            - multi-user.target
+            - shutdown.target
+          BindPaths: []
+          BindReadOnlyPaths: []
+          BindsTo: []
+          BlockIOAccounting: false
+          BlockIODeviceWeight: []
+          BlockIOReadBandwidth: []
+          BlockIOWeight: 18446744073709551615
+          BlockIOWriteBandwidth: []
+          BoundBy: []
+          BusName: ""
+          CPUAccounting: true
+          CPUAffinity: []
+          CPUAffinityFromNUMA: false
+          CPUQuotaPerSecUSec: 18446744073709551615
+          CPUQuotaPeriodUSec: 18446744073709551615
+          CPUSchedulingPolicy: 0
+          CPUSchedulingPriority: 0
+          CPUSchedulingResetOnFork: false
+          CPUShares: 18446744073709551615
+          CPUUsageNSec: 418161879481000
+          CPUWeight: 18446744073709551615
+          CacheDirectory: []
+          CacheDirectoryMode: 493
+          CanClean: []
+          CanFreeze: true
+          CanIsolate: false
+          CanReload: false
+          CanStart: true
+          CanStop: true
+          CapabilityBoundingSet: 18446744073709551615
+          CleanResult: success
+          CollectMode: inactive
+          ConditionResult: true
+          ConditionTimestamp: 1764981216360651
+          ConditionTimestampMonotonic: 160518416
+          Conditions: []
+          ConfigurationDirectory: []
+          ConfigurationDirectoryMode: 493
+          ConflictedBy: []
+          Conflicts:
+            - shutdown.target
+          ConsistsOf: []
+          ControlGroup: /system.slice/containerd.service
+          ControlPID: 0
+          CoredumpFilter: 51
+          DefaultDependencies: true
+          DefaultMemoryLow: 0
+          DefaultMemoryMin: 0
+          Delegate: true
+          DelegateControllers:
+            - cpu
+            - cpuacct
+            - cpuset
+            - io
+            - blkio
+            - memory
+            - devices
+            - pids
+            - bpf-firewall
+            - bpf-devices
+            - bpf-foreign
+            - bpf-socket-bind
+          Description: containerd container runtime
+          DeviceAllow: []
+          DevicePolicy: auto
+          DisableControllers: []
+          Documentation:
+            - https://containerd.io
+          DropInPaths:
+            - /etc/systemd/system/containerd.service.d/10-compat-symlink.conf
+            - /etc/systemd/system/containerd.service.d/999-tuning-tuning.conf
+          DynamicUser: false
+          EffectiveCPUs:
+            - 255
+            - 255
+            - 255
+            - 255
+            - 255
+            - 255
+            - 255
+            - 255
+            - 255
+            - 255
+            - 255
+            - 255
+            - 255
+            - 255
+            - 255
+            - 255
+            - 255
+            - 255
             - 0
             - 0
-            - 28126
             - 0
             - 0
-        ExecStartEx:
-          - - /usr/bin/containerd
+            - 0
+            - 0
+          EffectiveMemoryNodes:
+            - 3
+            - 0
+            - 0
+            - 0
+            - 0
+            - 0
+            - 0
+            - 0
+          Environment: []
+          EnvironmentFiles: []
+          ExecCondition: []
+          ExecConditionEx: []
+          ExecMainCode: 0
+          ExecMainExitTimestamp: 0
+          ExecMainExitTimestampMonotonic: 0
+          ExecMainPID: 27990
+          ExecMainStartTimestamp: 1764981216375845
+          ExecMainStartTimestampMonotonic: 160533610
+          ExecMainStatus: 0
+          ExecPaths: []
+          ExecReload: []
+          ExecReloadEx: []
+          ExecStart:
             - - /usr/bin/containerd
-            - []
-            - 1764981216580664
-            - 161739816
-            - 0
-            - 0
-            - 28126
-            - 0
-            - 0
-        ExecStartPost: []
-        ExecStartPostEx: []
-        ExecStartPre:
-          - - /sbin/modprobe
+              - - /usr/bin/containerd
+              - false
+              - 1764981216375816
+              - 160533581
+              - 0
+              - 0
+              - 27990
+              - 0
+              - 0
+          ExecStartEx:
+            - - /usr/bin/containerd
+              - - /usr/bin/containerd
+              - []
+              - 1764981216375816
+              - 160533581
+              - 0
+              - 0
+              - 27990
+              - 0
+              - 0
+          ExecStartPost: []
+          ExecStartPostEx: []
+          ExecStartPre:
             - - /sbin/modprobe
-              - overlay
-            - true
-            - 1764981216572907
-            - 161732059
-            - 1764981216576736
-            - 161735888
-            - 28123
-            - 1
-            - 0
-          - - /bin/ln
+              - - /sbin/modprobe
+                - overlay
+              - true
+              - 1764981216370302
+              - 160528067
+              - 1764981216372848
+              - 160530613
+              - 27988
+              - 1
+              - 0
             - - /bin/ln
-              - -sf
-              - /run/containerd/containerd.sock
-              - /run/dockershim.sock
+              - - /bin/ln
+                - -sf
+                - /run/containerd/containerd.sock
+                - /run/dockershim.sock
+              - false
+              - 1764981216373314
+              - 160531079
+              - 1764981216375165
+              - 160532930
+              - 27989
+              - 1
+              - 0
+          ExecStartPreEx:
+            - - /sbin/modprobe
+              - - /sbin/modprobe
+                - overlay
+              - - ignore-failure
+              - 1764981216370302
+              - 160528067
+              - 1764981216372848
+              - 160530613
+              - 27988
+              - 1
+              - 0
+            - - /bin/ln
+              - - /bin/ln
+                - -sf
+                - /run/containerd/containerd.sock
+                - /run/dockershim.sock
+              - []
+              - 1764981216373314
+              - 160531079
+              - 1764981216375165
+              - 160532930
+              - 27989
+              - 1
+              - 0
+          ExecStop: []
+          ExecStopEx: []
+          ExecStopPost: []
+          ExecStopPostEx: []
+          ExtensionImages: []
+          FailureAction: none
+          FailureActionExitStatus: -1
+          FileDescriptorStoreMax: 0
+          FinalKillSignal: 9
+          Following: ""
+          FragmentPath: /lib/systemd/system/containerd.service
+          FreezerState: running
+          GID: 4294967295
+          Group: ""
+          GuessMainPID: true
+          IOAccounting: false
+          IODeviceLatencyTargetUSec: []
+          IODeviceWeight: []
+          IOReadBandwidthMax: []
+          IOReadBytes: 18446744073709551615
+          IOReadIOPSMax: []
+          IOReadOperations: 18446744073709551615
+          IOSchedulingClass: 2
+          IOSchedulingPriority: 4
+          IOWeight: 18446744073709551615
+          IOWriteBandwidthMax: []
+          IOWriteBytes: 18446744073709551615
+          IOWriteIOPSMax: []
+          IOWriteOperations: 18446744073709551615
+          IPAccounting: false
+          IPAddressAllow: []
+          IPAddressDeny: []
+          IPCNamespacePath: ""
+          IPEgressBytes: 18446744073709551615
+          IPEgressFilterPath: []
+          IPEgressPackets: 18446744073709551615
+          IPIngressBytes: 18446744073709551615
+          IPIngressFilterPath: []
+          IPIngressPackets: 18446744073709551615
+          Id: containerd.service
+          IgnoreOnIsolate: false
+          IgnoreSIGPIPE: true
+          InaccessiblePaths: []
+          InactiveEnterTimestamp: 1764981216360359
+          InactiveEnterTimestampMonotonic: 160518124
+          InactiveExitTimestamp: 1764981216370529
+          InactiveExitTimestampMonotonic: 160528294
+          InvocationID:
+            - 172
+            - 221
+            - 159
+            - 21
+            - 110
+            - 216
+            - 68
+            - 239
+            - 159
+            - 39
+            - 43
+            - 24
+            - 178
+            - 3
+            - 46
+            - 71
+          Job:
+            - 0
+            - /
+          JobRunningTimeoutUSec: 18446744073709551615
+          JobTimeoutAction: none
+          JobTimeoutRebootArgument: ""
+          JobTimeoutUSec: 18446744073709551615
+          JoinsNamespaceOf: []
+          KeyringMode: private
+          KillMode: process
+          KillSignal: 15
+          LimitAS: 18446744073709551615
+          LimitASSoft: 18446744073709551615
+          LimitCORE: 18446744073709551615
+          LimitCORESoft: 18446744073709551615
+          LimitCPU: 18446744073709551615
+          LimitCPUSoft: 18446744073709551615
+          LimitDATA: 18446744073709551615
+          LimitDATASoft: 18446744073709551615
+          LimitFSIZE: 18446744073709551615
+          LimitFSIZESoft: 18446744073709551615
+          LimitLOCKS: 18446744073709551615
+          LimitLOCKSSoft: 18446744073709551615
+          LimitMEMLOCK: 18446744073709551615
+          LimitMEMLOCKSoft: 18446744073709551615
+          LimitMSGQUEUE: 819200
+          LimitMSGQUEUESoft: 819200
+          LimitNICE: 0
+          LimitNICESoft: 0
+          LimitNOFILE: 18446744073709551615
+          LimitNOFILESoft: 18446744073709551615
+          LimitNPROC: 18446744073709551615
+          LimitNPROCSoft: 18446744073709551615
+          LimitRSS: 18446744073709551615
+          LimitRSSSoft: 18446744073709551615
+          LimitRTPRIO: 0
+          LimitRTPRIOSoft: 0
+          LimitRTTIME: 18446744073709551615
+          LimitRTTIMESoft: 18446744073709551615
+          LimitSIGPENDING: 3789289
+          LimitSIGPENDINGSoft: 3789289
+          LimitSTACK: 67108864
+          LimitSTACKSoft: 67108864
+          LoadCredential: []
+          LoadError:
+            - ""
+            - ""
+          LoadState: loaded
+          LockPersonality: false
+          LogExtraFields: []
+          LogLevelMax: -1
+          LogNamespace: ""
+          LogRateLimitBurst: 0
+          LogRateLimitIntervalUSec: 0
+          LogsDirectory: []
+          LogsDirectoryMode: 493
+          MainPID: 27990
+          ManagedOOMMemoryPressure: auto
+          ManagedOOMMemoryPressureLimit: 0
+          ManagedOOMPreference: none
+          ManagedOOMSwap: auto
+          Markers: []
+          MemoryAccounting: true
+          MemoryAvailable: 18446744073709551615
+          MemoryCurrent: 109538574336
+          MemoryDenyWriteExecute: false
+          MemoryHigh: 18446744073709551615
+          MemoryLimit: 18446744073709551615
+          MemoryLow: 0
+          MemoryMax: 18446744073709551615
+          MemoryMin: 0
+          MemorySwapMax: 18446744073709551615
+          MountAPIVFS: false
+          MountFlags: 0
+          MountImages: []
+          NFileDescriptorStore: 0
+          NRestarts: 1
+          NUMAMask: []
+          NUMAPolicy: -1
+          Names:
+            - containerd.service
+          NeedDaemonReload: false
+          NetworkNamespacePath: ""
+          Nice: 0
+          NoExecPaths: []
+          NoNewPrivileges: false
+          NonBlocking: false
+          NotifyAccess: main
+          OOMPolicy: continue
+          OOMScoreAdjust: -999
+          OnFailure: []
+          OnFailureJobMode: replace
+          OnFailureOf: []
+          OnSuccess: []
+          OnSuccessJobMode: fail
+          OnSuccessOf: []
+          PAMName: ""
+          PIDFile: ""
+          PartOf: []
+          PassEnvironment: []
+          Perpetual: false
+          Personality: ""
+          PrivateDevices: false
+          PrivateIPC: false
+          PrivateMounts: false
+          PrivateNetwork: false
+          PrivateTmp: false
+          PrivateUsers: false
+          ProcSubset: all
+          PropagatesReloadTo: []
+          PropagatesStopTo: []
+          ProtectClock: false
+          ProtectControlGroups: false
+          ProtectHome: "no"
+          ProtectHostname: false
+          ProtectKernelLogs: false
+          ProtectKernelModules: false
+          ProtectKernelTunables: false
+          ProtectProc: default
+          ProtectSystem: "no"
+          ReadOnlyPaths: []
+          ReadWritePaths: []
+          RebootArgument: ""
+          Refs: []
+          RefuseManualStart: false
+          RefuseManualStop: false
+          ReloadPropagatedFrom: []
+          ReloadResult: success
+          RemainAfterExit: false
+          RemoveIPC: false
+          RequiredBy: []
+          Requires:
+            - sysinit.target
+            - system.slice
+          RequiresMountsFor: []
+          Requisite: []
+          RequisiteOf: []
+          Restart: always
+          RestartForceExitStatus:
+            - []
+            - []
+          RestartKillSignal: 15
+          RestartPreventExitStatus:
+            - []
+            - []
+          RestartUSec: 5000000
+          RestrictAddressFamilies:
             - false
-            - 1764981216577778
-            - 161736930
-            - 1764981216580020
-            - 161739172
-            - 28125
-            - 1
-            - 0
-        ExecStartPreEx:
-          - - /sbin/modprobe
-            - - /sbin/modprobe
-              - overlay
-            - - ignore-failure
-            - 1764981216572907
-            - 161732059
-            - 1764981216576736
-            - 161735888
-            - 28123
-            - 1
-            - 0
-          - - /bin/ln
-            - - /bin/ln
-              - -sf
-              - /run/containerd/containerd.sock
-              - /run/dockershim.sock
             - []
-            - 1764981216577778
-            - 161736930
-            - 1764981216580020
-            - 161739172
-            - 28125
-            - 1
+          RestrictNamespaces: 18446744073709551615
+          RestrictRealtime: false
+          RestrictSUIDSGID: false
+          Result: success
+          RootDirectory: ""
+          RootDirectoryStartOnly: false
+          RootHash: []
+          RootHashPath: ""
+          RootHashSignature: []
+          RootHashSignaturePath: ""
+          RootImage: ""
+          RootImageOptions: []
+          RootVerity: ""
+          RuntimeDirectory: []
+          RuntimeDirectoryMode: 493
+          RuntimeDirectoryPreserve: "no"
+          RuntimeMaxUSec: 18446744073709551615
+          SELinuxContext:
+            - false
+            - ""
+          SameProcessGroup: false
+          SecureBits: 0
+          SendSIGHUP: false
+          SendSIGKILL: true
+          SetCredential: []
+          Slice: system.slice
+          SliceOf: []
+          SmackProcessLabel:
+            - false
+            - ""
+          SocketBindAllow: []
+          SocketBindDeny: []
+          SourcePath: ""
+          StandardError: inherit
+          StandardErrorFileDescriptorName: ""
+          StandardInput: "null"
+          StandardInputData: []
+          StandardInputFileDescriptorName: ""
+          StandardOutput: journal
+          StandardOutputFileDescriptorName: ""
+          StartLimitAction: none
+          StartLimitBurst: 5
+          StartLimitIntervalUSec: 10000000
+          StartupBlockIOWeight: 18446744073709551615
+          StartupCPUShares: 18446744073709551615
+          StartupCPUWeight: 18446744073709551615
+          StartupIOWeight: 18446744073709551615
+          StateChangeTimestamp: 1764981216847740
+          StateChangeTimestampMonotonic: 161005505
+          StateDirectory: []
+          StateDirectoryMode: 493
+          StatusErrno: 0
+          StatusText: ""
+          StopPropagatedFrom: []
+          StopWhenUnneeded: false
+          SubState: running
+          SuccessAction: none
+          SuccessActionExitStatus: -1
+          SuccessExitStatus:
+            - []
+            - []
+          SupplementaryGroups: []
+          SyslogFacility: 3
+          SyslogIdentifier: ""
+          SyslogLevel: 6
+          SyslogLevelPrefix: true
+          SyslogPriority: 30
+          SystemCallArchitectures: []
+          SystemCallErrorNumber: 2147483646
+          SystemCallFilter:
+            - false
+            - []
+          SystemCallLog:
+            - false
+            - []
+          TTYPath: ""
+          TTYReset: false
+          TTYVHangup: false
+          TTYVTDisallocate: false
+          TasksAccounting: true
+          TasksCurrent: 478
+          TasksMax: 18446744073709551615
+          TemporaryFileSystem: []
+          TimeoutAbortUSec: 90000000
+          TimeoutCleanUSec: 18446744073709551615
+          TimeoutStartFailureMode: terminate
+          TimeoutStartUSec: 90000000
+          TimeoutStopFailureMode: terminate
+          TimeoutStopUSec: 90000000
+          TimerSlackNSec: 50000
+          Transient: false
+          TriggeredBy: []
+          Triggers: []
+          Type: notify
+          UID: 4294967295
+          UMask: 18
+          USBFunctionDescriptors: ""
+          USBFunctionStrings: ""
+          UnitFilePreset: enabled
+          UnitFileState: enabled
+          UnsetEnvironment: []
+          User: ""
+          UtmpIdentifier: ""
+          UtmpMode: init
+          WantedBy:
+            - multi-user.target
+          Wants: []
+          WatchdogSignal: 6
+          WatchdogTimestamp: 0
+          WatchdogTimestampMonotonic: 0
+          WatchdogUSec: 0
+          WorkingDirectory: ""
+      - unit: docker.service
+        properties:
+          ActiveEnterTimestamp: 0
+          ActiveEnterTimestampMonotonic: 0
+          ActiveExitTimestamp: 0
+          ActiveExitTimestampMonotonic: 0
+          ActiveState: inactive
+          After: []
+          AllowIsolate: false
+          AllowedCPUs: []
+          AllowedMemoryNodes: []
+          AmbientCapabilities: 0
+          AppArmorProfile:
+            - false
+            - ""
+          AssertResult: false
+          AssertTimestamp: 0
+          AssertTimestampMonotonic: 0
+          Asserts: []
+          BPFProgram: []
+          Before: []
+          BindPaths: []
+          BindReadOnlyPaths: []
+          BindsTo: []
+          BlockIOAccounting: false
+          BlockIODeviceWeight: []
+          BlockIOReadBandwidth: []
+          BlockIOWeight: 18446744073709551615
+          BlockIOWriteBandwidth: []
+          BoundBy: []
+          BusName: ""
+          CPUAccounting: true
+          CPUAffinity: []
+          CPUAffinityFromNUMA: false
+          CPUQuotaPerSecUSec: 18446744073709551615
+          CPUQuotaPeriodUSec: 18446744073709551615
+          CPUSchedulingPolicy: 0
+          CPUSchedulingPriority: 0
+          CPUSchedulingResetOnFork: false
+          CPUShares: 18446744073709551615
+          CPUUsageNSec: 18446744073709551615
+          CPUWeight: 18446744073709551615
+          CacheDirectory: []
+          CacheDirectoryMode: 493
+          CanClean: []
+          CanFreeze: true
+          CanIsolate: false
+          CanReload: false
+          CanStart: false
+          CanStop: true
+          CapabilityBoundingSet: 18446744073709551615
+          CleanResult: success
+          CollectMode: inactive
+          ConditionResult: false
+          ConditionTimestamp: 0
+          ConditionTimestampMonotonic: 0
+          Conditions: []
+          ConfigurationDirectory: []
+          ConfigurationDirectoryMode: 493
+          ConflictedBy: []
+          Conflicts: []
+          ConsistsOf: []
+          ControlGroup: ""
+          ControlPID: 0
+          CoredumpFilter: 51
+          DefaultDependencies: true
+          DefaultMemoryLow: 0
+          DefaultMemoryMin: 0
+          Delegate: false
+          DelegateControllers: []
+          Description: docker.service
+          DeviceAllow: []
+          DevicePolicy: auto
+          DisableControllers: []
+          Documentation: []
+          DropInPaths: []
+          DynamicUser: false
+          EffectiveCPUs: []
+          EffectiveMemoryNodes: []
+          Environment: []
+          EnvironmentFiles: []
+          ExecCondition: []
+          ExecConditionEx: []
+          ExecMainCode: 0
+          ExecMainExitTimestamp: 0
+          ExecMainExitTimestampMonotonic: 0
+          ExecMainPID: 0
+          ExecMainStartTimestamp: 0
+          ExecMainStartTimestampMonotonic: 0
+          ExecMainStatus: 0
+          ExecPaths: []
+          ExecReload: []
+          ExecReloadEx: []
+          ExecStart: []
+          ExecStartEx: []
+          ExecStartPost: []
+          ExecStartPostEx: []
+          ExecStartPre: []
+          ExecStartPreEx: []
+          ExecStop: []
+          ExecStopEx: []
+          ExecStopPost: []
+          ExecStopPostEx: []
+          ExtensionImages: []
+          FailureAction: none
+          FailureActionExitStatus: -1
+          FileDescriptorStoreMax: 0
+          FinalKillSignal: 9
+          Following: ""
+          FragmentPath: ""
+          FreezerState: running
+          GID: 4294967295
+          Group: ""
+          GuessMainPID: true
+          IOAccounting: false
+          IODeviceLatencyTargetUSec: []
+          IODeviceWeight: []
+          IOReadBandwidthMax: []
+          IOReadBytes: 18446744073709551615
+          IOReadIOPSMax: []
+          IOReadOperations: 18446744073709551615
+          IOSchedulingClass: 2
+          IOSchedulingPriority: 4
+          IOWeight: 18446744073709551615
+          IOWriteBandwidthMax: []
+          IOWriteBytes: 18446744073709551615
+          IOWriteIOPSMax: []
+          IOWriteOperations: 18446744073709551615
+          IPAccounting: false
+          IPAddressAllow: []
+          IPAddressDeny: []
+          IPCNamespacePath: ""
+          IPEgressBytes: 18446744073709551615
+          IPEgressFilterPath: []
+          IPEgressPackets: 18446744073709551615
+          IPIngressBytes: 18446744073709551615
+          IPIngressFilterPath: []
+          IPIngressPackets: 18446744073709551615
+          Id: docker.service
+          IgnoreOnIsolate: false
+          IgnoreSIGPIPE: true
+          InaccessiblePaths: []
+          InactiveEnterTimestamp: 0
+          InactiveEnterTimestampMonotonic: 0
+          InactiveExitTimestamp: 0
+          InactiveExitTimestampMonotonic: 0
+          InvocationID: []
+          Job:
             - 0
-        ExecStop: []
-        ExecStopEx: []
-        ExecStopPost: []
-        ExecStopPostEx: []
-        ExtensionImages: []
-        FailureAction: none
-        FailureActionExitStatus: -1
-        FileDescriptorStoreMax: 0
-        FinalKillSignal: 9
-        Following: ""
-        FragmentPath: /lib/systemd/system/containerd.service
-        FreezerState: running
-        GID: 4294967295
-        Group: ""
-        GuessMainPID: true
-        IOAccounting: false
-        IODeviceLatencyTargetUSec: []
-        IODeviceWeight: []
-        IOReadBandwidthMax: []
-        IOReadBytes: 18446744073709551615
-        IOReadIOPSMax: []
-        IOReadOperations: 18446744073709551615
-        IOSchedulingClass: 2
-        IOSchedulingPriority: 4
-        IOWeight: 18446744073709551615
-        IOWriteBandwidthMax: []
-        IOWriteBytes: 18446744073709551615
-        IOWriteIOPSMax: []
-        IOWriteOperations: 18446744073709551615
-        IPAccounting: false
-        IPAddressAllow: []
-        IPAddressDeny: []
-        IPCNamespacePath: ""
-        IPEgressBytes: 18446744073709551615
-        IPEgressFilterPath: []
-        IPEgressPackets: 18446744073709551615
-        IPIngressBytes: 18446744073709551615
-        IPIngressFilterPath: []
-        IPIngressPackets: 18446744073709551615
-        Id: containerd.service
-        IgnoreOnIsolate: false
-        IgnoreSIGPIPE: true
-        InaccessiblePaths: []
-        InactiveEnterTimestamp: 1764981216563904
-        InactiveEnterTimestampMonotonic: 161723056
-        InactiveExitTimestamp: 1764981216573165
-        InactiveExitTimestampMonotonic: 161732317
-        InvocationID:
-          - 245
-          - 242
-          - 115
-          - 219
-          - 52
-          - 24
-          - 77
-          - 203
-          - 174
-          - 250
-          - 153
-          - 14
-          - 49
-          - 124
-          - 13
-          - 185
-        Job:
-          - 0
-          - /
-        JobRunningTimeoutUSec: 18446744073709551615
-        JobTimeoutAction: none
-        JobTimeoutRebootArgument: ""
-        JobTimeoutUSec: 18446744073709551615
-        JoinsNamespaceOf: []
-        KeyringMode: private
-        KillMode: process
-        KillSignal: 15
-        LimitAS: 18446744073709551615
-        LimitASSoft: 18446744073709551615
-        LimitCORE: 18446744073709551615
-        LimitCORESoft: 18446744073709551615
-        LimitCPU: 18446744073709551615
-        LimitCPUSoft: 18446744073709551615
-        LimitDATA: 18446744073709551615
-        LimitDATASoft: 18446744073709551615
-        LimitFSIZE: 18446744073709551615
-        LimitFSIZESoft: 18446744073709551615
-        LimitLOCKS: 18446744073709551615
-        LimitLOCKSSoft: 18446744073709551615
-        LimitMEMLOCK: 18446744073709551615
-        LimitMEMLOCKSoft: 18446744073709551615
-        LimitMSGQUEUE: 819200
-        LimitMSGQUEUESoft: 819200
-        LimitNICE: 0
-        LimitNICESoft: 0
-        LimitNOFILE: 18446744073709551615
-        LimitNOFILESoft: 18446744073709551615
-        LimitNPROC: 18446744073709551615
-        LimitNPROCSoft: 18446744073709551615
-        LimitRSS: 18446744073709551615
-        LimitRSSSoft: 18446744073709551615
-        LimitRTPRIO: 0
-        LimitRTPRIOSoft: 0
-        LimitRTTIME: 18446744073709551615
-        LimitRTTIMESoft: 18446744073709551615
-        LimitSIGPENDING: 3789289
-        LimitSIGPENDINGSoft: 3789289
-        LimitSTACK: 67108864
-        LimitSTACKSoft: 67108864
-        LoadCredential: []
-        LoadError:
-          - ""
-          - ""
-        LoadState: loaded
-        LockPersonality: false
-        LogExtraFields: []
-        LogLevelMax: -1
-        LogNamespace: ""
-        LogRateLimitBurst: 0
-        LogRateLimitIntervalUSec: 0
-        LogsDirectory: []
-        LogsDirectoryMode: 493
-        MainPID: 28126
-        ManagedOOMMemoryPressure: auto
-        ManagedOOMMemoryPressureLimit: 0
-        ManagedOOMPreference: none
-        ManagedOOMSwap: auto
-        Markers: []
-        MemoryAccounting: true
-        MemoryAvailable: 18446744073709551615
-        MemoryCurrent: 110505410560
-        MemoryDenyWriteExecute: false
-        MemoryHigh: 18446744073709551615
-        MemoryLimit: 18446744073709551615
-        MemoryLow: 0
-        MemoryMax: 18446744073709551615
-        MemoryMin: 0
-        MemorySwapMax: 18446744073709551615
-        MountAPIVFS: false
-        MountFlags: 0
-        MountImages: []
-        NFileDescriptorStore: 0
-        NRestarts: 1
-        NUMAMask: []
-        NUMAPolicy: -1
-        Names:
-          - containerd.service
-        NeedDaemonReload: false
-        NetworkNamespacePath: ""
-        Nice: 0
-        NoExecPaths: []
-        NoNewPrivileges: false
-        NonBlocking: false
-        NotifyAccess: main
-        OOMPolicy: continue
-        OOMScoreAdjust: -999
-        OnFailure: []
-        OnFailureJobMode: replace
-        OnFailureOf: []
-        OnSuccess: []
-        OnSuccessJobMode: fail
-        OnSuccessOf: []
-        PAMName: ""
-        PIDFile: ""
-        PartOf: []
-        PassEnvironment: []
-        Perpetual: false
-        Personality: ""
-        PrivateDevices: false
-        PrivateIPC: false
-        PrivateMounts: false
-        PrivateNetwork: false
-        PrivateTmp: false
-        PrivateUsers: false
-        ProcSubset: all
-        PropagatesReloadTo: []
-        PropagatesStopTo: []
-        ProtectClock: false
-        ProtectControlGroups: false
-        ProtectHome: "no"
-        ProtectHostname: false
-        ProtectKernelLogs: false
-        ProtectKernelModules: false
-        ProtectKernelTunables: false
-        ProtectProc: default
-        ProtectSystem: "no"
-        ReadOnlyPaths: []
-        ReadWritePaths: []
-        RebootArgument: ""
-        Refs: []
-        RefuseManualStart: false
-        RefuseManualStop: false
-        ReloadPropagatedFrom: []
-        ReloadResult: success
-        RemainAfterExit: false
-        RemoveIPC: false
-        RequiredBy: []
-        Requires:
-          - sysinit.target
-          - system.slice
-        RequiresMountsFor: []
-        Requisite: []
-        RequisiteOf: []
-        Restart: always
-        RestartForceExitStatus:
-          - []
-          - []
-        RestartKillSignal: 15
-        RestartPreventExitStatus:
-          - []
-          - []
-        RestartUSec: 5000000
-        RestrictAddressFamilies:
-          - false
-          - []
-        RestrictNamespaces: 18446744073709551615
-        RestrictRealtime: false
-        RestrictSUIDSGID: false
-        Result: success
-        RootDirectory: ""
-        RootDirectoryStartOnly: false
-        RootHash: []
-        RootHashPath: ""
-        RootHashSignature: []
-        RootHashSignaturePath: ""
-        RootImage: ""
-        RootImageOptions: []
-        RootVerity: ""
-        RuntimeDirectory: []
-        RuntimeDirectoryMode: 493
-        RuntimeDirectoryPreserve: "no"
-        RuntimeMaxUSec: 18446744073709551615
-        SELinuxContext:
-          - false
-          - ""
-        SameProcessGroup: false
-        SecureBits: 0
-        SendSIGHUP: false
-        SendSIGKILL: true
-        SetCredential: []
-        Slice: system.slice
-        SliceOf: []
-        SmackProcessLabel:
-          - false
-          - ""
-        SocketBindAllow: []
-        SocketBindDeny: []
-        SourcePath: ""
-        StandardError: inherit
-        StandardErrorFileDescriptorName: ""
-        StandardInput: "null"
-        StandardInputData: []
-        StandardInputFileDescriptorName: ""
-        StandardOutput: journal
-        StandardOutputFileDescriptorName: ""
-        StartLimitAction: none
-        StartLimitBurst: 5
-        StartLimitIntervalUSec: 10000000
-        StartupBlockIOWeight: 18446744073709551615
-        StartupCPUShares: 18446744073709551615
-        StartupCPUWeight: 18446744073709551615
-        StartupIOWeight: 18446744073709551615
-        StateChangeTimestamp: 1764981217015704
-        StateChangeTimestampMonotonic: 162174856
-        StateDirectory: []
-        StateDirectoryMode: 493
-        StatusErrno: 0
-        StatusText: ""
-        StopPropagatedFrom: []
-        StopWhenUnneeded: false
-        SubState: running
-        SuccessAction: none
-        SuccessActionExitStatus: -1
-        SuccessExitStatus:
-          - []
-          - []
-        SupplementaryGroups: []
-        SyslogFacility: 3
-        SyslogIdentifier: ""
-        SyslogLevel: 6
-        SyslogLevelPrefix: true
-        SyslogPriority: 30
-        SystemCallArchitectures: []
-        SystemCallErrorNumber: 2147483646
-        SystemCallFilter:
-          - false
-          - []
-        SystemCallLog:
-          - false
-          - []
-        TTYPath: ""
-        TTYReset: false
-        TTYVHangup: false
-        TTYVTDisallocate: false
-        TasksAccounting: true
-        TasksCurrent: 473
-        TasksMax: 18446744073709551615
-        TemporaryFileSystem: []
-        TimeoutAbortUSec: 90000000
-        TimeoutCleanUSec: 18446744073709551615
-        TimeoutStartFailureMode: terminate
-        TimeoutStartUSec: 90000000
-        TimeoutStopFailureMode: terminate
-        TimeoutStopUSec: 90000000
-        TimerSlackNSec: 50000
-        Transient: false
-        TriggeredBy: []
-        Triggers: []
-        Type: notify
-        UID: 4294967295
-        UMask: 18
-        USBFunctionDescriptors: ""
-        USBFunctionStrings: ""
-        UnitFilePreset: enabled
-        UnitFileState: enabled
-        UnsetEnvironment: []
-        User: ""
-        UtmpIdentifier: ""
-        UtmpMode: init
-        WantedBy:
-          - multi-user.target
-        Wants: []
-        WatchdogSignal: 6
-        WatchdogTimestamp: 0
-        WatchdogTimestampMonotonic: 0
-        WatchdogUSec: 0
-        WorkingDirectory: ""
-  - type: SystemD
-    data:
-      unit: docker.service
-      properties:
-        ActiveEnterTimestamp: 0
-        ActiveEnterTimestampMonotonic: 0
-        ActiveExitTimestamp: 0
-        ActiveExitTimestampMonotonic: 0
-        ActiveState: inactive
-        After: []
-        AllowIsolate: false
-        AllowedCPUs: []
-        AllowedMemoryNodes: []
-        AmbientCapabilities: 0
-        AppArmorProfile:
-          - false
-          - ""
-        AssertResult: false
-        AssertTimestamp: 0
-        AssertTimestampMonotonic: 0
-        Asserts: []
-        BPFProgram: []
-        Before: []
-        BindPaths: []
-        BindReadOnlyPaths: []
-        BindsTo: []
-        BlockIOAccounting: false
-        BlockIODeviceWeight: []
-        BlockIOReadBandwidth: []
-        BlockIOWeight: 18446744073709551615
-        BlockIOWriteBandwidth: []
-        BoundBy: []
-        BusName: ""
-        CPUAccounting: true
-        CPUAffinity: []
-        CPUAffinityFromNUMA: false
-        CPUQuotaPerSecUSec: 18446744073709551615
-        CPUQuotaPeriodUSec: 18446744073709551615
-        CPUSchedulingPolicy: 0
-        CPUSchedulingPriority: 0
-        CPUSchedulingResetOnFork: false
-        CPUShares: 18446744073709551615
-        CPUUsageNSec: 18446744073709551615
-        CPUWeight: 18446744073709551615
-        CacheDirectory: []
-        CacheDirectoryMode: 493
-        CanClean: []
-        CanFreeze: true
-        CanIsolate: false
-        CanReload: false
-        CanStart: false
-        CanStop: true
-        CapabilityBoundingSet: 18446744073709551615
-        CleanResult: success
-        CollectMode: inactive
-        ConditionResult: false
-        ConditionTimestamp: 0
-        ConditionTimestampMonotonic: 0
-        Conditions: []
-        ConfigurationDirectory: []
-        ConfigurationDirectoryMode: 493
-        ConflictedBy: []
-        Conflicts: []
-        ConsistsOf: []
-        ControlGroup: ""
-        ControlPID: 0
-        CoredumpFilter: 51
-        DefaultDependencies: true
-        DefaultMemoryLow: 0
-        DefaultMemoryMin: 0
-        Delegate: false
-        DelegateControllers: []
-        Description: docker.service
-        DeviceAllow: []
-        DevicePolicy: auto
-        DisableControllers: []
-        Documentation: []
-        DropInPaths: []
-        DynamicUser: false
-        EffectiveCPUs: []
-        EffectiveMemoryNodes: []
-        Environment: []
-        EnvironmentFiles: []
-        ExecCondition: []
-        ExecConditionEx: []
-        ExecMainCode: 0
-        ExecMainExitTimestamp: 0
-        ExecMainExitTimestampMonotonic: 0
-        ExecMainPID: 0
-        ExecMainStartTimestamp: 0
-        ExecMainStartTimestampMonotonic: 0
-        ExecMainStatus: 0
-        ExecPaths: []
-        ExecReload: []
-        ExecReloadEx: []
-        ExecStart: []
-        ExecStartEx: []
-        ExecStartPost: []
-        ExecStartPostEx: []
-        ExecStartPre: []
-        ExecStartPreEx: []
-        ExecStop: []
-        ExecStopEx: []
-        ExecStopPost: []
-        ExecStopPostEx: []
-        ExtensionImages: []
-        FailureAction: none
-        FailureActionExitStatus: -1
-        FileDescriptorStoreMax: 0
-        FinalKillSignal: 9
-        Following: ""
-        FragmentPath: ""
-        FreezerState: running
-        GID: 4294967295
-        Group: ""
-        GuessMainPID: true
-        IOAccounting: false
-        IODeviceLatencyTargetUSec: []
-        IODeviceWeight: []
-        IOReadBandwidthMax: []
-        IOReadBytes: 18446744073709551615
-        IOReadIOPSMax: []
-        IOReadOperations: 18446744073709551615
-        IOSchedulingClass: 2
-        IOSchedulingPriority: 4
-        IOWeight: 18446744073709551615
-        IOWriteBandwidthMax: []
-        IOWriteBytes: 18446744073709551615
-        IOWriteIOPSMax: []
-        IOWriteOperations: 18446744073709551615
-        IPAccounting: false
-        IPAddressAllow: []
-        IPAddressDeny: []
-        IPCNamespacePath: ""
-        IPEgressBytes: 18446744073709551615
-        IPEgressFilterPath: []
-        IPEgressPackets: 18446744073709551615
-        IPIngressBytes: 18446744073709551615
-        IPIngressFilterPath: []
-        IPIngressPackets: 18446744073709551615
-        Id: docker.service
-        IgnoreOnIsolate: false
-        IgnoreSIGPIPE: true
-        InaccessiblePaths: []
-        InactiveEnterTimestamp: 0
-        InactiveEnterTimestampMonotonic: 0
-        InactiveExitTimestamp: 0
-        InactiveExitTimestampMonotonic: 0
-        InvocationID: []
-        Job:
-          - 0
-          - /
-        JobRunningTimeoutUSec: 18446744073709551615
-        JobTimeoutAction: none
-        JobTimeoutRebootArgument: ""
-        JobTimeoutUSec: 18446744073709551615
-        JoinsNamespaceOf: []
-        KeyringMode: private
-        KillMode: control-group
-        KillSignal: 15
-        LimitAS: 18446744073709551615
-        LimitASSoft: 18446744073709551615
-        LimitCORE: 18446744073709551615
-        LimitCORESoft: 0
-        LimitCPU: 18446744073709551615
-        LimitCPUSoft: 18446744073709551615
-        LimitDATA: 18446744073709551615
-        LimitDATASoft: 18446744073709551615
-        LimitFSIZE: 18446744073709551615
-        LimitFSIZESoft: 18446744073709551615
-        LimitLOCKS: 18446744073709551615
-        LimitLOCKSSoft: 18446744073709551615
-        LimitMEMLOCK: 124437454848
-        LimitMEMLOCKSoft: 124437454848
-        LimitMSGQUEUE: 819200
-        LimitMSGQUEUESoft: 819200
-        LimitNICE: 0
-        LimitNICESoft: 0
-        LimitNOFILE: 1048576
-        LimitNOFILESoft: 1048576
-        LimitNPROC: 3789289
-        LimitNPROCSoft: 3789289
-        LimitRSS: 18446744073709551615
-        LimitRSSSoft: 18446744073709551615
-        LimitRTPRIO: 0
-        LimitRTPRIOSoft: 0
-        LimitRTTIME: 18446744073709551615
-        LimitRTTIMESoft: 18446744073709551615
-        LimitSIGPENDING: 3789289
-        LimitSIGPENDINGSoft: 3789289
-        LimitSTACK: 18446744073709551615
-        LimitSTACKSoft: 8388608
-        LoadCredential: []
-        LoadError:
-          - org.freedesktop.systemd1.NoSuchUnit
-          - Unit docker.service not found.
-        LoadState: not-found
-        LockPersonality: false
-        LogExtraFields: []
-        LogLevelMax: -1
-        LogNamespace: ""
-        LogRateLimitBurst: 0
-        LogRateLimitIntervalUSec: 0
-        LogsDirectory: []
-        LogsDirectoryMode: 493
-        MainPID: 0
-        ManagedOOMMemoryPressure: auto
-        ManagedOOMMemoryPressureLimit: 0
-        ManagedOOMPreference: none
-        ManagedOOMSwap: auto
-        Markers: []
-        MemoryAccounting: true
-        MemoryAvailable: 18446744073709551615
-        MemoryCurrent: 18446744073709551615
-        MemoryDenyWriteExecute: false
-        MemoryHigh: 18446744073709551615
-        MemoryLimit: 18446744073709551615
-        MemoryLow: 0
-        MemoryMax: 18446744073709551615
-        MemoryMin: 0
-        MemorySwapMax: 18446744073709551615
-        MountAPIVFS: false
-        MountFlags: 0
-        MountImages: []
-        NFileDescriptorStore: 0
-        NRestarts: 0
-        NUMAMask: []
-        NUMAPolicy: -1
-        Names:
-          - docker.service
-        NeedDaemonReload: false
-        NetworkNamespacePath: ""
-        Nice: 0
-        NoExecPaths: []
-        NoNewPrivileges: false
-        NonBlocking: false
-        NotifyAccess: none
-        OOMPolicy: ""
-        OOMScoreAdjust: 0
-        OnFailure: []
-        OnFailureJobMode: replace
-        OnFailureOf: []
-        OnSuccess: []
-        OnSuccessJobMode: fail
-        OnSuccessOf: []
-        PAMName: ""
-        PIDFile: ""
-        PartOf: []
-        PassEnvironment: []
-        Perpetual: false
-        Personality: ""
-        PrivateDevices: false
-        PrivateIPC: false
-        PrivateMounts: false
-        PrivateNetwork: false
-        PrivateTmp: false
-        PrivateUsers: false
-        ProcSubset: all
-        PropagatesReloadTo: []
-        PropagatesStopTo: []
-        ProtectClock: false
-        ProtectControlGroups: false
-        ProtectHome: "no"
-        ProtectHostname: false
-        ProtectKernelLogs: false
-        ProtectKernelModules: false
-        ProtectKernelTunables: false
-        ProtectProc: default
-        ProtectSystem: "no"
-        ReadOnlyPaths: []
-        ReadWritePaths: []
-        RebootArgument: ""
-        Refs: []
-        RefuseManualStart: false
-        RefuseManualStop: false
-        ReloadPropagatedFrom: []
-        ReloadResult: success
-        RemainAfterExit: false
-        RemoveIPC: false
-        RequiredBy: []
-        Requires: []
-        RequiresMountsFor: []
-        Requisite: []
-        RequisiteOf: []
-        Restart: "no"
-        RestartForceExitStatus:
-          - []
-          - []
-        RestartKillSignal: 15
-        RestartPreventExitStatus:
-          - []
-          - []
-        RestartUSec: 100000
-        RestrictAddressFamilies:
-          - false
-          - []
-        RestrictNamespaces: 18446744073709551615
-        RestrictRealtime: false
-        RestrictSUIDSGID: false
-        Result: success
-        RootDirectory: ""
-        RootDirectoryStartOnly: false
-        RootHash: []
-        RootHashPath: ""
-        RootHashSignature: []
-        RootHashSignaturePath: ""
-        RootImage: ""
-        RootImageOptions: []
-        RootVerity: ""
-        RuntimeDirectory: []
-        RuntimeDirectoryMode: 493
-        RuntimeDirectoryPreserve: "no"
-        RuntimeMaxUSec: 18446744073709551615
-        SELinuxContext:
-          - false
-          - ""
-        SameProcessGroup: false
-        SecureBits: 0
-        SendSIGHUP: false
-        SendSIGKILL: true
-        SetCredential: []
-        Slice: ""
-        SliceOf: []
-        SmackProcessLabel:
-          - false
-          - ""
-        SocketBindAllow: []
-        SocketBindDeny: []
-        SourcePath: ""
-        StandardError: inherit
-        StandardErrorFileDescriptorName: ""
-        StandardInput: "null"
-        StandardInputData: []
-        StandardInputFileDescriptorName: ""
-        StandardOutput: inherit
-        StandardOutputFileDescriptorName: ""
-        StartLimitAction: none
-        StartLimitBurst: 5
-        StartLimitIntervalUSec: 10000000
-        StartupBlockIOWeight: 18446744073709551615
-        StartupCPUShares: 18446744073709551615
-        StartupCPUWeight: 18446744073709551615
-        StartupIOWeight: 18446744073709551615
-        StateChangeTimestamp: 0
-        StateChangeTimestampMonotonic: 0
-        StateDirectory: []
-        StateDirectoryMode: 493
-        StatusErrno: 0
-        StatusText: ""
-        StopPropagatedFrom: []
-        StopWhenUnneeded: false
-        SubState: dead
-        SuccessAction: none
-        SuccessActionExitStatus: -1
-        SuccessExitStatus:
-          - []
-          - []
-        SupplementaryGroups: []
-        SyslogFacility: 3
-        SyslogIdentifier: ""
-        SyslogLevel: 6
-        SyslogLevelPrefix: true
-        SyslogPriority: 30
-        SystemCallArchitectures: []
-        SystemCallErrorNumber: 2147483646
-        SystemCallFilter:
-          - false
-          - []
-        SystemCallLog:
-          - false
-          - []
-        TTYPath: ""
-        TTYReset: false
-        TTYVHangup: false
-        TTYVTDisallocate: false
-        TasksAccounting: true
-        TasksCurrent: 18446744073709551615
-        TasksMax: 629145
-        TemporaryFileSystem: []
-        TimeoutAbortUSec: 90000000
-        TimeoutCleanUSec: 18446744073709551615
-        TimeoutStartFailureMode: terminate
-        TimeoutStartUSec: 90000000
-        TimeoutStopFailureMode: terminate
-        TimeoutStopUSec: 90000000
-        TimerSlackNSec: 50000
-        Transient: false
-        TriggeredBy: []
-        Triggers: []
-        Type: ""
-        UID: 4294967295
-        UMask: 18
-        USBFunctionDescriptors: ""
-        USBFunctionStrings: ""
-        UnitFilePreset: ""
-        UnitFileState: ""
-        UnsetEnvironment: []
-        User: ""
-        UtmpIdentifier: ""
-        UtmpMode: init
-        WantedBy: []
-        Wants: []
-        WatchdogSignal: 6
-        WatchdogTimestamp: 0
-        WatchdogTimestampMonotonic: 0
-        WatchdogUSec: 18446744073709551615
-        WorkingDirectory: ""
-  - type: SystemD
-    data:
-      unit: kubelet.service
-      properties:
-        ActiveEnterTimestamp: 0
-        ActiveEnterTimestampMonotonic: 0
-        ActiveExitTimestamp: 0
-        ActiveExitTimestampMonotonic: 0
-        ActiveState: inactive
-        After: []
-        AllowIsolate: false
-        AllowedCPUs: []
-        AllowedMemoryNodes: []
-        AmbientCapabilities: 0
-        AppArmorProfile:
-          - false
-          - ""
-        AssertResult: false
-        AssertTimestamp: 0
-        AssertTimestampMonotonic: 0
-        Asserts: []
-        BPFProgram: []
-        Before: []
-        BindPaths: []
-        BindReadOnlyPaths: []
-        BindsTo: []
-        BlockIOAccounting: false
-        BlockIODeviceWeight: []
-        BlockIOReadBandwidth: []
-        BlockIOWeight: 18446744073709551615
-        BlockIOWriteBandwidth: []
-        BoundBy: []
-        BusName: ""
-        CPUAccounting: true
-        CPUAffinity: []
-        CPUAffinityFromNUMA: false
-        CPUQuotaPerSecUSec: 18446744073709551615
-        CPUQuotaPeriodUSec: 18446744073709551615
-        CPUSchedulingPolicy: 0
-        CPUSchedulingPriority: 0
-        CPUSchedulingResetOnFork: false
-        CPUShares: 18446744073709551615
-        CPUUsageNSec: 18446744073709551615
-        CPUWeight: 18446744073709551615
-        CacheDirectory: []
-        CacheDirectoryMode: 493
-        CanClean: []
-        CanFreeze: true
-        CanIsolate: false
-        CanReload: false
-        CanStart: false
-        CanStop: true
-        CapabilityBoundingSet: 18446744073709551615
-        CleanResult: success
-        CollectMode: inactive
-        ConditionResult: false
-        ConditionTimestamp: 0
-        ConditionTimestampMonotonic: 0
-        Conditions: []
-        ConfigurationDirectory: []
-        ConfigurationDirectoryMode: 493
-        ConflictedBy: []
-        Conflicts: []
-        ConsistsOf: []
-        ControlGroup: ""
-        ControlPID: 0
-        CoredumpFilter: 51
-        DefaultDependencies: true
-        DefaultMemoryLow: 0
-        DefaultMemoryMin: 0
-        Delegate: false
-        DelegateControllers: []
-        Description: kubelet.service
-        DeviceAllow: []
-        DevicePolicy: auto
-        DisableControllers: []
-        Documentation: []
-        DropInPaths: []
-        DynamicUser: false
-        EffectiveCPUs: []
-        EffectiveMemoryNodes: []
-        Environment: []
-        EnvironmentFiles: []
-        ExecCondition: []
-        ExecConditionEx: []
-        ExecMainCode: 0
-        ExecMainExitTimestamp: 0
-        ExecMainExitTimestampMonotonic: 0
-        ExecMainPID: 0
-        ExecMainStartTimestamp: 0
-        ExecMainStartTimestampMonotonic: 0
-        ExecMainStatus: 0
-        ExecPaths: []
-        ExecReload: []
-        ExecReloadEx: []
-        ExecStart: []
-        ExecStartEx: []
-        ExecStartPost: []
-        ExecStartPostEx: []
-        ExecStartPre: []
-        ExecStartPreEx: []
-        ExecStop: []
-        ExecStopEx: []
-        ExecStopPost: []
-        ExecStopPostEx: []
-        ExtensionImages: []
-        FailureAction: none
-        FailureActionExitStatus: -1
-        FileDescriptorStoreMax: 0
-        FinalKillSignal: 9
-        Following: ""
-        FragmentPath: ""
-        FreezerState: running
-        GID: 4294967295
-        Group: ""
-        GuessMainPID: true
-        IOAccounting: false
-        IODeviceLatencyTargetUSec: []
-        IODeviceWeight: []
-        IOReadBandwidthMax: []
-        IOReadBytes: 18446744073709551615
-        IOReadIOPSMax: []
-        IOReadOperations: 18446744073709551615
-        IOSchedulingClass: 2
-        IOSchedulingPriority: 4
-        IOWeight: 18446744073709551615
-        IOWriteBandwidthMax: []
-        IOWriteBytes: 18446744073709551615
-        IOWriteIOPSMax: []
-        IOWriteOperations: 18446744073709551615
-        IPAccounting: false
-        IPAddressAllow: []
-        IPAddressDeny: []
-        IPCNamespacePath: ""
-        IPEgressBytes: 18446744073709551615
-        IPEgressFilterPath: []
-        IPEgressPackets: 18446744073709551615
-        IPIngressBytes: 18446744073709551615
-        IPIngressFilterPath: []
-        IPIngressPackets: 18446744073709551615
-        Id: kubelet.service
-        IgnoreOnIsolate: false
-        IgnoreSIGPIPE: true
-        InaccessiblePaths: []
-        InactiveEnterTimestamp: 0
-        InactiveEnterTimestampMonotonic: 0
-        InactiveExitTimestamp: 0
-        InactiveExitTimestampMonotonic: 0
-        InvocationID: []
-        Job:
-          - 0
-          - /
-        JobRunningTimeoutUSec: 18446744073709551615
-        JobTimeoutAction: none
-        JobTimeoutRebootArgument: ""
-        JobTimeoutUSec: 18446744073709551615
-        JoinsNamespaceOf: []
-        KeyringMode: private
-        KillMode: control-group
-        KillSignal: 15
-        LimitAS: 18446744073709551615
-        LimitASSoft: 18446744073709551615
-        LimitCORE: 18446744073709551615
-        LimitCORESoft: 0
-        LimitCPU: 18446744073709551615
-        LimitCPUSoft: 18446744073709551615
-        LimitDATA: 18446744073709551615
-        LimitDATASoft: 18446744073709551615
-        LimitFSIZE: 18446744073709551615
-        LimitFSIZESoft: 18446744073709551615
-        LimitLOCKS: 18446744073709551615
-        LimitLOCKSSoft: 18446744073709551615
-        LimitMEMLOCK: 124437454848
-        LimitMEMLOCKSoft: 124437454848
-        LimitMSGQUEUE: 819200
-        LimitMSGQUEUESoft: 819200
-        LimitNICE: 0
-        LimitNICESoft: 0
-        LimitNOFILE: 1048576
-        LimitNOFILESoft: 1048576
-        LimitNPROC: 3789289
-        LimitNPROCSoft: 3789289
-        LimitRSS: 18446744073709551615
-        LimitRSSSoft: 18446744073709551615
-        LimitRTPRIO: 0
-        LimitRTPRIOSoft: 0
-        LimitRTTIME: 18446744073709551615
-        LimitRTTIMESoft: 18446744073709551615
-        LimitSIGPENDING: 3789289
-        LimitSIGPENDINGSoft: 3789289
-        LimitSTACK: 18446744073709551615
-        LimitSTACKSoft: 8388608
-        LoadCredential: []
-        LoadError:
-          - org.freedesktop.systemd1.NoSuchUnit
-          - Unit kubelet.service not found.
-        LoadState: not-found
-        LockPersonality: false
-        LogExtraFields: []
-        LogLevelMax: -1
-        LogNamespace: ""
-        LogRateLimitBurst: 0
-        LogRateLimitIntervalUSec: 0
-        LogsDirectory: []
-        LogsDirectoryMode: 493
-        MainPID: 0
-        ManagedOOMMemoryPressure: auto
-        ManagedOOMMemoryPressureLimit: 0
-        ManagedOOMPreference: none
-        ManagedOOMSwap: auto
-        Markers: []
-        MemoryAccounting: true
-        MemoryAvailable: 18446744073709551615
-        MemoryCurrent: 18446744073709551615
-        MemoryDenyWriteExecute: false
-        MemoryHigh: 18446744073709551615
-        MemoryLimit: 18446744073709551615
-        MemoryLow: 0
-        MemoryMax: 18446744073709551615
-        MemoryMin: 0
-        MemorySwapMax: 18446744073709551615
-        MountAPIVFS: false
-        MountFlags: 0
-        MountImages: []
-        NFileDescriptorStore: 0
-        NRestarts: 0
-        NUMAMask: []
-        NUMAPolicy: -1
-        Names:
-          - kubelet.service
-        NeedDaemonReload: false
-        NetworkNamespacePath: ""
-        Nice: 0
-        NoExecPaths: []
-        NoNewPrivileges: false
-        NonBlocking: false
-        NotifyAccess: none
-        OOMPolicy: ""
-        OOMScoreAdjust: 0
-        OnFailure: []
-        OnFailureJobMode: replace
-        OnFailureOf: []
-        OnSuccess: []
-        OnSuccessJobMode: fail
-        OnSuccessOf: []
-        PAMName: ""
-        PIDFile: ""
-        PartOf: []
-        PassEnvironment: []
-        Perpetual: false
-        Personality: ""
-        PrivateDevices: false
-        PrivateIPC: false
-        PrivateMounts: false
-        PrivateNetwork: false
-        PrivateTmp: false
-        PrivateUsers: false
-        ProcSubset: all
-        PropagatesReloadTo: []
-        PropagatesStopTo: []
-        ProtectClock: false
-        ProtectControlGroups: false
-        ProtectHome: "no"
-        ProtectHostname: false
-        ProtectKernelLogs: false
-        ProtectKernelModules: false
-        ProtectKernelTunables: false
-        ProtectProc: default
-        ProtectSystem: "no"
-        ReadOnlyPaths: []
-        ReadWritePaths: []
-        RebootArgument: ""
-        Refs: []
-        RefuseManualStart: false
-        RefuseManualStop: false
-        ReloadPropagatedFrom: []
-        ReloadResult: success
-        RemainAfterExit: false
-        RemoveIPC: false
-        RequiredBy: []
-        Requires: []
-        RequiresMountsFor: []
-        Requisite: []
-        RequisiteOf: []
-        Restart: "no"
-        RestartForceExitStatus:
-          - []
-          - []
-        RestartKillSignal: 15
-        RestartPreventExitStatus:
-          - []
-          - []
-        RestartUSec: 100000
-        RestrictAddressFamilies:
-          - false
-          - []
-        RestrictNamespaces: 18446744073709551615
-        RestrictRealtime: false
-        RestrictSUIDSGID: false
-        Result: success
-        RootDirectory: ""
-        RootDirectoryStartOnly: false
-        RootHash: []
-        RootHashPath: ""
-        RootHashSignature: []
-        RootHashSignaturePath: ""
-        RootImage: ""
-        RootImageOptions: []
-        RootVerity: ""
-        RuntimeDirectory: []
-        RuntimeDirectoryMode: 493
-        RuntimeDirectoryPreserve: "no"
-        RuntimeMaxUSec: 18446744073709551615
-        SELinuxContext:
-          - false
-          - ""
-        SameProcessGroup: false
-        SecureBits: 0
-        SendSIGHUP: false
-        SendSIGKILL: true
-        SetCredential: []
-        Slice: ""
-        SliceOf: []
-        SmackProcessLabel:
-          - false
-          - ""
-        SocketBindAllow: []
-        SocketBindDeny: []
-        SourcePath: ""
-        StandardError: inherit
-        StandardErrorFileDescriptorName: ""
-        StandardInput: "null"
-        StandardInputData: []
-        StandardInputFileDescriptorName: ""
-        StandardOutput: inherit
-        StandardOutputFileDescriptorName: ""
-        StartLimitAction: none
-        StartLimitBurst: 5
-        StartLimitIntervalUSec: 10000000
-        StartupBlockIOWeight: 18446744073709551615
-        StartupCPUShares: 18446744073709551615
-        StartupCPUWeight: 18446744073709551615
-        StartupIOWeight: 18446744073709551615
-        StateChangeTimestamp: 0
-        StateChangeTimestampMonotonic: 0
-        StateDirectory: []
-        StateDirectoryMode: 493
-        StatusErrno: 0
-        StatusText: ""
-        StopPropagatedFrom: []
-        StopWhenUnneeded: false
-        SubState: dead
-        SuccessAction: none
-        SuccessActionExitStatus: -1
-        SuccessExitStatus:
-          - []
-          - []
-        SupplementaryGroups: []
-        SyslogFacility: 3
-        SyslogIdentifier: ""
-        SyslogLevel: 6
-        SyslogLevelPrefix: true
-        SyslogPriority: 30
-        SystemCallArchitectures: []
-        SystemCallErrorNumber: 2147483646
-        SystemCallFilter:
-          - false
-          - []
-        SystemCallLog:
-          - false
-          - []
-        TTYPath: ""
-        TTYReset: false
-        TTYVHangup: false
-        TTYVTDisallocate: false
-        TasksAccounting: true
-        TasksCurrent: 18446744073709551615
-        TasksMax: 629145
-        TemporaryFileSystem: []
-        TimeoutAbortUSec: 90000000
-        TimeoutCleanUSec: 18446744073709551615
-        TimeoutStartFailureMode: terminate
-        TimeoutStartUSec: 90000000
-        TimeoutStopFailureMode: terminate
-        TimeoutStopUSec: 90000000
-        TimerSlackNSec: 50000
-        Transient: false
-        TriggeredBy: []
-        Triggers: []
-        Type: ""
-        UID: 4294967295
-        UMask: 18
-        USBFunctionDescriptors: ""
-        USBFunctionStrings: ""
-        UnitFilePreset: ""
-        UnitFileState: ""
-        UnsetEnvironment: []
-        User: ""
-        UtmpIdentifier: ""
-        UtmpMode: init
-        WantedBy: []
-        Wants: []
-        WatchdogSignal: 6
-        WatchdogTimestamp: 0
-        WatchdogTimestampMonotonic: 0
-        WatchdogUSec: 18446744073709551615
-        WorkingDirectory: ""
+            - /
+          JobRunningTimeoutUSec: 18446744073709551615
+          JobTimeoutAction: none
+          JobTimeoutRebootArgument: ""
+          JobTimeoutUSec: 18446744073709551615
+          JoinsNamespaceOf: []
+          KeyringMode: private
+          KillMode: control-group
+          KillSignal: 15
+          LimitAS: 18446744073709551615
+          LimitASSoft: 18446744073709551615
+          LimitCORE: 18446744073709551615
+          LimitCORESoft: 0
+          LimitCPU: 18446744073709551615
+          LimitCPUSoft: 18446744073709551615
+          LimitDATA: 18446744073709551615
+          LimitDATASoft: 18446744073709551615
+          LimitFSIZE: 18446744073709551615
+          LimitFSIZESoft: 18446744073709551615
+          LimitLOCKS: 18446744073709551615
+          LimitLOCKSSoft: 18446744073709551615
+          LimitMEMLOCK: 124437454848
+          LimitMEMLOCKSoft: 124437454848
+          LimitMSGQUEUE: 819200
+          LimitMSGQUEUESoft: 819200
+          LimitNICE: 0
+          LimitNICESoft: 0
+          LimitNOFILE: 1048576
+          LimitNOFILESoft: 1048576
+          LimitNPROC: 3789289
+          LimitNPROCSoft: 3789289
+          LimitRSS: 18446744073709551615
+          LimitRSSSoft: 18446744073709551615
+          LimitRTPRIO: 0
+          LimitRTPRIOSoft: 0
+          LimitRTTIME: 18446744073709551615
+          LimitRTTIMESoft: 18446744073709551615
+          LimitSIGPENDING: 3789289
+          LimitSIGPENDINGSoft: 3789289
+          LimitSTACK: 18446744073709551615
+          LimitSTACKSoft: 8388608
+          LoadCredential: []
+          LoadError:
+            - org.freedesktop.systemd1.NoSuchUnit
+            - Unit docker.service not found.
+          LoadState: not-found
+          LockPersonality: false
+          LogExtraFields: []
+          LogLevelMax: -1
+          LogNamespace: ""
+          LogRateLimitBurst: 0
+          LogRateLimitIntervalUSec: 0
+          LogsDirectory: []
+          LogsDirectoryMode: 493
+          MainPID: 0
+          ManagedOOMMemoryPressure: auto
+          ManagedOOMMemoryPressureLimit: 0
+          ManagedOOMPreference: none
+          ManagedOOMSwap: auto
+          Markers: []
+          MemoryAccounting: true
+          MemoryAvailable: 18446744073709551615
+          MemoryCurrent: 18446744073709551615
+          MemoryDenyWriteExecute: false
+          MemoryHigh: 18446744073709551615
+          MemoryLimit: 18446744073709551615
+          MemoryLow: 0
+          MemoryMax: 18446744073709551615
+          MemoryMin: 0
+          MemorySwapMax: 18446744073709551615
+          MountAPIVFS: false
+          MountFlags: 0
+          MountImages: []
+          NFileDescriptorStore: 0
+          NRestarts: 0
+          NUMAMask: []
+          NUMAPolicy: -1
+          Names:
+            - docker.service
+          NeedDaemonReload: false
+          NetworkNamespacePath: ""
+          Nice: 0
+          NoExecPaths: []
+          NoNewPrivileges: false
+          NonBlocking: false
+          NotifyAccess: none
+          OOMPolicy: ""
+          OOMScoreAdjust: 0
+          OnFailure: []
+          OnFailureJobMode: replace
+          OnFailureOf: []
+          OnSuccess: []
+          OnSuccessJobMode: fail
+          OnSuccessOf: []
+          PAMName: ""
+          PIDFile: ""
+          PartOf: []
+          PassEnvironment: []
+          Perpetual: false
+          Personality: ""
+          PrivateDevices: false
+          PrivateIPC: false
+          PrivateMounts: false
+          PrivateNetwork: false
+          PrivateTmp: false
+          PrivateUsers: false
+          ProcSubset: all
+          PropagatesReloadTo: []
+          PropagatesStopTo: []
+          ProtectClock: false
+          ProtectControlGroups: false
+          ProtectHome: "no"
+          ProtectHostname: false
+          ProtectKernelLogs: false
+          ProtectKernelModules: false
+          ProtectKernelTunables: false
+          ProtectProc: default
+          ProtectSystem: "no"
+          ReadOnlyPaths: []
+          ReadWritePaths: []
+          RebootArgument: ""
+          Refs: []
+          RefuseManualStart: false
+          RefuseManualStop: false
+          ReloadPropagatedFrom: []
+          ReloadResult: success
+          RemainAfterExit: false
+          RemoveIPC: false
+          RequiredBy: []
+          Requires: []
+          RequiresMountsFor: []
+          Requisite: []
+          RequisiteOf: []
+          Restart: "no"
+          RestartForceExitStatus:
+            - []
+            - []
+          RestartKillSignal: 15
+          RestartPreventExitStatus:
+            - []
+            - []
+          RestartUSec: 100000
+          RestrictAddressFamilies:
+            - false
+            - []
+          RestrictNamespaces: 18446744073709551615
+          RestrictRealtime: false
+          RestrictSUIDSGID: false
+          Result: success
+          RootDirectory: ""
+          RootDirectoryStartOnly: false
+          RootHash: []
+          RootHashPath: ""
+          RootHashSignature: []
+          RootHashSignaturePath: ""
+          RootImage: ""
+          RootImageOptions: []
+          RootVerity: ""
+          RuntimeDirectory: []
+          RuntimeDirectoryMode: 493
+          RuntimeDirectoryPreserve: "no"
+          RuntimeMaxUSec: 18446744073709551615
+          SELinuxContext:
+            - false
+            - ""
+          SameProcessGroup: false
+          SecureBits: 0
+          SendSIGHUP: false
+          SendSIGKILL: true
+          SetCredential: []
+          Slice: ""
+          SliceOf: []
+          SmackProcessLabel:
+            - false
+            - ""
+          SocketBindAllow: []
+          SocketBindDeny: []
+          SourcePath: ""
+          StandardError: inherit
+          StandardErrorFileDescriptorName: ""
+          StandardInput: "null"
+          StandardInputData: []
+          StandardInputFileDescriptorName: ""
+          StandardOutput: inherit
+          StandardOutputFileDescriptorName: ""
+          StartLimitAction: none
+          StartLimitBurst: 5
+          StartLimitIntervalUSec: 10000000
+          StartupBlockIOWeight: 18446744073709551615
+          StartupCPUShares: 18446744073709551615
+          StartupCPUWeight: 18446744073709551615
+          StartupIOWeight: 18446744073709551615
+          StateChangeTimestamp: 0
+          StateChangeTimestampMonotonic: 0
+          StateDirectory: []
+          StateDirectoryMode: 493
+          StatusErrno: 0
+          StatusText: ""
+          StopPropagatedFrom: []
+          StopWhenUnneeded: false
+          SubState: dead
+          SuccessAction: none
+          SuccessActionExitStatus: -1
+          SuccessExitStatus:
+            - []
+            - []
+          SupplementaryGroups: []
+          SyslogFacility: 3
+          SyslogIdentifier: ""
+          SyslogLevel: 6
+          SyslogLevelPrefix: true
+          SyslogPriority: 30
+          SystemCallArchitectures: []
+          SystemCallErrorNumber: 2147483646
+          SystemCallFilter:
+            - false
+            - []
+          SystemCallLog:
+            - false
+            - []
+          TTYPath: ""
+          TTYReset: false
+          TTYVHangup: false
+          TTYVTDisallocate: false
+          TasksAccounting: true
+          TasksCurrent: 18446744073709551615
+          TasksMax: 629145
+          TemporaryFileSystem: []
+          TimeoutAbortUSec: 90000000
+          TimeoutCleanUSec: 18446744073709551615
+          TimeoutStartFailureMode: terminate
+          TimeoutStartUSec: 90000000
+          TimeoutStopFailureMode: terminate
+          TimeoutStopUSec: 90000000
+          TimerSlackNSec: 50000
+          Transient: false
+          TriggeredBy: []
+          Triggers: []
+          Type: ""
+          UID: 4294967295
+          UMask: 18
+          USBFunctionDescriptors: ""
+          USBFunctionStrings: ""
+          UnitFilePreset: ""
+          UnitFileState: ""
+          UnsetEnvironment: []
+          User: ""
+          UtmpIdentifier: ""
+          UtmpMode: init
+          WantedBy: []
+          Wants: []
+          WatchdogSignal: 6
+          WatchdogTimestamp: 0
+          WatchdogTimestampMonotonic: 0
+          WatchdogUSec: 18446744073709551615
+          WorkingDirectory: ""
+      - unit: kubelet.service
+        properties:
+          ActiveEnterTimestamp: 0
+          ActiveEnterTimestampMonotonic: 0
+          ActiveExitTimestamp: 0
+          ActiveExitTimestampMonotonic: 0
+          ActiveState: inactive
+          After: []
+          AllowIsolate: false
+          AllowedCPUs: []
+          AllowedMemoryNodes: []
+          AmbientCapabilities: 0
+          AppArmorProfile:
+            - false
+            - ""
+          AssertResult: false
+          AssertTimestamp: 0
+          AssertTimestampMonotonic: 0
+          Asserts: []
+          BPFProgram: []
+          Before: []
+          BindPaths: []
+          BindReadOnlyPaths: []
+          BindsTo: []
+          BlockIOAccounting: false
+          BlockIODeviceWeight: []
+          BlockIOReadBandwidth: []
+          BlockIOWeight: 18446744073709551615
+          BlockIOWriteBandwidth: []
+          BoundBy: []
+          BusName: ""
+          CPUAccounting: true
+          CPUAffinity: []
+          CPUAffinityFromNUMA: false
+          CPUQuotaPerSecUSec: 18446744073709551615
+          CPUQuotaPeriodUSec: 18446744073709551615
+          CPUSchedulingPolicy: 0
+          CPUSchedulingPriority: 0
+          CPUSchedulingResetOnFork: false
+          CPUShares: 18446744073709551615
+          CPUUsageNSec: 18446744073709551615
+          CPUWeight: 18446744073709551615
+          CacheDirectory: []
+          CacheDirectoryMode: 493
+          CanClean: []
+          CanFreeze: true
+          CanIsolate: false
+          CanReload: false
+          CanStart: false
+          CanStop: true
+          CapabilityBoundingSet: 18446744073709551615
+          CleanResult: success
+          CollectMode: inactive
+          ConditionResult: false
+          ConditionTimestamp: 0
+          ConditionTimestampMonotonic: 0
+          Conditions: []
+          ConfigurationDirectory: []
+          ConfigurationDirectoryMode: 493
+          ConflictedBy: []
+          Conflicts: []
+          ConsistsOf: []
+          ControlGroup: ""
+          ControlPID: 0
+          CoredumpFilter: 51
+          DefaultDependencies: true
+          DefaultMemoryLow: 0
+          DefaultMemoryMin: 0
+          Delegate: false
+          DelegateControllers: []
+          Description: kubelet.service
+          DeviceAllow: []
+          DevicePolicy: auto
+          DisableControllers: []
+          Documentation: []
+          DropInPaths: []
+          DynamicUser: false
+          EffectiveCPUs: []
+          EffectiveMemoryNodes: []
+          Environment: []
+          EnvironmentFiles: []
+          ExecCondition: []
+          ExecConditionEx: []
+          ExecMainCode: 0
+          ExecMainExitTimestamp: 0
+          ExecMainExitTimestampMonotonic: 0
+          ExecMainPID: 0
+          ExecMainStartTimestamp: 0
+          ExecMainStartTimestampMonotonic: 0
+          ExecMainStatus: 0
+          ExecPaths: []
+          ExecReload: []
+          ExecReloadEx: []
+          ExecStart: []
+          ExecStartEx: []
+          ExecStartPost: []
+          ExecStartPostEx: []
+          ExecStartPre: []
+          ExecStartPreEx: []
+          ExecStop: []
+          ExecStopEx: []
+          ExecStopPost: []
+          ExecStopPostEx: []
+          ExtensionImages: []
+          FailureAction: none
+          FailureActionExitStatus: -1
+          FileDescriptorStoreMax: 0
+          FinalKillSignal: 9
+          Following: ""
+          FragmentPath: ""
+          FreezerState: running
+          GID: 4294967295
+          Group: ""
+          GuessMainPID: true
+          IOAccounting: false
+          IODeviceLatencyTargetUSec: []
+          IODeviceWeight: []
+          IOReadBandwidthMax: []
+          IOReadBytes: 18446744073709551615
+          IOReadIOPSMax: []
+          IOReadOperations: 18446744073709551615
+          IOSchedulingClass: 2
+          IOSchedulingPriority: 4
+          IOWeight: 18446744073709551615
+          IOWriteBandwidthMax: []
+          IOWriteBytes: 18446744073709551615
+          IOWriteIOPSMax: []
+          IOWriteOperations: 18446744073709551615
+          IPAccounting: false
+          IPAddressAllow: []
+          IPAddressDeny: []
+          IPCNamespacePath: ""
+          IPEgressBytes: 18446744073709551615
+          IPEgressFilterPath: []
+          IPEgressPackets: 18446744073709551615
+          IPIngressBytes: 18446744073709551615
+          IPIngressFilterPath: []
+          IPIngressPackets: 18446744073709551615
+          Id: kubelet.service
+          IgnoreOnIsolate: false
+          IgnoreSIGPIPE: true
+          InaccessiblePaths: []
+          InactiveEnterTimestamp: 0
+          InactiveEnterTimestampMonotonic: 0
+          InactiveExitTimestamp: 0
+          InactiveExitTimestampMonotonic: 0
+          InvocationID: []
+          Job:
+            - 0
+            - /
+          JobRunningTimeoutUSec: 18446744073709551615
+          JobTimeoutAction: none
+          JobTimeoutRebootArgument: ""
+          JobTimeoutUSec: 18446744073709551615
+          JoinsNamespaceOf: []
+          KeyringMode: private
+          KillMode: control-group
+          KillSignal: 15
+          LimitAS: 18446744073709551615
+          LimitASSoft: 18446744073709551615
+          LimitCORE: 18446744073709551615
+          LimitCORESoft: 0
+          LimitCPU: 18446744073709551615
+          LimitCPUSoft: 18446744073709551615
+          LimitDATA: 18446744073709551615
+          LimitDATASoft: 18446744073709551615
+          LimitFSIZE: 18446744073709551615
+          LimitFSIZESoft: 18446744073709551615
+          LimitLOCKS: 18446744073709551615
+          LimitLOCKSSoft: 18446744073709551615
+          LimitMEMLOCK: 124437454848
+          LimitMEMLOCKSoft: 124437454848
+          LimitMSGQUEUE: 819200
+          LimitMSGQUEUESoft: 819200
+          LimitNICE: 0
+          LimitNICESoft: 0
+          LimitNOFILE: 1048576
+          LimitNOFILESoft: 1048576
+          LimitNPROC: 3789289
+          LimitNPROCSoft: 3789289
+          LimitRSS: 18446744073709551615
+          LimitRSSSoft: 18446744073709551615
+          LimitRTPRIO: 0
+          LimitRTPRIOSoft: 0
+          LimitRTTIME: 18446744073709551615
+          LimitRTTIMESoft: 18446744073709551615
+          LimitSIGPENDING: 3789289
+          LimitSIGPENDINGSoft: 3789289
+          LimitSTACK: 18446744073709551615
+          LimitSTACKSoft: 8388608
+          LoadCredential: []
+          LoadError:
+            - org.freedesktop.systemd1.NoSuchUnit
+            - Unit kubelet.service not found.
+          LoadState: not-found
+          LockPersonality: false
+          LogExtraFields: []
+          LogLevelMax: -1
+          LogNamespace: ""
+          LogRateLimitBurst: 0
+          LogRateLimitIntervalUSec: 0
+          LogsDirectory: []
+          LogsDirectoryMode: 493
+          MainPID: 0
+          ManagedOOMMemoryPressure: auto
+          ManagedOOMMemoryPressureLimit: 0
+          ManagedOOMPreference: none
+          ManagedOOMSwap: auto
+          Markers: []
+          MemoryAccounting: true
+          MemoryAvailable: 18446744073709551615
+          MemoryCurrent: 18446744073709551615
+          MemoryDenyWriteExecute: false
+          MemoryHigh: 18446744073709551615
+          MemoryLimit: 18446744073709551615
+          MemoryLow: 0
+          MemoryMax: 18446744073709551615
+          MemoryMin: 0
+          MemorySwapMax: 18446744073709551615
+          MountAPIVFS: false
+          MountFlags: 0
+          MountImages: []
+          NFileDescriptorStore: 0
+          NRestarts: 0
+          NUMAMask: []
+          NUMAPolicy: -1
+          Names:
+            - kubelet.service
+          NeedDaemonReload: false
+          NetworkNamespacePath: ""
+          Nice: 0
+          NoExecPaths: []
+          NoNewPrivileges: false
+          NonBlocking: false
+          NotifyAccess: none
+          OOMPolicy: ""
+          OOMScoreAdjust: 0
+          OnFailure: []
+          OnFailureJobMode: replace
+          OnFailureOf: []
+          OnSuccess: []
+          OnSuccessJobMode: fail
+          OnSuccessOf: []
+          PAMName: ""
+          PIDFile: ""
+          PartOf: []
+          PassEnvironment: []
+          Perpetual: false
+          Personality: ""
+          PrivateDevices: false
+          PrivateIPC: false
+          PrivateMounts: false
+          PrivateNetwork: false
+          PrivateTmp: false
+          PrivateUsers: false
+          ProcSubset: all
+          PropagatesReloadTo: []
+          PropagatesStopTo: []
+          ProtectClock: false
+          ProtectControlGroups: false
+          ProtectHome: "no"
+          ProtectHostname: false
+          ProtectKernelLogs: false
+          ProtectKernelModules: false
+          ProtectKernelTunables: false
+          ProtectProc: default
+          ProtectSystem: "no"
+          ReadOnlyPaths: []
+          ReadWritePaths: []
+          RebootArgument: ""
+          Refs: []
+          RefuseManualStart: false
+          RefuseManualStop: false
+          ReloadPropagatedFrom: []
+          ReloadResult: success
+          RemainAfterExit: false
+          RemoveIPC: false
+          RequiredBy: []
+          Requires: []
+          RequiresMountsFor: []
+          Requisite: []
+          RequisiteOf: []
+          Restart: "no"
+          RestartForceExitStatus:
+            - []
+            - []
+          RestartKillSignal: 15
+          RestartPreventExitStatus:
+            - []
+            - []
+          RestartUSec: 100000
+          RestrictAddressFamilies:
+            - false
+            - []
+          RestrictNamespaces: 18446744073709551615
+          RestrictRealtime: false
+          RestrictSUIDSGID: false
+          Result: success
+          RootDirectory: ""
+          RootDirectoryStartOnly: false
+          RootHash: []
+          RootHashPath: ""
+          RootHashSignature: []
+          RootHashSignaturePath: ""
+          RootImage: ""
+          RootImageOptions: []
+          RootVerity: ""
+          RuntimeDirectory: []
+          RuntimeDirectoryMode: 493
+          RuntimeDirectoryPreserve: "no"
+          RuntimeMaxUSec: 18446744073709551615
+          SELinuxContext:
+            - false
+            - ""
+          SameProcessGroup: false
+          SecureBits: 0
+          SendSIGHUP: false
+          SendSIGKILL: true
+          SetCredential: []
+          Slice: ""
+          SliceOf: []
+          SmackProcessLabel:
+            - false
+            - ""
+          SocketBindAllow: []
+          SocketBindDeny: []
+          SourcePath: ""
+          StandardError: inherit
+          StandardErrorFileDescriptorName: ""
+          StandardInput: "null"
+          StandardInputData: []
+          StandardInputFileDescriptorName: ""
+          StandardOutput: inherit
+          StandardOutputFileDescriptorName: ""
+          StartLimitAction: none
+          StartLimitBurst: 5
+          StartLimitIntervalUSec: 10000000
+          StartupBlockIOWeight: 18446744073709551615
+          StartupCPUShares: 18446744073709551615
+          StartupCPUWeight: 18446744073709551615
+          StartupIOWeight: 18446744073709551615
+          StateChangeTimestamp: 0
+          StateChangeTimestampMonotonic: 0
+          StateDirectory: []
+          StateDirectoryMode: 493
+          StatusErrno: 0
+          StatusText: ""
+          StopPropagatedFrom: []
+          StopWhenUnneeded: false
+          SubState: dead
+          SuccessAction: none
+          SuccessActionExitStatus: -1
+          SuccessExitStatus:
+            - []
+            - []
+          SupplementaryGroups: []
+          SyslogFacility: 3
+          SyslogIdentifier: ""
+          SyslogLevel: 6
+          SyslogLevelPrefix: true
+          SyslogPriority: 30
+          SystemCallArchitectures: []
+          SystemCallErrorNumber: 2147483646
+          SystemCallFilter:
+            - false
+            - []
+          SystemCallLog:
+            - false
+            - []
+          TTYPath: ""
+          TTYReset: false
+          TTYVHangup: false
+          TTYVTDisallocate: false
+          TasksAccounting: true
+          TasksCurrent: 18446744073709551615
+          TasksMax: 629145
+          TemporaryFileSystem: []
+          TimeoutAbortUSec: 90000000
+          TimeoutCleanUSec: 18446744073709551615
+          TimeoutStartFailureMode: terminate
+          TimeoutStartUSec: 90000000
+          TimeoutStopFailureMode: terminate
+          TimeoutStopUSec: 90000000
+          TimerSlackNSec: 50000
+          Transient: false
+          TriggeredBy: []
+          Triggers: []
+          Type: ""
+          UID: 4294967295
+          UMask: 18
+          USBFunctionDescriptors: ""
+          USBFunctionStrings: ""
+          UnitFilePreset: ""
+          UnitFileState: ""
+          UnsetEnvironment: []
+          User: ""
+          UtmpIdentifier: ""
+          UtmpMode: init
+          WantedBy: []
+          Wants: []
+          WatchdogSignal: 6
+          WatchdogTimestamp: 0
+          WatchdogTimestampMonotonic: 0
+          WatchdogUSec: 18446744073709551615
+          WorkingDirectory: ""
   - type: Sysctl
     data:
       /proc/sys/abi/cp15_barrier: "1"
@@ -1516,16 +1512,16 @@ measurements:
       /proc/sys/dev/tty/legacy_tiocsti: "0"
       /proc/sys/fs/aio-max-nr: "65536"
       /proc/sys/fs/aio-nr: "0"
-      /proc/sys/fs/dentry-state: "1876907\t1776273\t45\t0\t640681\t0"
+      /proc/sys/fs/dentry-state: "1865664\t1764989\t45\t0\t640500\t0"
       /proc/sys/fs/dir-notify-enable: "1"
       /proc/sys/fs/epoll/max_user_watches: "216410223"
       /proc/sys/fs/fanotify/max_queued_events: "16384"
       /proc/sys/fs/fanotify/max_user_groups: "128"
       /proc/sys/fs/fanotify/max_user_marks: "1048576"
       /proc/sys/fs/file-max: "9223372036854775807"
-      /proc/sys/fs/file-nr: "2880\t0\t9223372036854775807"
-      /proc/sys/fs/inode-nr: "1231211\t435"
-      /proc/sys/fs/inode-state: "1231211\t435\t0\t0\t0\t0\t0"
+      /proc/sys/fs/file-nr: "4896\t0\t9223372036854775807"
+      /proc/sys/fs/inode-nr: "1222076\t435"
+      /proc/sys/fs/inode-state: "1222076\t435\t0\t0\t0\t0\t0"
       /proc/sys/fs/inotify/max_queued_events: "16384"
       /proc/sys/fs/inotify/max_user_instances: "65535"
       /proc/sys/fs/inotify/max_user_watches: "524288"
@@ -1596,7 +1592,7 @@ measurements:
       /proc/sys/kernel/ftrace_enabled: "1"
       /proc/sys/kernel/hardlockup_all_cpu_backtrace: "0"
       /proc/sys/kernel/hardlockup_panic: "0"
-      /proc/sys/kernel/hostname: ip-10-0-142-19
+      /proc/sys/kernel/hostname: ip-10-0-157-11
       /proc/sys/kernel/hotplug: ""
       /proc/sys/kernel/hung_task_all_cpu_backtrace: "0"
       /proc/sys/kernel/hung_task_check_count: "4194304"
@@ -1627,7 +1623,7 @@ measurements:
       /proc/sys/kernel/msgmni: "32000"
       /proc/sys/kernel/ngroups_max: "65536"
       /proc/sys/kernel/nmi_watchdog: "0"
-      /proc/sys/kernel/ns_last_pid: "4032168"
+      /proc/sys/kernel/ns_last_pid: "4045889"
       /proc/sys/kernel/numa_balancing: "0"
       /proc/sys/kernel/numa_balancing_promote_rate_limit_MBps: "65536"
       /proc/sys/kernel/oops_all_cpu_backtrace: "0"
@@ -1659,11 +1655,11 @@ measurements:
       /proc/sys/kernel/pty/max: "4096"
       /proc/sys/kernel/pty/nr: "0"
       /proc/sys/kernel/pty/reserve: "1024"
-      /proc/sys/kernel/random/boot_id: 6dcbe474-52c1-4fbc-985f-502d4dd3d4f9
+      /proc/sys/kernel/random/boot_id: 34d1a891-4a01-423b-ab31-b34aaa1bb207
       /proc/sys/kernel/random/entropy_avail: "256"
       /proc/sys/kernel/random/poolsize: "256"
       /proc/sys/kernel/random/urandom_min_reseed_secs: "60"
-      /proc/sys/kernel/random/uuid: 993d9bc4-b47d-4d86-ad37-b6f8c71d81cd
+      /proc/sys/kernel/random/uuid: 77a34cd1-0753-4648-bf4f-f8c85bffc7c7
       /proc/sys/kernel/random/write_wakeup_threshold: "256"
       /proc/sys/kernel/randomize_va_space: "2"
       /proc/sys/kernel/real-root-dev: "0"
@@ -1812,3 +1808,1234 @@ measurements:
       goVersion: go1.24.6
       platform: linux/arm64
       version: v1.33.5-eks-3025e55
+  - type: Image
+    data:
+      602401143452.dkr.ecr.us-east-1.amazonaws.com/amazon-k8s-cni:
+        fullImage: 602401143452.dkr.ecr.us-east-1.amazonaws.com/amazon-k8s-cni:v1.20.1-eksbuild.1
+        tag: v1.20.1-eksbuild.1
+      602401143452.dkr.ecr.us-east-1.amazonaws.com/amazon-k8s-cni-init:
+        fullImage: 602401143452.dkr.ecr.us-east-1.amazonaws.com/amazon-k8s-cni-init:v1.20.1-eksbuild.1
+        tag: v1.20.1-eksbuild.1
+      602401143452.dkr.ecr.us-east-1.amazonaws.com/amazon/aws-network-policy-agent:
+        fullImage: 602401143452.dkr.ecr.us-east-1.amazonaws.com/amazon/aws-network-policy-agent:v1.2.4-eksbuild.1
+        tag: v1.2.4-eksbuild.1
+      602401143452.dkr.ecr.us-east-1.amazonaws.com/eks/coredns:
+        fullImage: 602401143452.dkr.ecr.us-east-1.amazonaws.com/eks/coredns:v1.12.2-eksbuild.4
+        tag: v1.12.2-eksbuild.4
+      602401143452.dkr.ecr.us-east-1.amazonaws.com/eks/kube-proxy:
+        fullImage: 602401143452.dkr.ecr.us-east-1.amazonaws.com/eks/kube-proxy:v1.33.0-eksbuild.2
+        tag: v1.33.0-eksbuild.2
+      602401143452.dkr.ecr.us-east-1.amazonaws.com/eks/metrics-server:
+        fullImage: 602401143452.dkr.ecr.us-east-1.amazonaws.com/eks/metrics-server:v0.8.0-eksbuild.2
+        tag: v0.8.0-eksbuild.2
+      602401143452.dkr.ecr.us-west-2.amazonaws.com/eks/aws-efa-k8s-device-plugin:
+        fullImage: 602401143452.dkr.ecr.us-west-2.amazonaws.com/eks/aws-efa-k8s-device-plugin:v0.5.3
+        tag: v0.5.3
+      602401143452.dkr.ecr.us-west-2.amazonaws.com/eks/aws-fsx-csi-driver:
+        fullImage: 602401143452.dkr.ecr.us-west-2.amazonaws.com/eks/aws-fsx-csi-driver:v1.1.0
+        tag: v1.1.0
+      ghcr.io/mchmarny/cloud-native-stack:
+        fullImage: ghcr.io/mchmarny/cloud-native-stack:v0.4.1
+        tag: v0.4.1
+      ghcr.io/mchmarny/gpuid:
+        fullImage: ghcr.io/mchmarny/gpuid:latest
+        tag: latest
+      ghcr.io/mchmarny/node-role-controller:v0.5.0:
+        fullImage: ghcr.io/mchmarny/node-role-controller:v0.5.0@sha256:345638126a65cff794a59c620badcd02cdbc100d45f7745b4b42e32a803ff645
+        tag: sha256:345638126a65cff794a59c620badcd02cdbc100d45f7745b4b42e32a803ff645
+      nvcr.io/0491946863192633/argocd:
+        fullImage: nvcr.io/0491946863192633/argocd:v2.14.3
+        tag: v2.14.3
+      nvcr.io/0491946863192633/aws-secrets-manager-secrets-store-csi-driver-provider-aws:
+        fullImage: nvcr.io/0491946863192633/aws-secrets-manager-secrets-store-csi-driver-provider-aws:1.0.r2-72-gfb78a36-2024.05.29.23.03
+        tag: 1.0.r2-72-gfb78a36-2024.05.29.23.03
+      nvcr.io/0491946863192633/bitnami-kubectl:
+        fullImage: nvcr.io/0491946863192633/bitnami-kubectl:1.30.6
+        tag: 1.30.6
+      nvcr.io/0491946863192633/bitnami-mongodb:
+        fullImage: nvcr.io/0491946863192633/bitnami-mongodb:8.0.3-debian-12-r0
+        tag: 8.0.3-debian-12-r0
+      nvcr.io/0491946863192633/bitnami-nginx:
+        fullImage: nvcr.io/0491946863192633/bitnami-nginx:1.27.2-debian-12-r2
+        tag: 1.27.2-debian-12-r2
+      nvcr.io/0491946863192633/cert-manager-cainjector:
+        fullImage: nvcr.io/0491946863192633/cert-manager-cainjector:v1.15.1
+        tag: v1.15.1
+      nvcr.io/0491946863192633/cert-manager-controller:
+        fullImage: nvcr.io/0491946863192633/cert-manager-controller:v1.15.1
+        tag: v1.15.1
+      nvcr.io/0491946863192633/cert-manager-webhook:
+        fullImage: nvcr.io/0491946863192633/cert-manager-webhook:v1.15.1
+        tag: v1.15.1
+      nvcr.io/0491946863192633/csi-secrets-store-driver:
+        fullImage: nvcr.io/0491946863192633/csi-secrets-store-driver:v1.4.5
+        tag: v1.4.5
+      nvcr.io/0491946863192633/dgxc-janitor:
+        fullImage: nvcr.io/0491946863192633/dgxc-janitor:1.17.3
+        tag: 1.17.3
+      nvcr.io/0491946863192633/kratos-fluent-bit:
+        fullImage: nvcr.io/0491946863192633/kratos-fluent-bit:v7.0.2-dev-cf642b0-multiarch
+        tag: v7.0.2-dev-cf642b0-multiarch
+      nvcr.io/0491946863192633/kube-rbac-proxy:
+        fullImage: nvcr.io/0491946863192633/kube-rbac-proxy:v0.15.0
+        tag: v0.15.0
+      nvcr.io/0491946863192633/kube-state-metrics:
+        fullImage: nvcr.io/0491946863192633/kube-state-metrics:v2.12.0
+        tag: v2.12.0
+      nvcr.io/0491946863192633/las-fluentd:
+        fullImage: nvcr.io/0491946863192633/las-fluentd:1.16.1-09497efe
+        tag: 1.16.1-09497efe
+      nvcr.io/0491946863192633/mongodb_exporter:
+        fullImage: nvcr.io/0491946863192633/mongodb_exporter:0.41.2-debian-12-r1
+        tag: 0.41.2-debian-12-r1
+      nvcr.io/0491946863192633/mpi-operator:
+        fullImage: nvcr.io/0491946863192633/mpi-operator:0.6-pr700
+        tag: 0.6-pr700
+      nvcr.io/0491946863192633/node-exporter:
+        fullImage: nvcr.io/0491946863192633/node-exporter:v1.8.1-multiarch
+        tag: v1.8.1-multiarch
+      nvcr.io/0491946863192633/nvidia-xid-analyzer-sidecar:
+        fullImage: nvcr.io/0491946863192633/nvidia-xid-analyzer-sidecar:v1
+        tag: v1
+      nvcr.io/0491946863192633/nvsentinel-fault-quarantine-module:
+        fullImage: nvcr.io/0491946863192633/nvsentinel-fault-quarantine-module:1.167.1
+        tag: 1.167.1
+      nvcr.io/0491946863192633/nvsentinel-fault-remediation-module:
+        fullImage: nvcr.io/0491946863192633/nvsentinel-fault-remediation-module:1.167.1
+        tag: 1.167.1
+      nvcr.io/0491946863192633/nvsentinel-gpu-health-monitor:
+        fullImage: nvcr.io/0491946863192633/nvsentinel-gpu-health-monitor:1.167.1-dcgm-4.x
+        tag: 1.167.1-dcgm-4.x
+      nvcr.io/0491946863192633/nvsentinel-node-drainer-module:
+        fullImage: nvcr.io/0491946863192633/nvsentinel-node-drainer-module:1.167.1
+        tag: 1.167.1
+      nvcr.io/0491946863192633/nvsentinel-nvswitch-health-monitor:
+        fullImage: nvcr.io/0491946863192633/nvsentinel-nvswitch-health-monitor:1.167.1
+        tag: 1.167.1
+      nvcr.io/0491946863192633/nvsentinel-platform-connectors:
+        fullImage: nvcr.io/0491946863192633/nvsentinel-platform-connectors:1.167.1
+        tag: 1.167.1
+      nvcr.io/0491946863192633/nvsentinel-syslog-health-monitor:
+        fullImage: nvcr.io/0491946863192633/nvsentinel-syslog-health-monitor:1.167.1
+        tag: 1.167.1
+      nvcr.io/0491946863192633/prometheus:
+        fullImage: nvcr.io/0491946863192633/prometheus:v2.53.0
+        tag: v2.53.0
+      nvcr.io/0491946863192633/prometheus-config-reloader:
+        fullImage: nvcr.io/0491946863192633/prometheus-config-reloader:v0.75.0
+        tag: v0.75.0
+      nvcr.io/0491946863192633/prometheus-operator:
+        fullImage: nvcr.io/0491946863192633/prometheus-operator:v0.75.0
+        tag: v0.75.0
+      nvcr.io/0491946863192633/redis:
+        fullImage: nvcr.io/0491946863192633/redis:7.4.2
+        tag: 7.4.2
+      nvcr.io/0491946863192633/scd-csi-driver:
+        fullImage: nvcr.io/0491946863192633/scd-csi-driver:1.0.2
+        tag: 1.0.2
+      nvcr.io/0491946863192633/sig-storage-csi-node-driver-registrar:
+        fullImage: nvcr.io/0491946863192633/sig-storage-csi-node-driver-registrar:v2.11.1
+        tag: v2.11.1
+      nvcr.io/0491946863192633/sig-storage-livenessprobe:
+        fullImage: nvcr.io/0491946863192633/sig-storage-livenessprobe:v2.13.1
+        tag: v2.13.1
+      nvcr.io/0491946863192633/skyhook-operator:
+        fullImage: nvcr.io/0491946863192633/skyhook-operator:v0.7.4
+        tag: v0.7.4
+      nvcr.io/0491946863192633/training-operator:
+        fullImage: nvcr.io/0491946863192633/training-operator:v1-3f15cb8
+        tag: v1-3f15cb8
+      nvcr.io/0491946863192633/vace:
+        fullImage: nvcr.io/0491946863192633/vace:1.79.0
+        tag: 1.79.0
+      nvcr.io/0491946863192633/yet-another-cloudwatch-exporter:
+        fullImage: nvcr.io/0491946863192633/yet-another-cloudwatch-exporter:v0.60.0
+        tag: v0.60.0
+      nvcr.io/nvidia/cloud-native/dcgm:
+        fullImage: nvcr.io/nvidia/cloud-native/dcgm:4.3.1-1-ubuntu22.04
+        tag: 4.3.1-1-ubuntu22.04
+      nvcr.io/nvidia/cloud-native/gdrdrv:
+        fullImage: nvcr.io/nvidia/cloud-native/gdrdrv:v2.5.1-ubuntu22.04
+        tag: v2.5.1-ubuntu22.04
+      nvcr.io/nvidia/cloud-native/gpu-operator-validator:
+        fullImage: nvcr.io/nvidia/cloud-native/gpu-operator-validator:v25.3.3
+        tag: v25.3.3
+      nvcr.io/nvidia/cloud-native/k8s-driver-manager:
+        fullImage: nvcr.io/nvidia/cloud-native/k8s-driver-manager:v0.8.1
+        tag: v0.8.1
+      nvcr.io/nvidia/cloud-native/k8s-mig-manager:
+        fullImage: nvcr.io/nvidia/cloud-native/k8s-mig-manager:v0.12.3-ubuntu20.04
+        tag: v0.12.3-ubuntu20.04
+      nvcr.io/nvidia/driver:
+        fullImage: nvcr.io/nvidia/driver:580.82.07-ubuntu22.04
+        tag: 580.82.07-ubuntu22.04
+      nvcr.io/nvidia/gpu-operator:
+        fullImage: nvcr.io/nvidia/gpu-operator:v25.3.3
+        tag: v25.3.3
+      nvcr.io/nvidia/k8s-device-plugin:
+        fullImage: nvcr.io/nvidia/k8s-device-plugin:v0.17.4
+        tag: v0.17.4
+      nvcr.io/nvidia/k8s-dra-driver-gpu:
+        fullImage: nvcr.io/nvidia/k8s-dra-driver-gpu:v25.8.0
+        tag: v25.8.0
+      nvcr.io/nvidia/k8s/container-toolkit:
+        fullImage: nvcr.io/nvidia/k8s/container-toolkit:v1.17.8-ubuntu20.04
+        tag: v1.17.8-ubuntu20.04
+      nvcr.io/nvidia/k8s/dcgm-exporter:
+        fullImage: nvcr.io/nvidia/k8s/dcgm-exporter:4.3.1-4.4.0-ubuntu22.04
+        tag: 4.3.1-4.4.0-ubuntu22.04
+      public.ecr.aws/ebs-csi-driver/aws-ebs-csi-driver:
+        fullImage: public.ecr.aws/ebs-csi-driver/aws-ebs-csi-driver:v1.31.0
+        tag: v1.31.0
+      public.ecr.aws/eks-distro/kubernetes-csi/external-attacher:
+        fullImage: public.ecr.aws/eks-distro/kubernetes-csi/external-attacher:v4.6.1-eks-1-30-10
+        tag: v4.6.1-eks-1-30-10
+      public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner:
+        fullImage: public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner:v5.0.1-eks-1-30-10
+        tag: v5.0.1-eks-1-30-10
+      public.ecr.aws/eks-distro/kubernetes-csi/external-resizer:
+        fullImage: public.ecr.aws/eks-distro/kubernetes-csi/external-resizer:v1.11.1-eks-1-30-10
+        tag: v1.11.1-eks-1-30-10
+      public.ecr.aws/eks-distro/kubernetes-csi/livenessprobe:
+        fullImage: public.ecr.aws/eks-distro/kubernetes-csi/livenessprobe:v2.13.0-eks-1-30-10
+        tag: v2.13.0-eks-1-30-10
+      public.ecr.aws/eks-distro/kubernetes-csi/node-driver-registrar:
+        fullImage: public.ecr.aws/eks-distro/kubernetes-csi/node-driver-registrar:v2.11.0-eks-1-30-10
+        tag: v2.11.0-eks-1-30-10
+      public.ecr.aws/mountpoint-s3-csi-driver/aws-mountpoint-s3-csi-driver:
+        fullImage: public.ecr.aws/mountpoint-s3-csi-driver/aws-mountpoint-s3-csi-driver:v1.12.0
+        tag: v1.12.0
+      registry.k8s.io/nfd/node-feature-discovery:
+        fullImage: registry.k8s.io/nfd/node-feature-discovery:v0.17.3
+        tag: v0.17.3
+      registry.k8s.io/sig-storage/livenessprobe:
+        fullImage: registry.k8s.io/sig-storage/livenessprobe:v2.14.0
+        tag: v2.14.0
+      rtsp/mongosh:
+        fullImage: rtsp/mongosh:latest
+        tag: latest
+  - type: Helm
+    data:
+      argocd/argocd:
+        appVersion: v2.14.3
+        chart: argo-cd-7.8.7
+        status: deployed
+      default/dynamo-crds:
+        appVersion: ""
+        chart: dynamo-crds-0.5.0
+        status: deployed
+  - type: SMI
+    data:
+      timestamp: Sat Dec 20 01:04:32 2025
+      driverVersion: 580.82.07
+      cudaVersion: "13.1"
+      attachedGPUs: "4"
+      gpu:
+        - productName: NVIDIA GB200
+          productBrand: NVIDIA
+          productArchitecture: Blackwell
+          displayMode: Requested functionality has been deprecated
+          displayActive: Disabled
+          persistenceMode: Disabled
+          addressingMode: ATS
+          migMode:
+            currentMig: Disabled
+            pendingMig: Disabled
+          migDevices: |2-
+            			None
+
+          accountingMode: Disabled
+          accountingModeBufferSize: "4000"
+          driverModel:
+            currentDm: N/A
+            pendingDm: N/A
+          serial: "1650625112318"
+          uuid: GPU-0ed98a81-ed43-e851-52aa-13cdcb4e0d32
+          minorNumber: "0"
+          vbiosVersion: 97.00.B9.00.69
+          multiGPUBoard: "No"
+          boardId: "0x2900"
+          boardPartNumber: 900-2G548-A801-000
+          gpuPartNumber: 2941-892-A1
+          gpuFRUPartNumber: N/A
+          platformInfo:
+            chassisSerialNumber: "1821225190819"
+            slotNumber: "3"
+            trayIndex: "2"
+            hostId: "1"
+            peerType: Switch Connected
+            moduleId: "2"
+          inforomVersion:
+            imgVersion: G548.0201.00.06
+            oemObject: "2.1"
+            eccObject: "7.16"
+            pwrObject: N/A
+          inforomBBXFlush:
+            latestTimestamp: 2025/12/20 00:34:53.527
+            latestDuration: 20835 us
+          gpuOperationMode:
+            currentGom: N/A
+            pendingGom: N/A
+          c2cMode: Enabled
+          gpuVirtualizationMode:
+            virtualizationMode: Pass-Through
+            hostVGPUMode: N/A
+            vgpuHeterogeneousMode: N/A
+          gpuResetStatus:
+            resetRequired: ""
+            drainAndResetRecommended: ""
+          gpuRecoveryAction: None
+          gspFirmwareVersion: 580.82.07
+          ibmnpu:
+            relaxedOrderingMode: N/A
+          pci:
+            pciBus: "29"
+            pciDevice: "00"
+            pciDomain: "0000"
+            pciBaseClass: "3"
+            pciSubClass: "2"
+            pciDeviceId: 294110DE
+            pciBusId: "00000000:29:00.0"
+            pciSubSystemId: 204610DE
+            pciGPULinkInfo:
+              pcieGen:
+                maxLinkGen: "5"
+                currentLinkGen: "5"
+                deviceCurrentLinkGen: "5"
+                maxDeviceLinkGen: "6"
+                maxHostLinkGen: N/A
+              linkWidths:
+                maxLinkWidth: 16x
+                currentLinkWidth: 16x
+            pciBridgeChip:
+              bridgeChipType: N/A
+              bridgeChipFw: N/A
+            replayCounter: "0"
+            replayRolloverCounter: "0"
+            txUtil: 0 KB/s
+            rxUtil: 0 KB/s
+            atomicCapsOutbound: N/A
+            atomicCapsInbound: 'FETCHADD_32 FETCHADD_64 SWAP_32 SWAP_64 CAS_32 CAS_64 '
+          fanSpeed: N/A
+          performanceState: P0
+          clocksEventReasons:
+            clocksEventReasonGPUIdle: Active
+            clocksEventReasonApplicationsClocksSetting: Not Active
+            clocksEventReasonSwPowerCap: Not Active
+            clocksEventReasonHwSlowdown: Not Active
+            clocksEventReasonHwThermalSlowdown: Not Active
+            clocksEventReasonHwPowerBrakeSlowdown: Not Active
+            clocksEventReasonSyncBoost: Not Active
+            clocksEventReasonSwThermalSlowdown: Not Active
+            clocksEventReasonDisplayClocksSetting: Not Active
+          sparseOperationMode: N/A
+          fbMemoryUsage:
+            total: 189471 MiB
+            reserved: 741 MiB
+            used: 0 MiB
+            free: 188730 MiB
+          bar1MemoryUsage:
+            total: 262144 MiB
+            used: 0 MiB
+            free: 262144 MiB
+          ccProtectedMemoryUsage:
+            total: 0 MiB
+            used: 0 MiB
+            free: 0 MiB
+          computeMode: Default
+          utilization:
+            gpuUtil: 0 %
+            memoryUtil: 0 %
+            encoderUtil: 0 %
+            decoderUtil: 0 %
+            jpegUtil: 0 %
+            ofaUtil: 0 %
+          encoderStats:
+            sessionCount: "0"
+            averageFps: "0"
+            averageLatency: "0"
+          fbcStats:
+            sessionCount: "0"
+            averageFps: "0"
+            averageLatency: "0"
+          dramEncryptionMode:
+            currentDramEncryption: N/A
+            pendingDramEncryption: N/A
+          eccMode:
+            currentEcc: Enabled
+            pendingEcc: Enabled
+          eccErrors:
+            volatile:
+              sramCorrectable: "0"
+              sramUncorrectableParity: "0"
+              sramUncorrectableSecded: "0"
+              dramCorrectable: "0"
+              dramUncorrectable: "0"
+            aggregate:
+              sramCorrectable: "0"
+              sramUncorrectableParity: "0"
+              sramUncorrectableSecded: "0"
+              dramCorrectable: "0"
+              dramUncorrectable: "32"
+              sramThresholdExceeded: "No"
+            aggregateUncorrectableSramSources:
+              sramL2: "0"
+              sramSm: "0"
+              sramMicrocontroller: "0"
+              sramPcie: "0"
+              sramOther: "0"
+          retiredPages:
+            multipleSingleBitRetirement:
+              retiredCount: N/A
+              retiredPagelist: N/A
+            doubleBitRetirement:
+              retiredCount: N/A
+              retiredPagelist: N/A
+            pendingBlacklist: N/A
+            pendingRetirement: N/A
+          remappedRows:
+            remappedRowCorr: "0"
+            remappedRowUnc: "1"
+            remappedRowPending: "No"
+            remappedRowFailure: "No"
+            rowRemapperHistogram:
+              rowRemapperHistogramMax: 3967 bank(s)
+              rowRemapperHistogramHigh: 1 bank(s)
+              rowRemapperHistogramPartial: 0 bank(s)
+              rowRemapperHistogramLow: 0 bank(s)
+              rowRemapperHistogramNone: 0 bank(s)
+          temperature:
+            gpuTemp: 27 C
+            gpuTempTlimit: 60 C
+            gpuTempMaxTlimitThreshold: -5 C
+            gpuTempSlowTlimitThreshold: -2 C
+            gpuTempMaxGPUTlimitThreshold: 0 C
+            gpuTargetTemperature: N/A
+            memoryTemp: 27 C
+            gpuTempMaxMemTlimitThreshold: 0 C
+          supportedGpuTargetTemp:
+            gpuTargetTempMin: N/A
+            gpuTargetTempMax: N/A
+          gpuPowerReadings:
+            powerState: P0
+            powerDraw: ""
+            currentPowerLimit: 1200.00 W
+            requestedPowerLimit: 1200.00 W
+            defaultPowerLimit: 1200.00 W
+            minPowerLimit: 200.00 W
+            maxPowerLimit: 1200.00 W
+          gpuMemoryPowerReadings:
+            powerDraw: ""
+          modulePowerReadings:
+            powerState: P0
+            powerDraw: ""
+            currentPowerLimit: 2500.00 W
+            requestedPowerLimit: 2500.00 W
+            defaultPowerLimit: 2500.00 W
+            minPowerLimit: 500.00 W
+            maxPowerLimit: 2500.00 W
+          powerSmoothing: Insufficient Permissions
+          powerProfiles:
+            powerProfileRequestedProfiles: N/A
+            powerProfileEnforcedProfiles: N/A
+          clocks:
+            graphicsClock: 120 MHz
+            smClock: 120 MHz
+            memClock: 3996 MHz
+            videoClock: 600 MHz
+          applicationsClocks:
+            graphicsClock: 2062 MHz
+            memClock: 3996 MHz
+          defaultApplicationsClocks:
+            graphicsClock: 2062 MHz
+            memClock: 3996 MHz
+          deferredClocks:
+            memClock: N/A
+          maxClocks:
+            graphicsClock: 2062 MHz
+            smClock: 2062 MHz
+            memClock: 3996 MHz
+            videoClock: 1890 MHz
+          maxCustomerBoostClocks:
+            graphicsClock: 2062 MHz
+          clockPolicy:
+            autoBoost: N/A
+            autoBoostDefault: N/A
+          voltage:
+            graphicsVolt: ""
+          fabric:
+            state: Completed
+            status: Success
+            cliqueId: "3"
+            clusterUuid: 889d2be1-4bbf-69e1-d3f2-97c465ee31aa
+            health:
+              bandwidth: Full
+              routeRecoveryInProgress: "False"
+              routeUnhealthy: "False"
+              accessTimeoutRecovery: "False"
+          supportedClocks:
+            supportedMemClock:
+              value: 3996 MHz
+              supportedGraphicsClock: 120 MHz
+          processes: |2-
+
+          accountedProcesses: |2-
+
+          capabilities:
+            egm: disabled
+        - productName: NVIDIA GB200
+          productBrand: NVIDIA
+          productArchitecture: Blackwell
+          displayMode: Requested functionality has been deprecated
+          displayActive: Disabled
+          persistenceMode: Disabled
+          addressingMode: ATS
+          migMode:
+            currentMig: Disabled
+            pendingMig: Disabled
+          migDevices: |2-
+            			None
+
+          accountingMode: Disabled
+          accountingModeBufferSize: "4000"
+          driverModel:
+            currentDm: N/A
+            pendingDm: N/A
+          serial: "1650625112318"
+          uuid: GPU-b72040a8-c723-4489-9df6-0c9a9eb2b9a3
+          minorNumber: "1"
+          vbiosVersion: 97.00.B9.00.69
+          multiGPUBoard: "No"
+          boardId: "0x3f00"
+          boardPartNumber: 900-2G548-A801-000
+          gpuPartNumber: 2941-892-A1
+          gpuFRUPartNumber: N/A
+          platformInfo:
+            chassisSerialNumber: "1821225190819"
+            slotNumber: "3"
+            trayIndex: "2"
+            hostId: "1"
+            peerType: Switch Connected
+            moduleId: "1"
+          inforomVersion:
+            imgVersion: G548.0201.00.06
+            oemObject: "2.1"
+            eccObject: "7.16"
+            pwrObject: N/A
+          inforomBBXFlush:
+            latestTimestamp: 2025/12/20 00:34:50.840
+            latestDuration: 57679 us
+          gpuOperationMode:
+            currentGom: N/A
+            pendingGom: N/A
+          c2cMode: Enabled
+          gpuVirtualizationMode:
+            virtualizationMode: Pass-Through
+            hostVGPUMode: N/A
+            vgpuHeterogeneousMode: N/A
+          gpuResetStatus:
+            resetRequired: ""
+            drainAndResetRecommended: ""
+          gpuRecoveryAction: None
+          gspFirmwareVersion: 580.82.07
+          ibmnpu:
+            relaxedOrderingMode: N/A
+          pci:
+            pciBus: 3F
+            pciDevice: "00"
+            pciDomain: "0000"
+            pciBaseClass: "3"
+            pciSubClass: "2"
+            pciDeviceId: 294110DE
+            pciBusId: 00000000:3F:00.0
+            pciSubSystemId: 204610DE
+            pciGPULinkInfo:
+              pcieGen:
+                maxLinkGen: "5"
+                currentLinkGen: "5"
+                deviceCurrentLinkGen: "5"
+                maxDeviceLinkGen: "6"
+                maxHostLinkGen: N/A
+              linkWidths:
+                maxLinkWidth: 16x
+                currentLinkWidth: 16x
+            pciBridgeChip:
+              bridgeChipType: N/A
+              bridgeChipFw: N/A
+            replayCounter: "0"
+            replayRolloverCounter: "0"
+            txUtil: 0 KB/s
+            rxUtil: 0 KB/s
+            atomicCapsOutbound: N/A
+            atomicCapsInbound: 'FETCHADD_32 FETCHADD_64 SWAP_32 SWAP_64 CAS_32 CAS_64 '
+          fanSpeed: N/A
+          performanceState: P0
+          clocksEventReasons:
+            clocksEventReasonGPUIdle: Active
+            clocksEventReasonApplicationsClocksSetting: Not Active
+            clocksEventReasonSwPowerCap: Not Active
+            clocksEventReasonHwSlowdown: Not Active
+            clocksEventReasonHwThermalSlowdown: Not Active
+            clocksEventReasonHwPowerBrakeSlowdown: Not Active
+            clocksEventReasonSyncBoost: Not Active
+            clocksEventReasonSwThermalSlowdown: Not Active
+            clocksEventReasonDisplayClocksSetting: Not Active
+          sparseOperationMode: N/A
+          fbMemoryUsage:
+            total: 189471 MiB
+            reserved: 741 MiB
+            used: 0 MiB
+            free: 188730 MiB
+          bar1MemoryUsage:
+            total: 262144 MiB
+            used: 0 MiB
+            free: 262144 MiB
+          ccProtectedMemoryUsage:
+            total: 0 MiB
+            used: 0 MiB
+            free: 0 MiB
+          computeMode: Default
+          utilization:
+            gpuUtil: 0 %
+            memoryUtil: 0 %
+            encoderUtil: 0 %
+            decoderUtil: 0 %
+            jpegUtil: 0 %
+            ofaUtil: 0 %
+          encoderStats:
+            sessionCount: "0"
+            averageFps: "0"
+            averageLatency: "0"
+          fbcStats:
+            sessionCount: "0"
+            averageFps: "0"
+            averageLatency: "0"
+          dramEncryptionMode:
+            currentDramEncryption: N/A
+            pendingDramEncryption: N/A
+          eccMode:
+            currentEcc: Enabled
+            pendingEcc: Enabled
+          eccErrors:
+            volatile:
+              sramCorrectable: "0"
+              sramUncorrectableParity: "0"
+              sramUncorrectableSecded: "0"
+              dramCorrectable: "0"
+              dramUncorrectable: "0"
+            aggregate:
+              sramCorrectable: "0"
+              sramUncorrectableParity: "0"
+              sramUncorrectableSecded: "0"
+              dramCorrectable: "0"
+              dramUncorrectable: "0"
+              sramThresholdExceeded: "No"
+            aggregateUncorrectableSramSources:
+              sramL2: "0"
+              sramSm: "0"
+              sramMicrocontroller: "0"
+              sramPcie: "0"
+              sramOther: "0"
+          retiredPages:
+            multipleSingleBitRetirement:
+              retiredCount: N/A
+              retiredPagelist: N/A
+            doubleBitRetirement:
+              retiredCount: N/A
+              retiredPagelist: N/A
+            pendingBlacklist: N/A
+            pendingRetirement: N/A
+          remappedRows:
+            remappedRowCorr: "0"
+            remappedRowUnc: "0"
+            remappedRowPending: "No"
+            remappedRowFailure: "No"
+            rowRemapperHistogram:
+              rowRemapperHistogramMax: 3968 bank(s)
+              rowRemapperHistogramHigh: 0 bank(s)
+              rowRemapperHistogramPartial: 0 bank(s)
+              rowRemapperHistogramLow: 0 bank(s)
+              rowRemapperHistogramNone: 0 bank(s)
+          temperature:
+            gpuTemp: 27 C
+            gpuTempTlimit: 60 C
+            gpuTempMaxTlimitThreshold: -5 C
+            gpuTempSlowTlimitThreshold: -2 C
+            gpuTempMaxGPUTlimitThreshold: 0 C
+            gpuTargetTemperature: N/A
+            memoryTemp: 28 C
+            gpuTempMaxMemTlimitThreshold: 0 C
+          supportedGpuTargetTemp:
+            gpuTargetTempMin: N/A
+            gpuTargetTempMax: N/A
+          gpuPowerReadings:
+            powerState: P0
+            powerDraw: ""
+            currentPowerLimit: 1200.00 W
+            requestedPowerLimit: 1200.00 W
+            defaultPowerLimit: 1200.00 W
+            minPowerLimit: 200.00 W
+            maxPowerLimit: 1200.00 W
+          gpuMemoryPowerReadings:
+            powerDraw: ""
+          modulePowerReadings:
+            powerState: P0
+            powerDraw: ""
+            currentPowerLimit: 2500.00 W
+            requestedPowerLimit: 2500.00 W
+            defaultPowerLimit: 2500.00 W
+            minPowerLimit: 500.00 W
+            maxPowerLimit: 2500.00 W
+          powerSmoothing: Insufficient Permissions
+          powerProfiles:
+            powerProfileRequestedProfiles: N/A
+            powerProfileEnforcedProfiles: N/A
+          clocks:
+            graphicsClock: 120 MHz
+            smClock: 120 MHz
+            memClock: 3996 MHz
+            videoClock: 600 MHz
+          applicationsClocks:
+            graphicsClock: 2062 MHz
+            memClock: 3996 MHz
+          defaultApplicationsClocks:
+            graphicsClock: 2062 MHz
+            memClock: 3996 MHz
+          deferredClocks:
+            memClock: N/A
+          maxClocks:
+            graphicsClock: 2062 MHz
+            smClock: 2062 MHz
+            memClock: 3996 MHz
+            videoClock: 1890 MHz
+          maxCustomerBoostClocks:
+            graphicsClock: 2062 MHz
+          clockPolicy:
+            autoBoost: N/A
+            autoBoostDefault: N/A
+          voltage:
+            graphicsVolt: ""
+          fabric:
+            state: Completed
+            status: Success
+            cliqueId: "3"
+            clusterUuid: 889d2be1-4bbf-69e1-d3f2-97c465ee31aa
+            health:
+              bandwidth: Full
+              routeRecoveryInProgress: "False"
+              routeUnhealthy: "False"
+              accessTimeoutRecovery: "False"
+          supportedClocks:
+            supportedMemClock:
+              value: 3996 MHz
+              supportedGraphicsClock: 120 MHz
+          processes: |2-
+
+          accountedProcesses: |2-
+
+          capabilities:
+            egm: disabled
+        - productName: NVIDIA GB200
+          productBrand: NVIDIA
+          productArchitecture: Blackwell
+          displayMode: Requested functionality has been deprecated
+          displayActive: Disabled
+          persistenceMode: Disabled
+          addressingMode: ATS
+          migMode:
+            currentMig: Disabled
+            pendingMig: Disabled
+          migDevices: |2-
+            			None
+
+          accountingMode: Disabled
+          accountingModeBufferSize: "4000"
+          driverModel:
+            currentDm: N/A
+            pendingDm: N/A
+          serial: "1650625112297"
+          uuid: GPU-1d47a7c7-60e6-ceaa-24ab-17b6baaa3cf7
+          minorNumber: "2"
+          vbiosVersion: 97.00.B9.00.69
+          multiGPUBoard: "No"
+          boardId: "0x9c00"
+          boardPartNumber: 900-2G548-A801-000
+          gpuPartNumber: 2941-892-A1
+          gpuFRUPartNumber: N/A
+          platformInfo:
+            chassisSerialNumber: "1821225190819"
+            slotNumber: "3"
+            trayIndex: "2"
+            hostId: "1"
+            peerType: Switch Connected
+            moduleId: "4"
+          inforomVersion:
+            imgVersion: G548.0201.00.06
+            oemObject: "2.1"
+            eccObject: "7.16"
+            pwrObject: N/A
+          inforomBBXFlush:
+            latestTimestamp: 2025/12/20 00:34:50.801
+            latestDuration: 22762 us
+          gpuOperationMode:
+            currentGom: N/A
+            pendingGom: N/A
+          c2cMode: Enabled
+          gpuVirtualizationMode:
+            virtualizationMode: Pass-Through
+            hostVGPUMode: N/A
+            vgpuHeterogeneousMode: N/A
+          gpuResetStatus:
+            resetRequired: ""
+            drainAndResetRecommended: ""
+          gpuRecoveryAction: None
+          gspFirmwareVersion: 580.82.07
+          ibmnpu:
+            relaxedOrderingMode: N/A
+          pci:
+            pciBus: 9C
+            pciDevice: "00"
+            pciDomain: "0000"
+            pciBaseClass: "3"
+            pciSubClass: "2"
+            pciDeviceId: 294110DE
+            pciBusId: 00000000:9C:00.0
+            pciSubSystemId: 204610DE
+            pciGPULinkInfo:
+              pcieGen:
+                maxLinkGen: "5"
+                currentLinkGen: "5"
+                deviceCurrentLinkGen: "5"
+                maxDeviceLinkGen: "6"
+                maxHostLinkGen: N/A
+              linkWidths:
+                maxLinkWidth: 16x
+                currentLinkWidth: 16x
+            pciBridgeChip:
+              bridgeChipType: N/A
+              bridgeChipFw: N/A
+            replayCounter: "0"
+            replayRolloverCounter: "0"
+            txUtil: 0 KB/s
+            rxUtil: 0 KB/s
+            atomicCapsOutbound: N/A
+            atomicCapsInbound: 'FETCHADD_32 FETCHADD_64 SWAP_32 SWAP_64 CAS_32 CAS_64 '
+          fanSpeed: N/A
+          performanceState: P0
+          clocksEventReasons:
+            clocksEventReasonGPUIdle: Active
+            clocksEventReasonApplicationsClocksSetting: Not Active
+            clocksEventReasonSwPowerCap: Not Active
+            clocksEventReasonHwSlowdown: Not Active
+            clocksEventReasonHwThermalSlowdown: Not Active
+            clocksEventReasonHwPowerBrakeSlowdown: Not Active
+            clocksEventReasonSyncBoost: Not Active
+            clocksEventReasonSwThermalSlowdown: Not Active
+            clocksEventReasonDisplayClocksSetting: Not Active
+          sparseOperationMode: N/A
+          fbMemoryUsage:
+            total: 189471 MiB
+            reserved: 741 MiB
+            used: 0 MiB
+            free: 188730 MiB
+          bar1MemoryUsage:
+            total: 262144 MiB
+            used: 0 MiB
+            free: 262144 MiB
+          ccProtectedMemoryUsage:
+            total: 0 MiB
+            used: 0 MiB
+            free: 0 MiB
+          computeMode: Default
+          utilization:
+            gpuUtil: 0 %
+            memoryUtil: 0 %
+            encoderUtil: 0 %
+            decoderUtil: 0 %
+            jpegUtil: 0 %
+            ofaUtil: 0 %
+          encoderStats:
+            sessionCount: "0"
+            averageFps: "0"
+            averageLatency: "0"
+          fbcStats:
+            sessionCount: "0"
+            averageFps: "0"
+            averageLatency: "0"
+          dramEncryptionMode:
+            currentDramEncryption: N/A
+            pendingDramEncryption: N/A
+          eccMode:
+            currentEcc: Enabled
+            pendingEcc: Enabled
+          eccErrors:
+            volatile:
+              sramCorrectable: "0"
+              sramUncorrectableParity: "0"
+              sramUncorrectableSecded: "0"
+              dramCorrectable: "0"
+              dramUncorrectable: "0"
+            aggregate:
+              sramCorrectable: "0"
+              sramUncorrectableParity: "0"
+              sramUncorrectableSecded: "0"
+              dramCorrectable: "0"
+              dramUncorrectable: "0"
+              sramThresholdExceeded: "No"
+            aggregateUncorrectableSramSources:
+              sramL2: "0"
+              sramSm: "0"
+              sramMicrocontroller: "0"
+              sramPcie: "0"
+              sramOther: "0"
+          retiredPages:
+            multipleSingleBitRetirement:
+              retiredCount: N/A
+              retiredPagelist: N/A
+            doubleBitRetirement:
+              retiredCount: N/A
+              retiredPagelist: N/A
+            pendingBlacklist: N/A
+            pendingRetirement: N/A
+          remappedRows:
+            remappedRowCorr: "0"
+            remappedRowUnc: "0"
+            remappedRowPending: "No"
+            remappedRowFailure: "No"
+            rowRemapperHistogram:
+              rowRemapperHistogramMax: 3968 bank(s)
+              rowRemapperHistogramHigh: 0 bank(s)
+              rowRemapperHistogramPartial: 0 bank(s)
+              rowRemapperHistogramLow: 0 bank(s)
+              rowRemapperHistogramNone: 0 bank(s)
+          temperature:
+            gpuTemp: 27 C
+            gpuTempTlimit: 60 C
+            gpuTempMaxTlimitThreshold: -5 C
+            gpuTempSlowTlimitThreshold: -2 C
+            gpuTempMaxGPUTlimitThreshold: 0 C
+            gpuTargetTemperature: N/A
+            memoryTemp: 28 C
+            gpuTempMaxMemTlimitThreshold: 0 C
+          supportedGpuTargetTemp:
+            gpuTargetTempMin: N/A
+            gpuTargetTempMax: N/A
+          gpuPowerReadings:
+            powerState: P0
+            powerDraw: ""
+            currentPowerLimit: 1200.00 W
+            requestedPowerLimit: 1200.00 W
+            defaultPowerLimit: 1200.00 W
+            minPowerLimit: 200.00 W
+            maxPowerLimit: 1200.00 W
+          gpuMemoryPowerReadings:
+            powerDraw: ""
+          modulePowerReadings:
+            powerState: P0
+            powerDraw: ""
+            currentPowerLimit: 2500.00 W
+            requestedPowerLimit: 2500.00 W
+            defaultPowerLimit: 2500.00 W
+            minPowerLimit: 500.00 W
+            maxPowerLimit: 2500.00 W
+          powerSmoothing: Insufficient Permissions
+          powerProfiles:
+            powerProfileRequestedProfiles: N/A
+            powerProfileEnforcedProfiles: N/A
+          clocks:
+            graphicsClock: 120 MHz
+            smClock: 120 MHz
+            memClock: 3996 MHz
+            videoClock: 600 MHz
+          applicationsClocks:
+            graphicsClock: 2062 MHz
+            memClock: 3996 MHz
+          defaultApplicationsClocks:
+            graphicsClock: 2062 MHz
+            memClock: 3996 MHz
+          deferredClocks:
+            memClock: N/A
+          maxClocks:
+            graphicsClock: 2062 MHz
+            smClock: 2062 MHz
+            memClock: 3996 MHz
+            videoClock: 1890 MHz
+          maxCustomerBoostClocks:
+            graphicsClock: 2062 MHz
+          clockPolicy:
+            autoBoost: N/A
+            autoBoostDefault: N/A
+          voltage:
+            graphicsVolt: ""
+          fabric:
+            state: Completed
+            status: Success
+            cliqueId: "3"
+            clusterUuid: 889d2be1-4bbf-69e1-d3f2-97c465ee31aa
+            health:
+              bandwidth: Full
+              routeRecoveryInProgress: "False"
+              routeUnhealthy: "False"
+              accessTimeoutRecovery: "False"
+          supportedClocks:
+            supportedMemClock:
+              value: 3996 MHz
+              supportedGraphicsClock: 120 MHz
+          processes: |2-
+
+          accountedProcesses: |2-
+
+          capabilities:
+            egm: disabled
+        - productName: NVIDIA GB200
+          productBrand: NVIDIA
+          productArchitecture: Blackwell
+          displayMode: Requested functionality has been deprecated
+          displayActive: Disabled
+          persistenceMode: Disabled
+          addressingMode: ATS
+          migMode:
+            currentMig: Disabled
+            pendingMig: Disabled
+          migDevices: |2-
+            			None
+
+          accountingMode: Disabled
+          accountingModeBufferSize: "4000"
+          driverModel:
+            currentDm: N/A
+            pendingDm: N/A
+          serial: "1650625112297"
+          uuid: GPU-a4055aed-6c95-2d51-ae97-c023b630aa1d
+          minorNumber: "3"
+          vbiosVersion: 97.00.B9.00.69
+          multiGPUBoard: "No"
+          boardId: "0xb200"
+          boardPartNumber: 900-2G548-A801-000
+          gpuPartNumber: 2941-892-A1
+          gpuFRUPartNumber: N/A
+          platformInfo:
+            chassisSerialNumber: "1821225190819"
+            slotNumber: "3"
+            trayIndex: "2"
+            hostId: "1"
+            peerType: Switch Connected
+            moduleId: "3"
+          inforomVersion:
+            imgVersion: G548.0201.00.06
+            oemObject: "2.1"
+            eccObject: "7.16"
+            pwrObject: N/A
+          inforomBBXFlush:
+            latestTimestamp: 2025/12/20 00:34:54.537
+            latestDuration: 63187 us
+          gpuOperationMode:
+            currentGom: N/A
+            pendingGom: N/A
+          c2cMode: Enabled
+          gpuVirtualizationMode:
+            virtualizationMode: Pass-Through
+            hostVGPUMode: N/A
+            vgpuHeterogeneousMode: N/A
+          gpuResetStatus:
+            resetRequired: ""
+            drainAndResetRecommended: ""
+          gpuRecoveryAction: None
+          gspFirmwareVersion: 580.82.07
+          ibmnpu:
+            relaxedOrderingMode: N/A
+          pci:
+            pciBus: B2
+            pciDevice: "00"
+            pciDomain: "0000"
+            pciBaseClass: "3"
+            pciSubClass: "2"
+            pciDeviceId: 294110DE
+            pciBusId: 00000000:B2:00.0
+            pciSubSystemId: 204610DE
+            pciGPULinkInfo:
+              pcieGen:
+                maxLinkGen: "5"
+                currentLinkGen: "5"
+                deviceCurrentLinkGen: "5"
+                maxDeviceLinkGen: "6"
+                maxHostLinkGen: N/A
+              linkWidths:
+                maxLinkWidth: 16x
+                currentLinkWidth: 16x
+            pciBridgeChip:
+              bridgeChipType: N/A
+              bridgeChipFw: N/A
+            replayCounter: "0"
+            replayRolloverCounter: "0"
+            txUtil: 0 KB/s
+            rxUtil: 0 KB/s
+            atomicCapsOutbound: N/A
+            atomicCapsInbound: 'FETCHADD_32 FETCHADD_64 SWAP_32 SWAP_64 CAS_32 CAS_64 '
+          fanSpeed: N/A
+          performanceState: P0
+          clocksEventReasons:
+            clocksEventReasonGPUIdle: Active
+            clocksEventReasonApplicationsClocksSetting: Not Active
+            clocksEventReasonSwPowerCap: Not Active
+            clocksEventReasonHwSlowdown: Not Active
+            clocksEventReasonHwThermalSlowdown: Not Active
+            clocksEventReasonHwPowerBrakeSlowdown: Not Active
+            clocksEventReasonSyncBoost: Not Active
+            clocksEventReasonSwThermalSlowdown: Not Active
+            clocksEventReasonDisplayClocksSetting: Not Active
+          sparseOperationMode: N/A
+          fbMemoryUsage:
+            total: 189471 MiB
+            reserved: 741 MiB
+            used: 0 MiB
+            free: 188730 MiB
+          bar1MemoryUsage:
+            total: 262144 MiB
+            used: 0 MiB
+            free: 262144 MiB
+          ccProtectedMemoryUsage:
+            total: 0 MiB
+            used: 0 MiB
+            free: 0 MiB
+          computeMode: Default
+          utilization:
+            gpuUtil: 0 %
+            memoryUtil: 0 %
+            encoderUtil: 0 %
+            decoderUtil: 0 %
+            jpegUtil: 0 %
+            ofaUtil: 0 %
+          encoderStats:
+            sessionCount: "0"
+            averageFps: "0"
+            averageLatency: "0"
+          fbcStats:
+            sessionCount: "0"
+            averageFps: "0"
+            averageLatency: "0"
+          dramEncryptionMode:
+            currentDramEncryption: N/A
+            pendingDramEncryption: N/A
+          eccMode:
+            currentEcc: Enabled
+            pendingEcc: Enabled
+          eccErrors:
+            volatile:
+              sramCorrectable: "0"
+              sramUncorrectableParity: "0"
+              sramUncorrectableSecded: "0"
+              dramCorrectable: "0"
+              dramUncorrectable: "0"
+            aggregate:
+              sramCorrectable: "0"
+              sramUncorrectableParity: "0"
+              sramUncorrectableSecded: "0"
+              dramCorrectable: "0"
+              dramUncorrectable: "0"
+              sramThresholdExceeded: "No"
+            aggregateUncorrectableSramSources:
+              sramL2: "0"
+              sramSm: "0"
+              sramMicrocontroller: "0"
+              sramPcie: "0"
+              sramOther: "0"
+          retiredPages:
+            multipleSingleBitRetirement:
+              retiredCount: N/A
+              retiredPagelist: N/A
+            doubleBitRetirement:
+              retiredCount: N/A
+              retiredPagelist: N/A
+            pendingBlacklist: N/A
+            pendingRetirement: N/A
+          remappedRows:
+            remappedRowCorr: "0"
+            remappedRowUnc: "0"
+            remappedRowPending: "No"
+            remappedRowFailure: "No"
+            rowRemapperHistogram:
+              rowRemapperHistogramMax: 3968 bank(s)
+              rowRemapperHistogramHigh: 0 bank(s)
+              rowRemapperHistogramPartial: 0 bank(s)
+              rowRemapperHistogramLow: 0 bank(s)
+              rowRemapperHistogramNone: 0 bank(s)
+          temperature:
+            gpuTemp: 27 C
+            gpuTempTlimit: 60 C
+            gpuTempMaxTlimitThreshold: -5 C
+            gpuTempSlowTlimitThreshold: -2 C
+            gpuTempMaxGPUTlimitThreshold: 0 C
+            gpuTargetTemperature: N/A
+            memoryTemp: 29 C
+            gpuTempMaxMemTlimitThreshold: 0 C
+          supportedGpuTargetTemp:
+            gpuTargetTempMin: N/A
+            gpuTargetTempMax: N/A
+          gpuPowerReadings:
+            powerState: P0
+            powerDraw: ""
+            currentPowerLimit: 1200.00 W
+            requestedPowerLimit: 1200.00 W
+            defaultPowerLimit: 1200.00 W
+            minPowerLimit: 200.00 W
+            maxPowerLimit: 1200.00 W
+          gpuMemoryPowerReadings:
+            powerDraw: ""
+          modulePowerReadings:
+            powerState: P0
+            powerDraw: ""
+            currentPowerLimit: 2500.00 W
+            requestedPowerLimit: 2500.00 W
+            defaultPowerLimit: 2500.00 W
+            minPowerLimit: 500.00 W
+            maxPowerLimit: 2500.00 W
+          powerSmoothing: Insufficient Permissions
+          powerProfiles:
+            powerProfileRequestedProfiles: N/A
+            powerProfileEnforcedProfiles: N/A
+          clocks:
+            graphicsClock: 120 MHz
+            smClock: 120 MHz
+            memClock: 3996 MHz
+            videoClock: 600 MHz
+          applicationsClocks:
+            graphicsClock: 2062 MHz
+            memClock: 3996 MHz
+          defaultApplicationsClocks:
+            graphicsClock: 2062 MHz
+            memClock: 3996 MHz
+          deferredClocks:
+            memClock: N/A
+          maxClocks:
+            graphicsClock: 2062 MHz
+            smClock: 2062 MHz
+            memClock: 3996 MHz
+            videoClock: 1890 MHz
+          maxCustomerBoostClocks:
+            graphicsClock: 2062 MHz
+          clockPolicy:
+            autoBoost: N/A
+            autoBoostDefault: N/A
+          voltage:
+            graphicsVolt: ""
+          fabric:
+            state: Completed
+            status: Success
+            cliqueId: "3"
+            clusterUuid: 889d2be1-4bbf-69e1-d3f2-97c465ee31aa
+            health:
+              bandwidth: Full
+              routeRecoveryInProgress: "False"
+              routeUnhealthy: "False"
+              accessTimeoutRecovery: "False"
+          supportedClocks:
+            supportedMemClock:
+              value: 3996 MHz
+              supportedGraphicsClock: 120 MHz
+          processes: |2-
+
+          accountedProcesses: |2-
+
+          capabilities:
+            egm: disabled
