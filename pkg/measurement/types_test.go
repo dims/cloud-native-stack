@@ -11,6 +11,7 @@ const (
 	testSubtypeCluster = "cluster"
 	testSubtypeNode    = "node"
 	testSubtypePod     = "pod"
+	testVersion        = "1.28.0"
 )
 
 func TestType_String(t *testing.T) {
@@ -23,7 +24,7 @@ func TestType_String(t *testing.T) {
 		{"Image", TypeImage, "Image"},
 		{"KMod", TypeKMod, "KMod"},
 		{"K8s", TypeK8s, "K8s"},
-		{"SMI", TypeSMI, "SMI"},
+		{"SMI", TypeGPU, "GPU"},
 		{"Sysctl", TypeSysctl, "Sysctl"},
 		{"SystemD", TypeSystemD, "SystemD"},
 	}
@@ -162,7 +163,7 @@ func TestMeasurement_Validate(t *testing.T) {
 					{
 						Name: testSubtypeCluster,
 						Data: map[string]Reading{
-							"version": Str("1.28.0"),
+							"version": Str(testVersion),
 						},
 					},
 				},
@@ -177,7 +178,7 @@ func TestMeasurement_Validate(t *testing.T) {
 					{
 						Name: testSubtypeCluster,
 						Data: map[string]Reading{
-							"version": Str("1.28.0"),
+							"version": Str(testVersion),
 						},
 					},
 				},
@@ -231,7 +232,7 @@ func TestMeasurement_GetSubtype(t *testing.T) {
 			{
 				Name: testSubtypeCluster,
 				Data: map[string]Reading{
-					"version": Str("1.28.0"),
+					"version": Str(testVersion),
 				},
 			},
 			{
@@ -265,7 +266,7 @@ func TestMeasurement_HasSubtype(t *testing.T) {
 	m := &Measurement{
 		Type: TypeK8s,
 		Subtypes: []Subtype{
-			{Name: testSubtypeCluster, Data: map[string]Reading{"version": Str("1.28.0")}},
+			{Name: testSubtypeCluster, Data: map[string]Reading{"version": Str(testVersion)}},
 			{Name: testSubtypeNode, Data: map[string]Reading{"count": Int(3)}},
 		},
 	}
@@ -293,7 +294,7 @@ func TestMeasurement_SubtypeNames(t *testing.T) {
 	m := &Measurement{
 		Type: TypeK8s,
 		Subtypes: []Subtype{
-			{Name: testSubtypeCluster, Data: map[string]Reading{"version": Str("1.28.0")}},
+			{Name: testSubtypeCluster, Data: map[string]Reading{"version": Str(testVersion)}},
 			{Name: testSubtypeNode, Data: map[string]Reading{"count": Int(3)}},
 			{Name: testSubtypePod, Data: map[string]Reading{"ready": Bool(true)}},
 		},
@@ -357,7 +358,7 @@ func TestSubtype_Has(t *testing.T) {
 	st := &Subtype{
 		Name: "test",
 		Data: map[string]Reading{
-			"version": Str("1.28.0"),
+			"version": Str(testVersion),
 			"nodes":   Int(3),
 		},
 	}
@@ -385,7 +386,7 @@ func TestSubtype_Get(t *testing.T) {
 	st := &Subtype{
 		Name: "test",
 		Data: map[string]Reading{
-			"version": Str("1.28.0"),
+			"version": Str(testVersion),
 		},
 	}
 
@@ -394,7 +395,7 @@ func TestSubtype_Get(t *testing.T) {
 		if got == nil {
 			t.Fatal("Get() returned nil")
 		}
-		if v, ok := got.Any().(string); !ok || v != "1.28.0" {
+		if v, ok := got.Any().(string); !ok || v != testVersion {
 			t.Errorf("Get() = %v, want 1.28.0", got.Any())
 		}
 	})
@@ -411,7 +412,7 @@ func TestSubtype_Keys(t *testing.T) {
 	st := &Subtype{
 		Name: "test",
 		Data: map[string]Reading{
-			"version": Str("1.28.0"),
+			"version": Str(testVersion),
 			"nodes":   Int(3),
 			"ready":   Bool(true),
 		},
@@ -439,8 +440,8 @@ func TestSubtype_GetString(t *testing.T) {
 	st := &Subtype{
 		Name: "test",
 		Data: map[string]Reading{
-			"version": Str("1.28.0"),
-			"nodes":   Int(3),
+			"version": Str(testVersion),
+			"count":   Int(3),
 		},
 	}
 
@@ -450,7 +451,7 @@ func TestSubtype_GetString(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{"valid string", "version", "1.28.0", false},
+		{"valid string", "version", testVersion, false},
 		{"wrong type", "nodes", "", true},
 		{"missing key", "missing", "", true},
 	}
@@ -474,7 +475,7 @@ func TestSubtype_GetInt64(t *testing.T) {
 		Data: map[string]Reading{
 			"int_value":   Int(42),
 			"int64_value": Int64(9223372036854775807),
-			"version":     Str("1.28.0"),
+			"version":     Str(testVersion),
 		},
 	}
 
@@ -613,7 +614,7 @@ func TestMeasurement_JSON(t *testing.T) {
 			{
 				Name: testSubtypeCluster,
 				Data: map[string]Reading{
-					"version": Str("1.28.0"),
+					"version": Str(testVersion),
 					"nodes":   Int(3),
 					"ready":   Bool(true),
 					"cpu":     Float64(85.5),
@@ -662,7 +663,7 @@ func TestMeasurement_JSON(t *testing.T) {
 		if !ok {
 			t.Fatalf("JSON subtype[0].data is not a map")
 		}
-		if dataMap["version"] != "1.28.0" {
+		if dataMap["version"] != testVersion {
 			t.Errorf("JSON subtype[0].data.version = %v, want 1.28.0", dataMap["version"])
 		}
 	}
@@ -710,7 +711,7 @@ func TestMeasurement_YAML(t *testing.T) {
 			{
 				Name: testSubtypeCluster,
 				Data: map[string]Reading{
-					"version": Str("1.28.0"),
+					"version": Str(testVersion),
 					"nodes":   Int(3),
 					"ready":   Bool(true),
 				},
@@ -748,8 +749,8 @@ func TestMeasurement_YAML(t *testing.T) {
 		version, err := restored.Subtypes[0].GetString("version")
 		if err != nil {
 			t.Errorf("Failed to get version string: %v", err)
-		} else if version != "1.28.0" {
-			t.Errorf("version = %v, want 1.28.0", version)
+		} else if version != testVersion {
+			t.Errorf("version = %v, want %s", version, testVersion)
 		}
 
 		// Check int value

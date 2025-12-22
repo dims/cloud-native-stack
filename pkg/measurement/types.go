@@ -40,7 +40,7 @@ const (
 	TypeImage   Type = "Image"
 	TypeKMod    Type = "KMod"
 	TypeK8s     Type = "K8s"
-	TypeSMI     Type = "SMI"
+	TypeGPU     Type = "GPU"
 	TypeSysctl  Type = "Sysctl"
 	TypeSystemD Type = "SystemD"
 )
@@ -51,7 +51,7 @@ var Types = []Type{
 	TypeImage,
 	TypeKMod,
 	TypeK8s,
-	TypeSMI,
+	TypeGPU,
 	TypeSysctl,
 	TypeSystemD,
 }
@@ -76,6 +76,29 @@ type Measurement struct {
 type Subtype struct {
 	Name string             `json:"subtype,omitempty" yaml:"subtype,omitempty"`
 	Data map[string]Reading `json:"data" yaml:"data"`
+}
+
+// UnmarshalJSON custom unmarshaler for Subtype to handle Reading interface
+func (st *Subtype) UnmarshalJSON(data []byte) error {
+	// Create a temporary struct with raw data
+	var tmp struct {
+		Name string         `json:"subtype"`
+		Data map[string]any `json:"data"`
+	}
+
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+
+	st.Name = tmp.Name
+	st.Data = make(map[string]Reading)
+
+	// Convert each value to a Reading using ToReading
+	for k, v := range tmp.Data {
+		st.Data[k] = ToReading(v)
+	}
+
+	return nil
 }
 
 // UnmarshalYAML custom unmarshaler for Subtype to handle Reading interface

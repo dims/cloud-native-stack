@@ -34,10 +34,10 @@ func (s *SMICollector) Collect(ctx context.Context) (*measurement.Measurement, e
 	}
 
 	res := &measurement.Measurement{
-		Type: measurement.TypeSMI,
+		Type: measurement.TypeGPU,
 		Subtypes: []measurement.Subtype{
 			{
-				Data: smiReadings,
+				Data: smiReadings, // no need for filtering here since we control the fields in getSMIReadings
 			},
 		},
 	}

@@ -22,7 +22,7 @@ func TestCompare(t *testing.T) {
 				},
 			},
 			m2: Measurement{
-				Type: TypeSMI,
+				Type: TypeGPU,
 				Subtypes: []Subtype{
 					{Name: "gpu", Data: map[string]Reading{"driver": Str("535.104.05")}},
 				},
@@ -207,13 +207,13 @@ func TestCompare(t *testing.T) {
 		{
 			name: "float changes",
 			m1: Measurement{
-				Type: TypeSMI,
+				Type: TypeGPU,
 				Subtypes: []Subtype{
 					{Name: "gpu", Data: map[string]Reading{"temp": Float64(75.5)}},
 				},
 			},
 			m2: Measurement{
-				Type: TypeSMI,
+				Type: TypeGPU,
 				Subtypes: []Subtype{
 					{Name: "gpu", Data: map[string]Reading{"temp": Float64(82.3)}},
 				},

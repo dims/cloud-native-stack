@@ -46,7 +46,7 @@ func (k *KubernetesCollector) Collect(ctx context.Context) (*measurement.Measure
 		Type: measurement.TypeK8s,
 		Subtypes: []measurement.Subtype{
 			{
-				Data: versionInfo,
+				Data: versionInfo, // no need for filtering, all fields explicitly collected
 			},
 		},
 	}

@@ -11,6 +11,13 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
 
+var (
+	// Keys to filter out from systemd properties for privacy/security or noise reduction
+	filterOutSysctlKeys = []string{
+		"/proc/sys/dev/cdrom/*",
+	}
+)
+
 // SysctlCollector collects sysctl configurations from /proc/sys
 // excluding /proc/sys/net
 type SysctlCollector struct {
@@ -56,7 +63,42 @@ func (s *SysctlCollector) Collect(ctx context.Context) (*measurement.Measurement
 			return nil
 		}
 
-		params[path] = measurement.Str(strings.TrimSpace(string(c)))
+		content := strings.TrimSpace(string(c))
+
+		// Check if content has multiple lines with space-separated values
+		lines := strings.Split(content, "\n")
+		if len(lines) > 1 {
+			// Try to parse as key-value pairs
+			allParsed := true
+			for _, line := range lines {
+				line = strings.TrimSpace(line)
+				if line == "" {
+					continue
+				}
+
+				// Check if line has space-separated key and value
+				parts := strings.Fields(line)
+				if len(parts) >= 2 {
+					// Create new entry with extended path
+					key := parts[0]
+					value := strings.Join(parts[1:], " ")
+					extendedPath := path + "/" + key
+					params[extendedPath] = measurement.Str(value)
+				} else {
+					// Not a key-value pair format
+					allParsed = false
+					break
+				}
+			}
+
+			// If all lines were parsed, skip the original entry
+			if allParsed {
+				return nil
+			}
+		}
+
+		// Store original content if not multi-line key-value format
+		params[path] = measurement.Str(content)
 
 		return nil
 	})
@@ -68,7 +110,7 @@ func (s *SysctlCollector) Collect(ctx context.Context) (*measurement.Measurement
 		Type: measurement.TypeSysctl,
 		Subtypes: []measurement.Subtype{
 			{
-				Data: params,
+				Data: measurement.FilterOut(params, filterOutSysctlKeys),
 			},
 		},
 	}

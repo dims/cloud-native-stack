@@ -51,7 +51,7 @@ func (s *KModCollector) Collect(ctx context.Context) (*measurement.Measurement, 
 		Type: measurement.TypeKMod,
 		Subtypes: []measurement.Subtype{
 			{
-				Data: readings,
+				Data: readings, // all keys are module names with value true, no need to filter out
 			},
 		},
 	}

@@ -248,7 +248,3 @@ func getQueryParamOrDefault(q map[string][]string, key string) string {
 	}
 	return defaultQueryValue
 }
-
-func stringPtr(s string) *string {
-	return &s
-}

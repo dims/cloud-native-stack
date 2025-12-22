@@ -10,6 +10,13 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
 
+var (
+	// Keys to filter out from GRUB config for privacy/security
+	filterOutGrabKeys = []string{
+		"root",
+	}
+)
+
 // GrubCollector collects information about GRUB bootloader configurations from /proc/cmdline
 // and parses them into GrubConfig structures
 type GrubCollector struct {
@@ -66,7 +73,7 @@ func (s *GrubCollector) Collect(ctx context.Context) (*measurement.Measurement, 
 		Type: measurement.TypeGrub,
 		Subtypes: []measurement.Subtype{
 			{
-				Data: props,
+				Data: measurement.FilterOut(props, filterOutGrabKeys),
 			},
 		},
 	}

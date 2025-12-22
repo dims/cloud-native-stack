@@ -8,6 +8,19 @@ import (
 	"github.com/coreos/go-systemd/v22/dbus"
 )
 
+var (
+	// Keys to filter out from systemd properties for privacy/security or noise reduction
+	filterOutSystemDKeys = []string{
+		"AllowedCPUs",
+		"AllowedMemoryNodes",
+		"Asserts",
+		"BPFProgram",
+		"BusName",
+		"Id",
+		"*Credential*",
+	}
+)
+
 // SystemDCollector is a collector that gathers configuration data from systemd services.
 type SystemDCollector struct {
 	Services []string
@@ -41,7 +54,7 @@ func (s *SystemDCollector) Collect(ctx context.Context) (*measurement.Measuremen
 
 		subs = append(subs, measurement.Subtype{
 			Name: service,
-			Data: readings,
+			Data: measurement.FilterOut(readings, filterOutSystemDKeys),
 		})
 	}
 
