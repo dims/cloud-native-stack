@@ -2,12 +2,12 @@
 
 ## Files Compared
 
-| System | Source | Cluster      | Node             |
-|--------|--------|--------------|------------------|
-| H100   | AWS    | `a8c39f8a`   | `ip-10-0-158-18` |
-| GB200  | AWS    | `validation` | `ip-10-0-157-11` |
+| System | Source | Node                      |
+|--------|--------|---------------------------|
+| H100   | AWS    | `ip-10-0-233-106.ec2.internal` |
+| GB200  | AWS    | `ip-10-0-205-119.ec2.internal` |
 
-Both snapshots use `snapshot.dgxc.io/v1`, version `v0.4.1`.
+Both snapshots use `snapshot.dgxc.io/v1`, version `v0.5.6`.
 
 > Meaningful config and capability diffs only. Ignores order, timestamps, and other expected runtime noise.
 
@@ -21,7 +21,7 @@ Both snapshots use `snapshot.dgxc.io/v1`, version `v0.4.1`.
 | CPU Architecture | Different | H100 is x86_64; GB200 is ARM64 |
 | Crypto Acceleration | Different | Architecture-specific crypto modules |
 | NUMA / Memory Policy | Different | Explicit NUMA tuning only on GB200 |
-| Kubernetes | Missing in GB200 snapshot | Version reported only on H100 |
+| Kubernetes | Both Present | Different versions: H100 (v1.30.14-eks), GB200 (v1.33.5-eks) |
 | Container Runtime | Equivalent | containerd configuration aligned |
 | GPU Stack | Equivalent | NVIDIA + GDR present on both |
 | Networking / RDMA | Equivalent | EFA + RDMA stacks aligned |
@@ -111,12 +111,13 @@ Both snapshots include:
 
 | Aspect | H100 | GB200 |
 |--------|------|-------|
-| Kubernetes metadata | Present | Missing |
-| Reported version | v1.30.14-eks | N/A |
+| Kubernetes metadata | Present | Present |
+| Reported version | v1.30.14-eks-3025e55 | v1.33.5-eks-3025e55 |
+| Build date | 2025-11-11T03:22:24Z | 2025-11-11T03:21:21Z |
+| Go version | go1.24.9 | go1.24.6 |
+| Platform | linux/amd64 | linux/amd64 |
 
-**Classification:** Observability gap, not necessarily a system gap. Either kubelet is not installed/running on GB200 at snapshot time, or Kubernetes metadata collection was skipped.
-
-This is the single largest structural difference between the two snapshots.
+**Classification:** Both nodes have Kubernetes installed, but GB200 is running a newer version (v1.33.5 vs v1.30.14). Both are EKS builds from similar timeframes with minor Go version differences.
 
 ⸻
 

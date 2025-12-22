@@ -1,26 +1,10 @@
 kind: Snapshot
 apiVersion: snapshot.dgxc.io/v1
 metadata:
-  snapshot-timestamp: "2025-12-22T20:26:43Z"
-  snapshot-version: 0.5.5
-  source-node: ip-10-0-157-11.ec2.internal
+  snapshot-timestamp: "2025-12-22T21:23:21Z"
+  snapshot-version: 0.5.6
+  source-node: ip-10-0-205-119.ec2.internal
 measurements:
-  - type: Grub
-    subtypes:
-      - data:
-          BOOT_IMAGE: /boot/vmlinuz-6.8.0-1028-aws
-          apparmor: "1"
-          audit: "1"
-          audit_backlog_limit: "8192"
-          hugepages: "5128"
-          hugepagesz: 2M
-          init_on_alloc: "0"
-          nokaslr: ""
-          numa_balancing: disable
-          panic: "-1"
-          ro: ""
-          root: PARTUUID=8f173f4e-5cdd-42a6-bde6-d7564da61cf1
-          security: apparmor
   - type: KMod
     subtypes:
       - data:
@@ -110,26 +94,37 @@ measurements:
           xt_state: true
           xt_statistic: true
           xt_tcpudp: true
+  - type: Grub
+    subtypes:
+      - data:
+          BOOT_IMAGE: /boot/vmlinuz-6.8.0-1028-aws
+          apparmor: "1"
+          audit: "1"
+          audit_backlog_limit: "8192"
+          hugepages: "5128"
+          hugepagesz: 2M
+          init_on_alloc: "0"
+          nokaslr: ""
+          numa_balancing: disable
+          panic: "-1"
+          ro: ""
+          security: apparmor
   - type: SystemD
     subtypes:
       - subtype: containerd.service
         data:
-          ActiveEnterTimestamp: 1764981216847740
-          ActiveEnterTimestampMonotonic: 161005505
-          ActiveExitTimestamp: 1764981211336890
-          ActiveExitTimestampMonotonic: 155494655
+          ActiveEnterTimestamp: 1764980989043294
+          ActiveEnterTimestampMonotonic: 174204480
+          ActiveExitTimestamp: 1764980983536548
+          ActiveExitTimestampMonotonic: 168697734
           ActiveState: active
-          After: '[system.slice dbus.service network.target sysinit.target basic.target local-fs.target systemd-journald.socket]'
+          After: '[basic.target systemd-journald.socket sysinit.target system.slice dbus.service local-fs.target network.target]'
           AllowIsolate: false
-          AllowedCPUs: '[]'
-          AllowedMemoryNodes: '[]'
           AmbientCapabilities: 0
           AppArmorProfile: '[false ]'
           AssertResult: true
-          AssertTimestamp: 1764981216360654
-          AssertTimestampMonotonic: 160518419
-          Asserts: '[]'
-          BPFProgram: '[]'
+          AssertTimestamp: 1764980988573500
+          AssertTimestampMonotonic: 173734686
           Before: '[multi-user.target shutdown.target]'
           BindPaths: '[]'
           BindReadOnlyPaths: '[]'
@@ -140,7 +135,6 @@ measurements:
           BlockIOWeight: 18446744073709551615
           BlockIOWriteBandwidth: '[]'
           BoundBy: '[]'
-          BusName: ""
           CPUAccounting: true
           CPUAffinity: '[]'
           CPUAffinityFromNUMA: false
@@ -150,7 +144,7 @@ measurements:
           CPUSchedulingPriority: "0"
           CPUSchedulingResetOnFork: false
           CPUShares: 18446744073709551615
-          CPUUsageNSec: 503071991255000
+          CPUUsageNSec: 486910362141000
           CPUWeight: 18446744073709551615
           CacheDirectory: '[]'
           CacheDirectoryMode: "493"
@@ -164,8 +158,8 @@ measurements:
           CleanResult: success
           CollectMode: inactive
           ConditionResult: true
-          ConditionTimestamp: 1764981216360651
-          ConditionTimestampMonotonic: 160518416
+          ConditionTimestamp: 1764980988573498
+          ConditionTimestampMonotonic: 173734684
           Conditions: '[]'
           ConfigurationDirectory: '[]'
           ConfigurationDirectoryMode: "493"
@@ -196,19 +190,19 @@ measurements:
           ExecMainCode: "0"
           ExecMainExitTimestamp: 0
           ExecMainExitTimestampMonotonic: 0
-          ExecMainPID: "27990"
-          ExecMainStartTimestamp: 1764981216375845
-          ExecMainStartTimestampMonotonic: 160533610
+          ExecMainPID: "28515"
+          ExecMainStartTimestamp: 1764980988589870
+          ExecMainStartTimestampMonotonic: 173751056
           ExecMainStatus: "0"
           ExecPaths: '[]'
           ExecReload: '[]'
           ExecReloadEx: '[]'
-          ExecStart: '[[/usr/bin/containerd [/usr/bin/containerd] false 1764981216375816 160533581 0 0 27990 0 0]]'
-          ExecStartEx: '[[/usr/bin/containerd [/usr/bin/containerd] [] 1764981216375816 160533581 0 0 27990 0 0]]'
+          ExecStart: '[[/usr/bin/containerd [/usr/bin/containerd] false 1764980988589832 173751019 0 0 28515 0 0]]'
+          ExecStartEx: '[[/usr/bin/containerd [/usr/bin/containerd] [] 1764980988589832 173751019 0 0 28515 0 0]]'
           ExecStartPost: '[]'
           ExecStartPostEx: '[]'
-          ExecStartPre: '[[/sbin/modprobe [/sbin/modprobe overlay] true 1764981216370302 160528067 1764981216372848 160530613 27988 1 0] [/bin/ln [/bin/ln -sf /run/containerd/containerd.sock /run/dockershim.sock] false 1764981216373314 160531079 1764981216375165 160532930 27989 1 0]]'
-          ExecStartPreEx: '[[/sbin/modprobe [/sbin/modprobe overlay] [ignore-failure] 1764981216370302 160528067 1764981216372848 160530613 27988 1 0] [/bin/ln [/bin/ln -sf /run/containerd/containerd.sock /run/dockershim.sock] [] 1764981216373314 160531079 1764981216375165 160532930 27989 1 0]]'
+          ExecStartPre: '[[/sbin/modprobe [/sbin/modprobe overlay] true 1764980988582860 173744047 1764980988586380 173747567 28513 1 0] [/bin/ln [/bin/ln -sf /run/containerd/containerd.sock /run/dockershim.sock] false 1764980988587188 173748375 1764980988589191 173750377 28514 1 0]]'
+          ExecStartPreEx: '[[/sbin/modprobe [/sbin/modprobe overlay] [ignore-failure] 1764980988582860 173744047 1764980988586380 173747567 28513 1 0] [/bin/ln [/bin/ln -sf /run/containerd/containerd.sock /run/dockershim.sock] [] 1764980988587188 173748375 1764980988589191 173750377 28514 1 0]]'
           ExecStop: '[]'
           ExecStopEx: '[]'
           ExecStopPost: '[]'
@@ -248,15 +242,14 @@ measurements:
           IPIngressBytes: 18446744073709551615
           IPIngressFilterPath: '[]'
           IPIngressPackets: 18446744073709551615
-          Id: containerd.service
           IgnoreOnIsolate: false
           IgnoreSIGPIPE: true
           InaccessiblePaths: '[]'
-          InactiveEnterTimestamp: 1764981216360359
-          InactiveEnterTimestampMonotonic: 160518124
-          InactiveExitTimestamp: 1764981216370529
-          InactiveExitTimestampMonotonic: 160528294
-          InvocationID: '[172 221 159 21 110 216 68 239 159 39 43 24 178 3 46 71]'
+          InactiveEnterTimestamp: 1764980988573146
+          InactiveEnterTimestampMonotonic: 173734333
+          InactiveExitTimestamp: 1764980988583142
+          InactiveExitTimestampMonotonic: 173744329
+          InvocationID: '[133 207 89 4 238 139 68 213 139 148 12 4 221 53 68 193]'
           Job: '[0 /]'
           JobRunningTimeoutUSec: 18446744073709551615
           JobTimeoutAction: none
@@ -298,7 +291,6 @@ measurements:
           LimitSIGPENDINGSoft: 3789289
           LimitSTACK: 67108864
           LimitSTACKSoft: 67108864
-          LoadCredential: '[]'
           LoadError: '[ ]'
           LoadState: loaded
           LockPersonality: false
@@ -309,7 +301,7 @@ measurements:
           LogRateLimitIntervalUSec: 0
           LogsDirectory: '[]'
           LogsDirectoryMode: "493"
-          MainPID: "27990"
+          MainPID: "28515"
           ManagedOOMMemoryPressure: auto
           ManagedOOMMemoryPressureLimit: "0"
           ManagedOOMPreference: none
@@ -317,7 +309,7 @@ measurements:
           Markers: '[]'
           MemoryAccounting: true
           MemoryAvailable: 18446744073709551615
-          MemoryCurrent: 109601460224
+          MemoryCurrent: 91281424384
           MemoryDenyWriteExecute: false
           MemoryHigh: 18446744073709551615
           MemoryLimit: 18446744073709551615
@@ -383,7 +375,7 @@ measurements:
           RemainAfterExit: false
           RemoveIPC: false
           RequiredBy: '[]'
-          Requires: '[sysinit.target system.slice]'
+          Requires: '[system.slice sysinit.target]'
           RequiresMountsFor: '[]'
           Requisite: '[]'
           RequisiteOf: '[]'
@@ -415,7 +407,6 @@ measurements:
           SecureBits: "0"
           SendSIGHUP: false
           SendSIGKILL: true
-          SetCredential: '[]'
           Slice: system.slice
           SliceOf: '[]'
           SmackProcessLabel: '[false ]'
@@ -436,8 +427,8 @@ measurements:
           StartupCPUShares: 18446744073709551615
           StartupCPUWeight: 18446744073709551615
           StartupIOWeight: 18446744073709551615
-          StateChangeTimestamp: 1764981216847740
-          StateChangeTimestampMonotonic: 161005505
+          StateChangeTimestamp: 1764980989043294
+          StateChangeTimestampMonotonic: 174204480
           StateDirectory: '[]'
           StateDirectoryMode: "493"
           StatusErrno: "0"
@@ -463,7 +454,7 @@ measurements:
           TTYVHangup: false
           TTYVTDisallocate: false
           TasksAccounting: true
-          TasksCurrent: 479
+          TasksCurrent: 477
           TasksMax: 18446744073709551615
           TemporaryFileSystem: '[]'
           TimeoutAbortUSec: 90000000
@@ -503,15 +494,11 @@ measurements:
           ActiveState: inactive
           After: '[]'
           AllowIsolate: false
-          AllowedCPUs: '[]'
-          AllowedMemoryNodes: '[]'
           AmbientCapabilities: 0
           AppArmorProfile: '[false ]'
           AssertResult: false
           AssertTimestamp: 0
           AssertTimestampMonotonic: 0
-          Asserts: '[]'
-          BPFProgram: '[]'
           Before: '[]'
           BindPaths: '[]'
           BindReadOnlyPaths: '[]'
@@ -522,7 +509,6 @@ measurements:
           BlockIOWeight: 18446744073709551615
           BlockIOWriteBandwidth: '[]'
           BoundBy: '[]'
-          BusName: ""
           CPUAccounting: true
           CPUAffinity: '[]'
           CPUAffinityFromNUMA: false
@@ -630,7 +616,6 @@ measurements:
           IPIngressBytes: 18446744073709551615
           IPIngressFilterPath: '[]'
           IPIngressPackets: 18446744073709551615
-          Id: docker.service
           IgnoreOnIsolate: false
           IgnoreSIGPIPE: true
           InaccessiblePaths: '[]'
@@ -680,7 +665,6 @@ measurements:
           LimitSIGPENDINGSoft: 3789289
           LimitSTACK: 18446744073709551615
           LimitSTACKSoft: 8388608
-          LoadCredential: '[]'
           LoadError: '[org.freedesktop.systemd1.NoSuchUnit Unit docker.service not found.]'
           LoadState: not-found
           LockPersonality: false
@@ -797,7 +781,6 @@ measurements:
           SecureBits: "0"
           SendSIGHUP: false
           SendSIGKILL: true
-          SetCredential: '[]'
           Slice: ""
           SliceOf: '[]'
           SmackProcessLabel: '[false ]'
@@ -885,15 +868,11 @@ measurements:
           ActiveState: inactive
           After: '[]'
           AllowIsolate: false
-          AllowedCPUs: '[]'
-          AllowedMemoryNodes: '[]'
           AmbientCapabilities: 0
           AppArmorProfile: '[false ]'
           AssertResult: false
           AssertTimestamp: 0
           AssertTimestampMonotonic: 0
-          Asserts: '[]'
-          BPFProgram: '[]'
           Before: '[]'
           BindPaths: '[]'
           BindReadOnlyPaths: '[]'
@@ -904,7 +883,6 @@ measurements:
           BlockIOWeight: 18446744073709551615
           BlockIOWriteBandwidth: '[]'
           BoundBy: '[]'
-          BusName: ""
           CPUAccounting: true
           CPUAffinity: '[]'
           CPUAffinityFromNUMA: false
@@ -1012,7 +990,6 @@ measurements:
           IPIngressBytes: 18446744073709551615
           IPIngressFilterPath: '[]'
           IPIngressPackets: 18446744073709551615
-          Id: kubelet.service
           IgnoreOnIsolate: false
           IgnoreSIGPIPE: true
           InaccessiblePaths: '[]'
@@ -1062,7 +1039,6 @@ measurements:
           LimitSIGPENDINGSoft: 3789289
           LimitSTACK: 18446744073709551615
           LimitSTACKSoft: 8388608
-          LoadCredential: '[]'
           LoadError: '[org.freedesktop.systemd1.NoSuchUnit Unit kubelet.service not found.]'
           LoadState: not-found
           LockPersonality: false
@@ -1179,7 +1155,6 @@ measurements:
           SecureBits: "0"
           SendSIGHUP: false
           SendSIGKILL: true
-          SetCredential: '[]'
           Slice: ""
           SliceOf: '[]'
           SmackProcessLabel: '[false ]'
@@ -1267,34 +1242,6 @@ measurements:
           /proc/sys/abi/swp: "0"
           /proc/sys/abi/tagged_addr_disabled: "0"
           /proc/sys/debug/exception-trace: "0"
-          /proc/sys/dev/cdrom/autoclose: "1"
-          /proc/sys/dev/cdrom/autoeject: "0"
-          /proc/sys/dev/cdrom/check_media: "0"
-          /proc/sys/dev/cdrom/debug: "0"
-          /proc/sys/dev/cdrom/info: |-
-            CD-ROM information, Id: cdrom.c 3.20 2003/12/17
-
-            drive name:
-            drive speed:
-            drive # of slots:
-            Can close tray:
-            Can open tray:
-            Can lock tray:
-            Can change speed:
-            Can select disk:
-            Can read multisession:
-            Can read MCN:
-            Reports media changed:
-            Can play audio:
-            Can write CD-R:
-            Can write CD-RW:
-            Can read DVD:
-            Can write DVD-R:
-            Can write DVD-RAM:
-            Can read MRW:
-            Can write MRW:
-            Can write RAM:
-          /proc/sys/dev/cdrom/lock: "0"
           /proc/sys/dev/raid/speed_limit_max: "200000"
           /proc/sys/dev/raid/speed_limit_min: "1000"
           /proc/sys/dev/scsi/logging_level: "0"
@@ -1302,16 +1249,16 @@ measurements:
           /proc/sys/dev/tty/legacy_tiocsti: "0"
           /proc/sys/fs/aio-max-nr: "65536"
           /proc/sys/fs/aio-nr: "0"
-          /proc/sys/fs/dentry-state: "1940077\t1839401\t45\t0\t714745\t0"
+          /proc/sys/fs/dentry-state: "1620045\t1519363\t45\t0\t658883\t0"
           /proc/sys/fs/dir-notify-enable: "1"
           /proc/sys/fs/epoll/max_user_watches: "216410223"
           /proc/sys/fs/fanotify/max_queued_events: "16384"
           /proc/sys/fs/fanotify/max_user_groups: "128"
           /proc/sys/fs/fanotify/max_user_marks: "1048576"
           /proc/sys/fs/file-max: "9223372036854775807"
-          /proc/sys/fs/file-nr: "4320\t0\t9223372036854775807"
-          /proc/sys/fs/inode-nr: "1222217\t435"
-          /proc/sys/fs/inode-state: "1222217\t435\t0\t0\t0\t0\t0"
+          /proc/sys/fs/file-nr: "3456\t0\t9223372036854775807"
+          /proc/sys/fs/inode-nr: "958048\t435"
+          /proc/sys/fs/inode-state: "958048\t435\t0\t0\t0\t0\t0"
           /proc/sys/fs/inotify/max_queued_events: "16384"
           /proc/sys/fs/inotify/max_user_instances: "65535"
           /proc/sys/fs/inotify/max_user_watches: "524288"
@@ -1382,7 +1329,7 @@ measurements:
           /proc/sys/kernel/ftrace_enabled: "1"
           /proc/sys/kernel/hardlockup_all_cpu_backtrace: "0"
           /proc/sys/kernel/hardlockup_panic: "0"
-          /proc/sys/kernel/hostname: ip-10-0-157-11
+          /proc/sys/kernel/hostname: ip-10-0-205-119
           /proc/sys/kernel/hotplug: ""
           /proc/sys/kernel/hung_task_all_cpu_backtrace: "0"
           /proc/sys/kernel/hung_task_check_count: "4194304"
@@ -1413,7 +1360,7 @@ measurements:
           /proc/sys/kernel/msgmni: "32000"
           /proc/sys/kernel/ngroups_max: "65536"
           /proc/sys/kernel/nmi_watchdog: "0"
-          /proc/sys/kernel/ns_last_pid: "1478824"
+          /proc/sys/kernel/ns_last_pid: "1444768"
           /proc/sys/kernel/numa_balancing: "0"
           /proc/sys/kernel/numa_balancing_promote_rate_limit_MBps: "65536"
           /proc/sys/kernel/oops_all_cpu_backtrace: "0"
@@ -1445,11 +1392,11 @@ measurements:
           /proc/sys/kernel/pty/max: "4096"
           /proc/sys/kernel/pty/nr: "0"
           /proc/sys/kernel/pty/reserve: "1024"
-          /proc/sys/kernel/random/boot_id: 34d1a891-4a01-423b-ab31-b34aaa1bb207
+          /proc/sys/kernel/random/boot_id: b54b54f2-7db1-41a1-9647-d0bca9522fd2
           /proc/sys/kernel/random/entropy_avail: "256"
           /proc/sys/kernel/random/poolsize: "256"
           /proc/sys/kernel/random/urandom_min_reseed_secs: "60"
-          /proc/sys/kernel/random/uuid: 66652044-adc9-44b0-8809-4077926f7a29
+          /proc/sys/kernel/random/uuid: 8f99e259-cb05-44a4-be67-2821392351df
           /proc/sys/kernel/random/write_wakeup_threshold: "256"
           /proc/sys/kernel/randomize_va_space: "2"
           /proc/sys/kernel/real-root-dev: "0"
@@ -1525,10 +1472,9 @@ measurements:
           /proc/sys/sunrpc/tcp_fin_timeout: "15"
           /proc/sys/sunrpc/tcp_max_slot_table_entries: "65536"
           /proc/sys/sunrpc/tcp_slot_table_entries: "2"
-          /proc/sys/sunrpc/transports: |-
-            tcp 1048576
-            udp 32768
-            rdma 1048576
+          /proc/sys/sunrpc/transports/rdma: "1048576"
+          /proc/sys/sunrpc/transports/tcp: "1048576"
+          /proc/sys/sunrpc/transports/udp: "32768"
           /proc/sys/sunrpc/udp_slot_table_entries: "16"
           /proc/sys/user/max_cgroup_namespaces: "3789289"
           /proc/sys/user/max_fanotify_groups: "128"
@@ -1597,80 +1543,78 @@ measurements:
           gitCommit: 48e78a69c609bdd68c6d0f05c3afd1ba054f7970
           gitTreeState: clean
           goVersion: go1.24.6
-          platform: linux/arm64
+          platform: linux/amd64
           version: v1.33.5-eks-3025e55
   - type: Image
     subtypes:
       - data:
-          602401143452.dkr.ecr.us-east-1.amazonaws.com/amazon-k8s-cni: v1.20.1-eksbuild.1
-          602401143452.dkr.ecr.us-east-1.amazonaws.com/amazon-k8s-cni-init: v1.20.1-eksbuild.1
-          602401143452.dkr.ecr.us-east-1.amazonaws.com/amazon/aws-network-policy-agent: v1.2.4-eksbuild.1
-          602401143452.dkr.ecr.us-east-1.amazonaws.com/eks/coredns: v1.12.2-eksbuild.4
-          602401143452.dkr.ecr.us-east-1.amazonaws.com/eks/kube-proxy: v1.33.0-eksbuild.2
-          602401143452.dkr.ecr.us-east-1.amazonaws.com/eks/metrics-server: v0.8.0-eksbuild.2
-          602401143452.dkr.ecr.us-west-2.amazonaws.com/eks/aws-efa-k8s-device-plugin: v0.5.3
-          602401143452.dkr.ecr.us-west-2.amazonaws.com/eks/aws-fsx-csi-driver: v1.1.0
-          ghcr.io/mchmarny/eidos: v0.5.5
-          ghcr.io/mchmarny/gpuid: latest
-          ghcr.io/mchmarny/node-role-controller:v0.5.0: sha256:345638126a65cff794a59c620badcd02cdbc100d45f7745b4b42e32a803ff645
-          nvcr.io/0491946863192633/argocd: v2.14.3
-          nvcr.io/0491946863192633/aws-secrets-manager-secrets-store-csi-driver-provider-aws: 1.0.r2-72-gfb78a36-2024.05.29.23.03
-          nvcr.io/0491946863192633/bitnami-kubectl: 1.30.6
-          nvcr.io/0491946863192633/bitnami-mongodb: 8.0.3-debian-12-r0
-          nvcr.io/0491946863192633/bitnami-nginx: 1.27.2-debian-12-r2
-          nvcr.io/0491946863192633/cert-manager-cainjector: v1.15.1
-          nvcr.io/0491946863192633/cert-manager-controller: v1.15.1
-          nvcr.io/0491946863192633/cert-manager-webhook: v1.15.1
-          nvcr.io/0491946863192633/csi-secrets-store-driver: v1.4.5
-          nvcr.io/0491946863192633/dgxc-janitor: 1.17.3
-          nvcr.io/0491946863192633/kratos-fluent-bit: v7.0.2-dev-cf642b0-multiarch
-          nvcr.io/0491946863192633/kube-rbac-proxy: v0.15.0
-          nvcr.io/0491946863192633/kube-state-metrics: v2.12.0
-          nvcr.io/0491946863192633/las-fluentd: 1.16.1-09497efe
-          nvcr.io/0491946863192633/mongodb_exporter: 0.41.2-debian-12-r1
-          nvcr.io/0491946863192633/mpi-operator: 0.6-pr700
-          nvcr.io/0491946863192633/node-exporter: v1.8.1-multiarch
-          nvcr.io/0491946863192633/nvidia-xid-analyzer-sidecar: v1
-          nvcr.io/0491946863192633/nvsentinel-fault-quarantine-module: 1.167.1
-          nvcr.io/0491946863192633/nvsentinel-fault-remediation-module: 1.167.1
-          nvcr.io/0491946863192633/nvsentinel-gpu-health-monitor: 1.167.1-dcgm-4.x
-          nvcr.io/0491946863192633/nvsentinel-node-drainer-module: 1.167.1
-          nvcr.io/0491946863192633/nvsentinel-nvswitch-health-monitor: 1.167.1
-          nvcr.io/0491946863192633/nvsentinel-platform-connectors: 1.167.1
-          nvcr.io/0491946863192633/nvsentinel-syslog-health-monitor: 1.167.1
-          nvcr.io/0491946863192633/prometheus: v2.53.0
-          nvcr.io/0491946863192633/prometheus-config-reloader: v0.75.0
-          nvcr.io/0491946863192633/prometheus-operator: v0.75.0
-          nvcr.io/0491946863192633/redis: 7.4.2
-          nvcr.io/0491946863192633/scd-csi-driver: 1.0.2
-          nvcr.io/0491946863192633/sig-storage-csi-node-driver-registrar: v2.11.1
-          nvcr.io/0491946863192633/sig-storage-livenessprobe: v2.13.1
-          nvcr.io/0491946863192633/skyhook-operator: v0.7.4
-          nvcr.io/0491946863192633/training-operator: v1-3f15cb8
-          nvcr.io/0491946863192633/vace: 1.79.0
-          nvcr.io/0491946863192633/yet-another-cloudwatch-exporter: v0.60.0
-          nvcr.io/nvidia/cloud-native/dcgm: 4.3.1-1-ubuntu22.04
-          nvcr.io/nvidia/cloud-native/gdrdrv: v2.5.1-ubuntu22.04
-          nvcr.io/nvidia/cloud-native/gpu-operator-validator: v25.3.3
-          nvcr.io/nvidia/cloud-native/k8s-driver-manager: v0.8.1
-          nvcr.io/nvidia/cloud-native/k8s-mig-manager: v0.12.3-ubuntu20.04
-          nvcr.io/nvidia/driver: 580.82.07-ubuntu22.04
-          nvcr.io/nvidia/gpu-operator: v25.3.3
-          nvcr.io/nvidia/k8s-device-plugin: v0.17.4
-          nvcr.io/nvidia/k8s-dra-driver-gpu: v25.8.0
-          nvcr.io/nvidia/k8s/container-toolkit: v1.17.8-ubuntu20.04
-          nvcr.io/nvidia/k8s/dcgm-exporter: 4.3.1-4.4.0-ubuntu22.04
-          public.ecr.aws/ebs-csi-driver/aws-ebs-csi-driver: v1.31.0
-          public.ecr.aws/eks-distro/kubernetes-csi/external-attacher: v4.6.1-eks-1-30-10
-          public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner: v5.0.1-eks-1-30-10
-          public.ecr.aws/eks-distro/kubernetes-csi/external-resizer: v1.11.1-eks-1-30-10
-          public.ecr.aws/eks-distro/kubernetes-csi/livenessprobe: v2.13.0-eks-1-30-10
-          public.ecr.aws/eks-distro/kubernetes-csi/node-driver-registrar: v2.11.0-eks-1-30-10
-          public.ecr.aws/mountpoint-s3-csi-driver/aws-mountpoint-s3-csi-driver: v1.12.0
-          registry.k8s.io/nfd/node-feature-discovery: v0.17.3
-          registry.k8s.io/sig-storage/livenessprobe: v2.14.0
-          rtsp/mongosh: latest
-  - type: SMI
+          amazon-k8s-cni: v1.20.1-eksbuild.1
+          amazon-k8s-cni-init: v1.20.1-eksbuild.1
+          argocd: v2.14.3
+          aws-ebs-csi-driver: v1.31.0
+          aws-efa-k8s-device-plugin: v0.5.3
+          aws-fsx-csi-driver: v1.1.0
+          aws-mountpoint-s3-csi-driver: v1.12.0
+          aws-network-policy-agent: v1.2.4-eksbuild.1
+          aws-secrets-manager-secrets-store-csi-driver-provider-aws: 1.0.r2-72-gfb78a36-2024.05.29.23.03
+          bitnami-kubectl: 1.30.6
+          bitnami-mongodb: 8.0.3-debian-12-r0
+          bitnami-nginx: 1.27.2-debian-12-r2
+          cert-manager-cainjector: v1.15.1
+          cert-manager-controller: v1.15.1
+          cert-manager-webhook: v1.15.1
+          container-toolkit: v1.17.8-ubuntu20.04
+          coredns: v1.12.2-eksbuild.4
+          csi-secrets-store-driver: v1.4.5
+          dcgm: 4.3.1-1-ubuntu22.04
+          dcgm-exporter: 4.3.1-4.4.0-ubuntu22.04
+          dgxc-janitor: 1.17.3
+          driver: 580.82.07-ubuntu22.04
+          eidos: v0.5.6
+          external-attacher: v4.6.1-eks-1-30-10
+          external-provisioner: v5.0.1-eks-1-30-10
+          external-resizer: v1.11.1-eks-1-30-10
+          gdrdrv: v2.5.1-ubuntu22.04
+          gpu-operator: v25.3.3
+          gpu-operator-validator: v25.3.3
+          gpuid: latest
+          k8s-device-plugin: v0.17.4
+          k8s-dra-driver-gpu: v25.8.0
+          k8s-driver-manager: v0.8.1
+          k8s-mig-manager: v0.12.3-ubuntu20.04
+          kratos-fluent-bit: v7.0.2-dev-cf642b0-multiarch
+          kube-proxy: v1.33.0-eksbuild.2
+          kube-rbac-proxy: v0.15.0
+          kube-state-metrics: v2.12.0
+          las-fluentd: 1.16.1-09497efe
+          livenessprobe: v2.13.0-eks-1-30-10
+          metrics-server: v0.8.0-eksbuild.2
+          mongodb_exporter: 0.41.2-debian-12-r1
+          mongosh: latest
+          mpi-operator: 0.6-pr700
+          node-driver-registrar: v2.11.0-eks-1-30-10
+          node-exporter: v1.8.1-multiarch
+          node-feature-discovery: v0.17.3
+          nvidia-xid-analyzer-sidecar: v1
+          nvsentinel-fault-quarantine-module: 1.167.1
+          nvsentinel-fault-remediation-module: 1.167.1
+          nvsentinel-gpu-health-monitor: 1.167.1-dcgm-4.x
+          nvsentinel-node-drainer-module: 1.167.1
+          nvsentinel-nvswitch-health-monitor: 1.167.1
+          nvsentinel-platform-connectors: 1.167.1
+          nvsentinel-syslog-health-monitor: 1.167.1
+          prometheus: v2.53.0
+          prometheus-config-reloader: v0.75.0
+          prometheus-operator: v0.75.0
+          redis: 7.4.2
+          scd-csi-driver: 1.0.2
+          sig-storage-csi-node-driver-registrar: v2.11.1
+          sig-storage-livenessprobe: v2.13.1
+          skyhook-operator: v0.7.4
+          training-operator: v1-3f15cb8
+          vace: 1.79.0
+          yet-another-cloudwatch-exporter: v0.60.0
+  - type: GPU
     subtypes:
       - data:
           addressing-mode: ATS
