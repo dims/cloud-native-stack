@@ -3,7 +3,8 @@ version: 2
 project_name: eidos
 
 builds:
-  - binary: eidos
+  - id: eidos
+    binary: eidos
     # set the modified timestamp on the output binary to the git timestamp to ensure a reproducible build
     mod_timestamp: &build-timestamp '{{ .CommitTimestamp }}'
     dir: cmd/eidos
@@ -21,6 +22,29 @@ builds:
       -X github.com/NVIDIA/cloud-native-stack/pkg/cli.date={{.Date}}
     goos:
       - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+
+  - id: server
+    binary: server
+    # set the modified timestamp on the output binary to the git timestamp to ensure a reproducible build
+    mod_timestamp: &build-timestamp '{{ .CommitTimestamp }}'
+    dir: cmd/server
+    env:
+      - CGO_ENABLED=0
+      - GO111MODULE=on
+    flags:
+      - -trimpath
+    ldflags: &build-ldflags |
+      -w
+      -s
+      -extldflags "-static"
+      -X github.com/NVIDIA/cloud-native-stack/pkg/server.version={{.Version}}
+      -X github.com/NVIDIA/cloud-native-stack/pkg/server.commit={{.ShortCommit}}
+      -X github.com/NVIDIA/cloud-native-stack/pkg/server.date={{.Date}}
+    goos:
       - linux
     goarch:
       - amd64
@@ -55,7 +79,21 @@ release:
   prerelease: auto
 
 kos:
-  - base_image: nvcr.io/nvidia/cuda:13.1.0-runtime-ubuntu24.04
+  - id: eidos
+    build: eidos
+    base_image: nvcr.io/nvidia/cuda:13.1.0-runtime-ubuntu24.04
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    tags:
+      - latest
+      - "{{.Tag}}"
+    preserve_import_paths: false
+    bare: true
+    sbom: spdx
+
+  - id: server
+    build: server
     platforms:
       - linux/amd64
       - linux/arm64

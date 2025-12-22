@@ -18,6 +18,18 @@ import (
 	"golang.org/x/time/rate"
 )
 
+const (
+	name           = "eidos-server"
+	versionDefault = "dev"
+)
+
+var (
+	// overridden during build with ldflags
+	version = versionDefault
+	commit  = "unknown"
+	date    = "unknown"
+)
+
 // DefaultConfig returns sensible defaults
 func DefaultConfig() *Config {
 	cfg := &Config{
@@ -177,12 +189,34 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 // Run starts the server with graceful shutdown handling
 func Run() error {
-	return RunWithConfig(DefaultConfig())
+	if err := RunWithConfig(DefaultConfig()); err != nil {
+		slog.Error("error running server", slog.String("error", err.Error()))
+		return fmt.Errorf("server error: %w", err)
+	}
+	return nil
 }
 
 // RunWithConfig starts the server with custom configuration
 func RunWithConfig(config *Config) error {
+	slog.Info("starting server",
+		slog.String("version", version),
+		slog.String("commit", commit),
+		slog.String("date", date))
+
 	server := NewServer(config)
+
+	slog.Info("server config",
+		slog.String("address", server.httpServer.Addr),
+		slog.Int("port", config.Port),
+		slog.Any("rateLimit", config.RateLimit),
+		slog.Int("rateLimitBurst", config.RateLimitBurst),
+		slog.Int("maxBulkRequests", config.MaxBulkRequests),
+		slog.Duration("readTimeout", config.ReadTimeout),
+		slog.Duration("writeTimeout", config.WriteTimeout),
+		slog.Duration("idleTimeout", config.IdleTimeout),
+		slog.Duration("shutdownTimeout", config.ShutdownTimeout),
+		slog.String("logLevel", config.LogLevel.String()),
+	)
 
 	// Setup graceful shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -201,7 +235,7 @@ func RunWithConfig(config *Config) error {
 		return fmt.Errorf("server error: %w", err)
 	}
 
-	fmt.Println("Server stopped gracefully")
+	slog.Info("server stopped gracefully")
 	return nil
 }
 
