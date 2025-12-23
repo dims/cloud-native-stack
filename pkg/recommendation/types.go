@@ -13,11 +13,11 @@ const (
 
 // Recommendation represents the recommendation response structure.
 type Recommendation struct {
-	Request        *Query                     `json:"request"`
-	MatchedRules   []string                   `json:"matchedRuleId"`
-	PayloadVersion string                     `json:"payloadVersion"`
-	GeneratedAt    time.Time                  `json:"generatedAt"`
-	Measurements   []*measurement.Measurement `json:"measurements"`
+	Request        Query                      `json:"request" yaml:"request"`
+	MatchedRules   []string                   `json:"matchedRuleId" yaml:"matchedRuleId"`
+	PayloadVersion string                     `json:"payloadVersion" yaml:"payloadVersion"`
+	GeneratedAt    time.Time                  `json:"generatedAt" yaml:"generatedAt"`
+	Measurements   []*measurement.Measurement `json:"measurements" yaml:"measurements"`
 }
 
 // RecommendationStore holds base measurements for recommendations.

@@ -10,19 +10,19 @@ import (
 
 // ErrorResponse represents error responses as per OpenAPI spec
 type ErrorResponse struct {
-	Code      string                 `json:"code"`
-	Message   string                 `json:"message"`
-	Details   map[string]interface{} `json:"details,omitempty"`
-	RequestID string                 `json:"requestId"`
-	Timestamp time.Time              `json:"timestamp"`
-	Retryable bool                   `json:"retryable"`
+	Code      string                 `json:"code" yaml:"code"`
+	Message   string                 `json:"message" yaml:"message"`
+	Details   map[string]interface{} `json:"details,omitempty" yaml:"details,omitempty"`
+	RequestID string                 `json:"requestId" yaml:"requestId"`
+	Timestamp time.Time              `json:"timestamp" yaml:"timestamp"`
+	Retryable bool                   `json:"retryable" yaml:"retryable"`
 }
 
 // HealthResponse represents health check response
 type HealthResponse struct {
-	Status    string    `json:"status"`
-	Timestamp time.Time `json:"timestamp"`
-	Reason    string    `json:"reason,omitempty"`
+	Status    string    `json:"status" yaml:"status"`
+	Timestamp time.Time `json:"timestamp" yaml:"timestamp"`
+	Reason    string    `json:"reason,omitempty" yaml:"reason,omitempty"`
 }
 
 // Config holds server configuration

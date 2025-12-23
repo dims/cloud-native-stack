@@ -6,45 +6,48 @@ import (
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/version"
+	fakediscovery "k8s.io/client-go/discovery/fake"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
 func TestKubernetesCollector_Collect(t *testing.T) {
 	ctx := context.Background()
-	collector := &KubernetesCollector{}
-
-	// This test requires a kubernetes cluster to be available
-	// It will fail if no cluster is accessible
-	m, err := collector.Collect(ctx)
-
-	// If no cluster is available, we expect an error
-	if err != nil {
-		assert.Error(t, err, "expected error when cluster is not available")
-		t.Logf("Kubernetes collector failed as expected (no cluster available): %v", err)
-		return
+	fakeClient := fake.NewClientset()
+	fakeDiscovery := fakeClient.Discovery().(*fakediscovery.FakeDiscovery)
+	fakeDiscovery.FakedServerVersion = &version.Info{
+		GitVersion: "v1.28.0",
+		Platform:   "linux/amd64",
+		GoVersion:  "go1.20.7",
 	}
+	collector := &KubernetesCollector{Clientset: fakeClient}
 
-	// If cluster is available, validate the measurement
+	m, err := collector.Collect(ctx)
 	assert.NoError(t, err)
 	assert.NotNil(t, m)
 	assert.Equal(t, measurement.TypeK8s, m.Type)
 	assert.Len(t, m.Subtypes, 1)
 	assert.NotNil(t, m.Subtypes[0].Data)
 
-	// Check that required fields are present
 	data := m.Subtypes[0].Data
-	assert.Contains(t, data, "version")
-	assert.Contains(t, data, "platform")
-	assert.Contains(t, data, "goVersion")
-
-	version, _ := m.Subtypes[0].GetString("version")
-	t.Logf("Kubernetes version: %s", version)
+	if assert.Len(t, data, 3) {
+		if reading, ok := data["version"]; assert.True(t, ok) {
+			assert.Equal(t, "v1.28.0", reading.Any())
+		}
+		if reading, ok := data["platform"]; assert.True(t, ok) {
+			assert.Equal(t, "linux/amd64", reading.Any())
+		}
+		if reading, ok := data["goVersion"]; assert.True(t, ok) {
+			assert.Equal(t, "go1.20.7", reading.Any())
+		}
+	}
 }
 
 func TestKubernetesCollector_CollectWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	collector := &KubernetesCollector{}
+	collector := &KubernetesCollector{Clientset: fake.NewClientset()}
 	m, err := collector.Collect(ctx)
 
 	assert.Error(t, err)

@@ -16,25 +16,25 @@ const (
 // Query represents a recommendation query with various context parameters.
 type Query struct {
 	// Os is the operating system family (e.g., ubuntu, cos)
-	Os OsFamily `json:"os,omitempty"`
+	Os OsFamily `json:"os,omitempty" yaml:"os,omitempty"`
 
 	// OsVersion is the operating system version (e.g., 22.04)
-	OsVersion version.Version `json:"osv,omitempty"`
+	OsVersion version.Version `json:"osv,omitempty" yaml:"osv,omitempty"`
 
 	// Kernel is the running kernel version (e.g., 5.15.0)
-	Kernel version.Version `json:"kernel,omitempty"`
+	Kernel version.Version `json:"kernel,omitempty" yaml:"kernel,omitempty"`
 
 	// Service is the managed service context (e.g., eks, gke, or self-managed)
-	Service ServiceType `json:"service,omitempty"`
+	Service ServiceType `json:"service,omitempty" yaml:"service,omitempty"`
 
 	// K8s is the Kubernetes cluster version (e.g., v1.25.4)
-	K8s version.Version `json:"k8s,omitempty"`
+	K8s version.Version `json:"k8s,omitempty" yaml:"k8s,omitempty"`
 
 	// GPU is the GPU type (e.g., H100, GB200)
-	GPU GPUType `json:"gpu,omitempty"`
+	GPU GPUType `json:"gpu,omitempty" yaml:"gpu,omitempty"`
 
 	// Intent is the workload intent (e.g., training or inference)
-	Intent IntentType `json:"intent,omitempty"`
+	Intent IntentType `json:"intent,omitempty" yaml:"intent,omitempty"`
 }
 
 func (q *Query) IsEmpty() bool {

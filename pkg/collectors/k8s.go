@@ -7,10 +7,12 @@ import (
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/client"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
+	"k8s.io/client-go/kubernetes"
 )
 
 // KubernetesCollector collects information about the Kubernetes cluster.
 type KubernetesCollector struct {
+	Clientset kubernetes.Interface
 }
 
 // Collect retrieves Kubernetes cluster version information from the API server.
@@ -21,9 +23,9 @@ func (k *KubernetesCollector) Collect(ctx context.Context) (*measurement.Measure
 		return nil, err
 	}
 
-	k8sClient, _, err := client.GetKubeClient("")
+	k8sClient, err := k.getClient()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get kubernetes client: %w", err)
+		return nil, err
 	}
 
 	serverVersion, err := k8sClient.Discovery().ServerVersion()
@@ -49,4 +51,15 @@ func (k *KubernetesCollector) Collect(ctx context.Context) (*measurement.Measure
 	}
 
 	return res, nil
+}
+
+func (k *KubernetesCollector) getClient() (kubernetes.Interface, error) {
+	if k.Clientset != nil {
+		return k.Clientset, nil
+	}
+	k8sClient, _, err := client.GetKubeClient("")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get kubernetes client: %w", err)
+	}
+	return k8sClient, nil
 }

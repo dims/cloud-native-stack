@@ -14,6 +14,7 @@ import (
 
 // ImageCollector collects information about container images running in the cluster.
 type ImageCollector struct {
+	Clientset kubernetes.Interface
 }
 
 // Collect retrieves unique container images from all pods in the cluster.
@@ -24,9 +25,9 @@ func (i *ImageCollector) Collect(ctx context.Context) (*measurement.Measurement,
 		return nil, err
 	}
 
-	k8sClient, _, err := client.GetKubeClient("")
+	k8sClient, err := i.getClient()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get kubernetes client: %w", err)
+		return nil, err
 	}
 
 	images, err := i.collectContainerImages(ctx, k8sClient)
@@ -46,8 +47,19 @@ func (i *ImageCollector) Collect(ctx context.Context) (*measurement.Measurement,
 	return res, nil
 }
 
+func (i *ImageCollector) getClient() (kubernetes.Interface, error) {
+	if i.Clientset != nil {
+		return i.Clientset, nil
+	}
+	k8sClient, _, err := client.GetKubeClient("")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get kubernetes client: %w", err)
+	}
+	return k8sClient, nil
+}
+
 // collectContainerImages extracts unique container images from all pods.
-func (i *ImageCollector) collectContainerImages(ctx context.Context, k8sClient *kubernetes.Clientset) (map[string]measurement.Reading, error) {
+func (i *ImageCollector) collectContainerImages(ctx context.Context, k8sClient kubernetes.Interface) (map[string]measurement.Reading, error) {
 	pods, err := k8sClient.CoreV1().Pods("").List(ctx, v1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pods: %w", err)

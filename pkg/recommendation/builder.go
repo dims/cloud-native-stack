@@ -46,7 +46,7 @@ func (b *Builder) Build(q *Query) (*Recommendation, error) {
 	}
 
 	r := &Recommendation{
-		Request:        q,
+		Request:        *q,
 		PayloadVersion: RecommendationAPIVersion,
 		MatchedRules:   make([]string, 0),
 		GeneratedAt:    time.Now().UTC(),

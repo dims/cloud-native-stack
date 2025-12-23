@@ -34,11 +34,11 @@ func (s *Server) handleDefault(w http.ResponseWriter, r *http.Request) {
 	)
 
 	resp := struct {
-		Name      string   `json:"name"`
-		Version   string   `json:"version"`
-		Ready     bool     `json:"ready"`
-		Timestamp string   `json:"timestamp"`
-		Routes    []string `json:"routes"`
+		Name      string   `json:"name" yaml:"name"`
+		Version   string   `json:"version" yaml:"version"`
+		Ready     bool     `json:"ready" yaml:"ready"`
+		Timestamp string   `json:"timestamp" yaml:"timestamp"`
+		Routes    []string `json:"routes" yaml:"routes"`
 	}{
 		Name:      name,
 		Version:   version,
