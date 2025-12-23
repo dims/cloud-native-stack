@@ -125,7 +125,7 @@ overlays:
       - type: K8s
         subtypes:
           - data:
-              version: v1.33.5-eks  # AWS EKS Kubernetes version for GPU orchestration
+              version: v1.33  # AWS EKS Kubernetes version for GPU orchestration
       - type: KMod
         subtypes:
           - data:
