@@ -37,59 +37,42 @@ type Query struct {
 	Intent IntentType `json:"intent,omitempty"`
 }
 
-// IsMatch checks if the query matches another query, treating "any" values as wildcards.
+func (q *Query) IsEmpty() bool {
+	var zeroVersion version.Version
+	return q.Os == "" &&
+		q.OsVersion == zeroVersion &&
+		q.Kernel == zeroVersion &&
+		q.Service == "" &&
+		q.K8s == zeroVersion &&
+		q.GPU == "" &&
+		q.Intent == ""
+}
+
+// IsMatch reports whether the rule (receiver) applies to the candidate query, only
+// matching when every populated rule field is satisfied by the candidate.
 func (q *Query) IsMatch(other *Query) bool {
-	leftOS := q.Os
-	if leftOS == "" {
-		leftOS = OSAny
-	}
-	rightOS := other.Os
-	if rightOS == "" {
-		rightOS = OSAny
-	}
-	if leftOS != OSAny && rightOS != OSAny && leftOS != rightOS {
+	if q == nil || other == nil || other.IsEmpty() {
 		return false
 	}
-	if q.OsVersion.Precision != 0 && other.OsVersion.Precision != 0 && q.OsVersion != other.OsVersion {
+	if !matchEnum(q.Os, other.Os, OSAny) {
 		return false
 	}
-	if q.Kernel.Precision != 0 && other.Kernel.Precision != 0 && q.Kernel != other.Kernel {
+	if !matchVersion(q.OsVersion, other.OsVersion) {
 		return false
 	}
-	leftService := q.Service
-	if leftService == "" {
-		leftService = ServiceAny
-	}
-	rightService := other.Service
-	if rightService == "" {
-		rightService = ServiceAny
-	}
-	if leftService != ServiceAny && rightService != ServiceAny && leftService != rightService {
+	if !matchVersion(q.Kernel, other.Kernel) {
 		return false
 	}
-	if q.K8s.Precision != 0 && other.K8s.Precision != 0 && q.K8s != other.K8s {
+	if !matchEnum(q.Service, other.Service, ServiceAny) {
 		return false
 	}
-	leftGPU := q.GPU
-	if leftGPU == "" {
-		leftGPU = GPUAny
-	}
-	rightGPU := other.GPU
-	if rightGPU == "" {
-		rightGPU = GPUAny
-	}
-	if leftGPU != GPUAny && rightGPU != GPUAny && leftGPU != rightGPU {
+	if !matchVersion(q.K8s, other.K8s) {
 		return false
 	}
-	leftIntent := q.Intent
-	if leftIntent == "" {
-		leftIntent = IntentAny
+	if !matchEnum(q.GPU, other.GPU, GPUAny) {
+		return false
 	}
-	rightIntent := other.Intent
-	if rightIntent == "" {
-		rightIntent = IntentAny
-	}
-	if leftIntent != IntentAny && rightIntent != IntentAny && leftIntent != rightIntent {
+	if !matchEnum(q.Intent, other.Intent, IntentAny) {
 		return false
 	}
 	return true
@@ -136,6 +119,7 @@ const (
 	QueryParamOSFamily    string = "os"
 	QueryParamOSVersion   string = "osv"
 	QueryParamKernel      string = "kernel"
+	QueryParamService     string = "service"
 	QueryParamEnvironment string = "env"
 	QueryParamKubernetes  string = "k8s"
 	QueryParamGPU         string = "gpu"
@@ -220,7 +204,10 @@ func SupportedServiceTypes() []ServiceType {
 
 // ParseServiceType parses the service type from query parameters.
 func ParseServiceType(list url.Values) (ServiceType, error) {
-	svcStr := strings.ToLower(list.Get(QueryParamEnvironment))
+	svcStr := strings.ToLower(list.Get(QueryParamService))
+	if svcStr == "" {
+		svcStr = strings.ToLower(list.Get(QueryParamEnvironment))
+	}
 	if svcStr == "" {
 		return ServiceAny, nil
 	}
@@ -379,4 +366,25 @@ func ParseQuery(r *http.Request) (*Query, error) {
 	}
 
 	return q, nil
+}
+
+func matchEnum[T ~string](rule, candidate, wildcard T) bool {
+	var zero T
+	if rule == zero || rule == wildcard {
+		return true
+	}
+	if candidate == zero || candidate == wildcard {
+		return false
+	}
+	return rule == candidate
+}
+
+func matchVersion(rule, candidate version.Version) bool {
+	if rule.Precision == 0 {
+		return true
+	}
+	if candidate.Precision == 0 {
+		return false
+	}
+	return rule == candidate
 }

@@ -68,34 +68,36 @@ func TestQueryIsMatch(t *testing.T) {
 	zeroVersion := version.Version{}
 
 	tests := []struct {
-		name  string
-		left  Query
-		right Query
-		want  bool
+		name        string
+		left        Query
+		right       Query
+		want        bool
+		reverseWant *bool
 	}{
 		{name: "identical queries", left: base, right: base, want: true},
-		{name: "zero value left matches", left: Query{}, right: base, want: true},
+		{name: "zero value left matches", left: Query{}, right: base, want: true, reverseWant: boolPtr(false)},
+		{name: "zero value right rejected", left: base, right: Query{}, want: false, reverseWant: boolPtr(true)},
 		{name: "os mismatch", left: base, right: Query{Os: OSCOS}, want: false},
-		{name: "os wildcard left", left: Query{Os: OSAny}, right: base, want: true},
-		{name: "os wildcard right", left: base, right: Query{Os: OSAny}, want: true},
+		{name: "os wildcard left", left: Query{Os: OSAny}, right: base, want: true, reverseWant: boolPtr(false)},
+		{name: "os wildcard right", left: base, right: Query{Os: OSAny}, want: false, reverseWant: boolPtr(true)},
 		{name: "os version mismatch", left: base, right: Query{OsVersion: mustParseVersion(t, "24.04")}, want: false},
-		{name: "os version wildcard left", left: Query{OsVersion: zeroVersion}, right: base, want: true},
-		{name: "os version wildcard right", left: base, right: Query{OsVersion: zeroVersion}, want: true},
+		{name: "os version wildcard left", left: Query{Os: base.Os, OsVersion: zeroVersion}, right: base, want: true, reverseWant: boolPtr(false)},
+		{name: "os version wildcard right", left: base, right: Query{Os: base.Os, OsVersion: zeroVersion}, want: false, reverseWant: boolPtr(true)},
 		{name: "kernel mismatch", left: base, right: Query{Kernel: mustParseVersion(t, "6.0.0")}, want: false},
-		{name: "kernel wildcard left", left: Query{Kernel: zeroVersion}, right: base, want: true},
-		{name: "kernel wildcard right", left: base, right: Query{Kernel: zeroVersion}, want: true},
+		{name: "kernel wildcard left", left: Query{Os: base.Os, Kernel: zeroVersion}, right: base, want: true, reverseWant: boolPtr(false)},
+		{name: "kernel wildcard right", left: base, right: Query{Os: base.Os, Kernel: zeroVersion}, want: false, reverseWant: boolPtr(true)},
 		{name: "service mismatch", left: base, right: Query{Service: ServiceGKE}, want: false},
-		{name: "service wildcard left", left: Query{Service: ServiceAny}, right: base, want: true},
-		{name: "service wildcard right", left: base, right: Query{Service: ServiceAny}, want: true},
+		{name: "service wildcard left", left: Query{Service: ServiceAny}, right: base, want: true, reverseWant: boolPtr(false)},
+		{name: "service wildcard right", left: base, right: Query{Service: ServiceAny}, want: false, reverseWant: boolPtr(true)},
 		{name: "k8s mismatch", left: base, right: Query{K8s: mustParseVersion(t, "1.29.0")}, want: false},
-		{name: "k8s wildcard left", left: Query{K8s: zeroVersion}, right: base, want: true},
-		{name: "k8s wildcard right", left: base, right: Query{K8s: zeroVersion}, want: true},
+		{name: "k8s wildcard left", left: Query{Os: base.Os, K8s: zeroVersion}, right: base, want: true, reverseWant: boolPtr(false)},
+		{name: "k8s wildcard right", left: base, right: Query{Os: base.Os, K8s: zeroVersion}, want: false, reverseWant: boolPtr(true)},
 		{name: "gpu mismatch", left: base, right: Query{GPU: GPUB200}, want: false},
-		{name: "gpu wildcard left", left: Query{GPU: GPUAny}, right: base, want: true},
-		{name: "gpu wildcard right", left: base, right: Query{GPU: GPUAny}, want: true},
+		{name: "gpu wildcard left", left: Query{GPU: GPUAny}, right: base, want: true, reverseWant: boolPtr(false)},
+		{name: "gpu wildcard right", left: base, right: Query{GPU: GPUAny}, want: false, reverseWant: boolPtr(true)},
 		{name: "intent mismatch", left: base, right: Query{Intent: IntentInference}, want: false},
-		{name: "intent wildcard left", left: Query{Intent: IntentAny}, right: base, want: true},
-		{name: "intent wildcard right", left: base, right: Query{Intent: IntentAny}, want: true},
+		{name: "intent wildcard left", left: Query{Intent: IntentAny}, right: base, want: true, reverseWant: boolPtr(false)},
+		{name: "intent wildcard right", left: base, right: Query{Intent: IntentAny}, want: false, reverseWant: boolPtr(true)},
 	}
 
 	for _, tt := range tests {
@@ -105,10 +107,18 @@ func TestQueryIsMatch(t *testing.T) {
 			if got := left.IsMatch(&right); got != tt.want {
 				t.Fatalf("left.IsMatch(right) = %v, want %v", got, tt.want)
 			}
-			if got := right.IsMatch(&left); got != tt.want {
-				t.Fatalf("right.IsMatch(left) = %v, want %v", got, tt.want)
+			reverseWant := tt.want
+			if tt.reverseWant != nil {
+				reverseWant = *tt.reverseWant
+			}
+			if got := right.IsMatch(&left); got != reverseWant {
+				t.Fatalf("right.IsMatch(left) = %v, want %v", got, reverseWant)
 			}
 		})
+	}
+
+	if base.IsMatch(nil) {
+		t.Fatal("expected base.IsMatch(nil) to be false")
 	}
 }
 
@@ -194,8 +204,10 @@ func TestParseServiceType(t *testing.T) {
 		wantErr bool
 	}{
 		{name: "default", values: url.Values{}, want: ServiceAny},
-		{name: "valid", values: url.Values{QueryParamEnvironment: {"eks"}}, want: ServiceEKS},
-		{name: "invalid", values: url.Values{QueryParamEnvironment: {"aks"}}, wantErr: true},
+		{name: "valid env", values: url.Values{QueryParamEnvironment: {"eks"}}, want: ServiceEKS},
+		{name: "valid service alias", values: url.Values{QueryParamService: {"gke"}}, want: ServiceGKE},
+		{name: "invalid env", values: url.Values{QueryParamEnvironment: {"aks"}}, wantErr: true},
+		{name: "invalid service alias", values: url.Values{QueryParamService: {"aks"}}, wantErr: true},
 	}
 
 	for _, tt := range tests {
@@ -291,7 +303,7 @@ func TestParseQuery(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "valid",
+			name: "valid env",
 			path: "/?os=ubuntu&osv=22.04&kernel=5.15.0&env=eks&k8s=1.28.3&gpu=h100&intent=training",
 			want: &Query{
 				Os:        OSUbuntu,
@@ -301,6 +313,16 @@ func TestParseQuery(t *testing.T) {
 				K8s:       k8s,
 				GPU:       GPUH100,
 				Intent:    IntentTraining,
+			},
+		},
+		{
+			name: "valid service alias",
+			path: "/?os=ubuntu&service=gke",
+			want: &Query{
+				Os:      OSUbuntu,
+				Service: ServiceGKE,
+				GPU:     GPUAny,
+				Intent:  IntentAny,
 			},
 		},
 		{
@@ -364,4 +386,9 @@ func assertQueryEquals(t *testing.T, want, got *Query) {
 	if want.Intent != got.Intent {
 		t.Fatalf("Intent = %s, want %s", got.Intent, want.Intent)
 	}
+}
+
+func boolPtr(val bool) *bool {
+	result := val
+	return &result
 }

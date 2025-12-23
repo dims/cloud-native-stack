@@ -19,6 +19,7 @@ func buildRecommendation(q *Query) (*Recommendation, error) {
 	r := &Recommendation{
 		Request:        q,
 		PayloadVersion: RecommendationAPIVersion,
+		MatchedRules:   make([]string, 0),
 		GeneratedAt:    time.Now().UTC(),
 	}
 
@@ -35,6 +36,7 @@ func buildRecommendation(q *Query) (*Recommendation, error) {
 		// overlays use Query as key, so matching queries inherit overlay-specific measurements
 		if overlay.Key.IsMatch(q) {
 			merged, index = mergeOverlayMeasurements(merged, index, overlay.Types)
+			r.MatchedRules = append(r.MatchedRules, overlay.Key.String())
 		}
 	}
 

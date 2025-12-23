@@ -109,6 +109,7 @@ base:
           vbios-version: 97.00.B9.00.69  # GPU BIOS firmware version determining hardware initialization and clock settings
 overlays:
   - key:
+      #  ?service=eks&os=ubuntu
       service: eks
       os: ubuntu
     types:
@@ -117,6 +118,7 @@ overlays:
           - data:
               BOOT_IMAGE: /boot/vmlinuz-6.8.0-1028-aws  # AWS-optimized kernel image version
   - key:
+      #  ?service=eks&gpu=gb200
       service: eks
       gpu: gb200
     types:

@@ -14,9 +14,7 @@ import (
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/logging"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recommendation"
-	"github.com/NVIDIA/cloud-native-stack/pkg/serializers"
 
-	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/time/rate"
 )
@@ -27,44 +25,14 @@ const (
 )
 
 var (
-	// overridden during build with ldflags
+	// overridden during build with ldflags to reflect actual version info
+	// e.g., -X "github.com/NVIDIA/cloud-native-stack/pkg/server.version=1.0.0"
 	version = versionDefault
 	commit  = "unknown"
 	date    = "unknown"
 )
 
-// DefaultConfig returns sensible defaults
-func DefaultConfig() *Config {
-	cfg := &Config{
-		Address:         "",
-		Port:            8080,
-		RateLimit:       100, // 100 req/s
-		RateLimitBurst:  200, // burst of 200
-		CacheMaxAge:     300, // 5 minutes
-		MaxBulkRequests: 100,
-		ReadTimeout:     10 * time.Second,
-		WriteTimeout:    30 * time.Second,
-		IdleTimeout:     120 * time.Second,
-		ShutdownTimeout: 30 * time.Second,
-		LogLevel:        slog.LevelInfo.String(),
-	}
-
-	// Override with environment variables if set
-	if portStr := os.Getenv("PORT"); portStr != "" {
-		var port int
-		if _, err := fmt.Sscanf(portStr, "%d", &port); err == nil {
-			cfg.Port = port
-		}
-	}
-
-	if logLevelStr := os.Getenv("LOG_LEVEL"); logLevelStr != "" {
-		cfg.LogLevel = logLevelStr
-	}
-
-	return cfg
-}
-
-// Server represents the HTTP server
+// Server represents the HTTP server for handling requests.
 type Server struct {
 	config                *Config
 	httpServer            *http.Server
@@ -74,7 +42,7 @@ type Server struct {
 	ready                 bool
 }
 
-// NewServer creates a new server instance
+// NewServer creates a new server instance with the given configuration.
 func NewServer(config *Config) *Server {
 	if config == nil {
 		config = DefaultConfig()
@@ -104,53 +72,18 @@ func NewServer(config *Config) *Server {
 	return s
 }
 
-// setupRoutes configures all HTTP routes and middleware
-func (s *Server) setupRoutes() http.Handler {
-	mux := http.NewServeMux()
-
-	// System endpoints (no rate limiting)
-	mux.HandleFunc("/health", s.handleHealth)
-	mux.HandleFunc("/ready", s.handleReady)
-
-	// API endpoints with middleware
-	mux.HandleFunc("/v1/recommendations", s.withMiddleware(s.recommendationHandler))
-
-	return mux
-}
-
-// writeError writes error response
-func (s *Server) writeError(w http.ResponseWriter, r *http.Request, statusCode int,
-	code, message string, retryable bool, details map[string]interface{}) {
-
-	requestID, _ := r.Context().Value(contextKeyRequestID).(string)
-	if requestID == "" {
-		requestID = uuid.New().String()
-	}
-
-	errResp := ErrorResponse{
-		Code:      code,
-		Message:   message,
-		Details:   details,
-		RequestID: requestID,
-		Timestamp: time.Now().UTC(),
-		Retryable: retryable,
-	}
-
-	serializers.RespondJSON(w, statusCode, errResp)
-}
-
-// SetReady marks the server as ready to serve traffic
+// SetReady marks the server as ready to serve traffic or not.
 func (s *Server) SetReady(ready bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.ready = ready
 }
 
-// Start starts the HTTP server
+// Start starts the HTTP server and listens for incoming requests.
 func (s *Server) Start(ctx context.Context) error {
 	s.SetReady(true)
 
-	fmt.Printf("Starting server on %s\n", s.httpServer.Addr)
+	fmt.Printf("starting server on %s\n", s.httpServer.Addr)
 
 	// Start server in goroutine
 	errChan := make(chan error, 1)
@@ -169,18 +102,19 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 }
 
-// Shutdown gracefully shuts down the server
+// Shutdown gracefully shuts down the server within the given context.
 func (s *Server) Shutdown(ctx context.Context) error {
 	s.SetReady(false)
 
 	shutdownCtx, cancel := context.WithTimeout(ctx, s.config.ShutdownTimeout)
 	defer cancel()
 
-	fmt.Println("Shutting down server...")
+	fmt.Println("shutting down server...")
 	return s.httpServer.Shutdown(shutdownCtx)
 }
 
-// Run starts the server with graceful shutdown handling
+// Run starts the server with graceful shutdown handling using default configuration
+// and logs any errors encountered during execution.
 func Run() error {
 	if err := RunWithConfig(DefaultConfig()); err != nil {
 		slog.Error("error running server", slog.String("error", err.Error()))
@@ -189,7 +123,7 @@ func Run() error {
 	return nil
 }
 
-// RunWithConfig starts the server with custom configuration
+// RunWithConfig starts the server with custom configuration and graceful shutdown handling.
 func RunWithConfig(config *Config) error {
 	if config == nil {
 		config = DefaultConfig()

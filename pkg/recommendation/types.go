@@ -14,7 +14,7 @@ const (
 // Recommendation represents the recommendation response structure.
 type Recommendation struct {
 	Request        *Query                     `json:"request"`
-	MatchedRuleID  string                     `json:"matchedRuleId"`
+	MatchedRules   []string                   `json:"matchedRuleId"`
 	PayloadVersion string                     `json:"payloadVersion"`
 	GeneratedAt    time.Time                  `json:"generatedAt"`
 	Measurements   []*measurement.Measurement `json:"measurements"`
