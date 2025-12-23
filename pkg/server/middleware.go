@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -70,10 +71,12 @@ func (s *Server) panicRecoveryMiddleware(next http.HandlerFunc) http.HandlerFunc
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				s.logger.Error("panic recovered", fmt.Errorf("%v", err), map[string]interface{}{
-					"path":   r.URL.Path,
-					"method": r.Method,
-				})
+				slog.Error("panic recovered",
+					"error", err.(error).Error(),
+					"requestID", r.Context().Value(contextKeyRequestID),
+					"path", r.URL.Path,
+					"method", r.Method,
+				)
 				s.writeError(w, r, http.StatusInternalServerError, ErrCodeInternalError,
 					"Internal server error", true, nil)
 			}
@@ -88,20 +91,20 @@ func (s *Server) loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		start := time.Now()
 		requestID := r.Context().Value(contextKeyRequestID)
 
-		s.logger.Info("request started", map[string]interface{}{
-			"requestID": requestID,
-			"method":    r.Method,
-			"path":      r.URL.Path,
-		})
+		slog.Info("request started",
+			"requestID", requestID,
+			"method", r.Method,
+			"path", r.URL.Path,
+		)
 
 		next.ServeHTTP(w, r)
 
 		duration := time.Since(start)
-		s.logger.Info("request completed", map[string]interface{}{
-			"requestID": requestID,
-			"method":    r.Method,
-			"path":      r.URL.Path,
-			"duration":  duration.String(),
-		})
+		slog.Info("request completed",
+			"requestID", requestID,
+			"method", r.Method,
+			"path", r.URL.Path,
+			"duration", duration.String(),
+		)
 	}
 }

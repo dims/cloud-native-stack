@@ -27,20 +27,16 @@ type NodeSnapshotter struct {
 	Version    string
 	Factory    collectors.CollectorFactory
 	Serializer serializers.Serializer
-	Logger     *slog.Logger
 }
 
 // Run collects configuration from the current node and outputs it to stdout.
 // It implements the Snapshotter interface.
 func (n *NodeSnapshotter) Run(ctx context.Context) error {
-	if n.Logger == nil {
-		n.Logger = slog.Default()
-	}
 	if n.Factory == nil {
 		n.Factory = collectors.NewDefaultCollectorFactory()
 	}
 
-	n.Logger.Info("starting node snapshot")
+	slog.Info("starting node snapshot")
 
 	// Pre-allocate with estimated capacity
 	var mu sync.Mutex
@@ -56,10 +52,10 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 
 	// Collect node metadata
 	g.Go(func() error {
-		n.Logger.Debug("collecting node metadata")
+		slog.Debug("collecting node metadata")
 		nd, err := node.Get(node.GetOptions{})
 		if err != nil {
-			n.Logger.Error("failed to get node info", slog.String("error", err.Error()))
+			slog.Error("failed to get node info", slog.String("error", err.Error()))
 			return fmt.Errorf("failed to get node info: %w", err)
 		}
 		mu.Lock()
@@ -67,17 +63,17 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 		snap.Metadata["source-node"] = nd.Name
 		snap.Metadata["snapshot-timestamp"] = time.Now().UTC().Format(time.RFC3339)
 		mu.Unlock()
-		n.Logger.Debug("obtained node metadata", slog.String("name", nd.Name), slog.String("namespace", nd.Namespace))
+		slog.Debug("obtained node metadata", slog.String("name", nd.Name), slog.String("namespace", nd.Namespace))
 		return nil
 	})
 
 	// Collect images
 	g.Go(func() error {
-		n.Logger.Debug("collecting container images")
+		slog.Debug("collecting container images")
 		ic := n.Factory.CreateImageCollector()
 		images, err := ic.Collect(ctx)
 		if err != nil {
-			n.Logger.Error("failed to collect container images", slog.String("error", err.Error()))
+			slog.Error("failed to collect container images", slog.String("error", err.Error()))
 			return fmt.Errorf("failed to collect container images: %w", err)
 		}
 		mu.Lock()
@@ -88,11 +84,11 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 
 	// Collect k8s resources
 	g.Go(func() error {
-		n.Logger.Debug("collecting kubernetes resources")
+		slog.Debug("collecting kubernetes resources")
 		kc := n.Factory.CreateKubernetesCollector()
 		k8sResources, err := kc.Collect(ctx)
 		if err != nil {
-			n.Logger.Error("failed to collect kubernetes resources", slog.String("error", err.Error()))
+			slog.Error("failed to collect kubernetes resources", slog.String("error", err.Error()))
 			return fmt.Errorf("failed to collect kubernetes resources: %w", err)
 		}
 		mu.Lock()
@@ -103,11 +99,11 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 
 	// Collect kernel modules
 	g.Go(func() error {
-		n.Logger.Debug("collecting kernel modules")
+		slog.Debug("collecting kernel modules")
 		km := n.Factory.CreateKModCollector()
 		kMod, err := km.Collect(ctx)
 		if err != nil {
-			n.Logger.Error("failed to collect kmod", slog.String("error", err.Error()))
+			slog.Error("failed to collect kmod", slog.String("error", err.Error()))
 			return fmt.Errorf("failed to collect kMod info: %w", err)
 		}
 		mu.Lock()
@@ -118,11 +114,11 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 
 	// Collect systemd
 	g.Go(func() error {
-		n.Logger.Debug("collecting systemd services")
+		slog.Debug("collecting systemd services")
 		sd := n.Factory.CreateSystemDCollector()
 		systemd, err := sd.Collect(ctx)
 		if err != nil {
-			n.Logger.Error("failed to collect systemd", slog.String("error", err.Error()))
+			slog.Error("failed to collect systemd", slog.String("error", err.Error()))
 			return fmt.Errorf("failed to collect systemd info: %w", err)
 		}
 		mu.Lock()
@@ -133,11 +129,11 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 
 	// Collect grub
 	g.Go(func() error {
-		n.Logger.Debug("collecting grub configuration")
+		slog.Debug("collecting grub configuration")
 		g := n.Factory.CreateGrubCollector()
 		grub, err := g.Collect(ctx)
 		if err != nil {
-			n.Logger.Error("failed to collect grub", slog.String("error", err.Error()))
+			slog.Error("failed to collect grub", slog.String("error", err.Error()))
 			return fmt.Errorf("failed to collect grub info: %w", err)
 		}
 		mu.Lock()
@@ -148,11 +144,11 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 
 	// Collect sysctl
 	g.Go(func() error {
-		n.Logger.Debug("collecting sysctl configuration")
+		slog.Debug("collecting sysctl configuration")
 		s := n.Factory.CreateSysctlCollector()
 		sysctl, err := s.Collect(ctx)
 		if err != nil {
-			n.Logger.Error("failed to collect sysctl", slog.String("error", err.Error()))
+			slog.Error("failed to collect sysctl", slog.String("error", err.Error()))
 			return fmt.Errorf("failed to collect sysctl info: %w", err)
 		}
 		mu.Lock()
@@ -163,11 +159,11 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 
 	// Collect SMI
 	g.Go(func() error {
-		n.Logger.Debug("collecting SMI configuration")
+		slog.Debug("collecting SMI configuration")
 		smi := n.Factory.CreateSMICollector()
 		smiConfigs, err := smi.Collect(ctx)
 		if err != nil {
-			n.Logger.Error("failed to collect SMI", slog.String("error", err.Error()))
+			slog.Error("failed to collect SMI", slog.String("error", err.Error()))
 			return fmt.Errorf("failed to collect SMI info: %w", err)
 		}
 		mu.Lock()
@@ -181,7 +177,7 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 		return err
 	}
 
-	n.Logger.Info("snapshot collection complete", slog.Int("total_configs", len(snap.Measurements)))
+	slog.Info("snapshot collection complete", slog.Int("total_configs", len(snap.Measurements)))
 
 	// Serialize output
 	if n.Serializer == nil {
@@ -189,7 +185,7 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 	}
 
 	if err := n.Serializer.Serialize(snap); err != nil {
-		n.Logger.Error("failed to serialize", slog.String("error", err.Error()))
+		slog.Error("failed to serialize", slog.String("error", err.Error()))
 		return fmt.Errorf("failed to serialize: %w", err)
 	}
 

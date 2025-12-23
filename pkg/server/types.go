@@ -1,7 +1,6 @@
 package server
 
 import (
-	"log/slog"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -49,5 +48,5 @@ type Config struct {
 	ShutdownTimeout time.Duration
 
 	// Logging
-	LogLevel slog.Level
+	LogLevel string
 }

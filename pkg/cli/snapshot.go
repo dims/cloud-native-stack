@@ -32,7 +32,6 @@ var snapshotCmd = &cobra.Command{
 The snapshot can be output in JSON, YAML, or table format.`,
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		ctx := cmd.Context()
-		logger := GetLogger()
 
 		// Parse output format
 		format := serializers.Format(outputFormat)
@@ -52,7 +51,6 @@ The snapshot can be output in JSON, YAML, or table format.`,
 			Version:    version,
 			Factory:    factory,
 			Serializer: serializers.NewWriter(format, nil),
-			Logger:     logger,
 		}
 
 		return ns.Run(ctx)

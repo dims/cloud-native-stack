@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/NVIDIA/cloud-native-stack/pkg/logging"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recommendation"
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializers"
 
@@ -45,7 +46,7 @@ func DefaultConfig() *Config {
 		WriteTimeout:    30 * time.Second,
 		IdleTimeout:     120 * time.Second,
 		ShutdownTimeout: 30 * time.Second,
-		LogLevel:        slog.LevelInfo,
+		LogLevel:        slog.LevelInfo.String(),
 	}
 
 	// Override with environment variables if set
@@ -57,10 +58,7 @@ func DefaultConfig() *Config {
 	}
 
 	if logLevelStr := os.Getenv("LOG_LEVEL"); logLevelStr != "" {
-		var level slog.Level
-		if err := level.UnmarshalText([]byte(logLevelStr)); err == nil {
-			cfg.LogLevel = level
-		}
+		cfg.LogLevel = logLevelStr
 	}
 
 	return cfg
@@ -74,7 +72,6 @@ type Server struct {
 	mu                    sync.RWMutex
 	recommendationHandler http.HandlerFunc
 	ready                 bool
-	logger                Logger
 }
 
 // NewServer creates a new server instance
@@ -86,7 +83,6 @@ func NewServer(config *Config) *Server {
 	s := &Server{
 		config:      config,
 		rateLimiter: rate.NewLimiter(config.RateLimit, config.RateLimitBurst),
-		logger:      NewLogger(slog.LevelInfo),
 	}
 
 	// Initialize recommendation handler
@@ -195,10 +191,17 @@ func Run() error {
 
 // RunWithConfig starts the server with custom configuration
 func RunWithConfig(config *Config) error {
-	slog.Info("starting server",
-		slog.String("version", version),
-		slog.String("commit", commit),
-		slog.String("date", date))
+	if config == nil {
+		config = DefaultConfig()
+	}
+
+	// Initialize logger
+	logging.SetDefaultStructuredLoggerWithLevel(name, version, config.LogLevel)
+	slog.Info("starting",
+		"name", name,
+		"version", version,
+		"commit", commit,
+		"date", date)
 
 	server := NewServer(config)
 
@@ -212,7 +215,7 @@ func RunWithConfig(config *Config) error {
 		slog.Duration("writeTimeout", config.WriteTimeout),
 		slog.Duration("idleTimeout", config.IdleTimeout),
 		slog.Duration("shutdownTimeout", config.ShutdownTimeout),
-		slog.String("logLevel", config.LogLevel.String()),
+		slog.String("logLevel", config.LogLevel),
 	)
 
 	// Setup graceful shutdown

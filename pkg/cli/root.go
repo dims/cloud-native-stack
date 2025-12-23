@@ -13,9 +13,10 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/logging"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/NVIDIA/cloud-native-stack/pkg/logging"
 )
 
 const (
@@ -31,7 +32,6 @@ var (
 
 	cfgFile  string
 	logLevel string
-	logger   *slog.Logger
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -73,7 +73,7 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig, initLogger)
+	cobra.OnInitialize(initConfig)
 
 	// Define command groups
 	rootCmd.AddGroup(
@@ -86,20 +86,15 @@ func init() {
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.eidos.yaml)")
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "log level (debug, info, warn, error)")
-}
 
-// GetLogger returns the initialized logger for use by subcommands.
-func GetLogger() *slog.Logger {
-	if logger == nil {
-		logger = logging.New(slog.LevelInfo)
-	}
-	return logger
-}
-
-// initLogger initializes the structured logger based on the log level flag.
-func initLogger() {
-	level := logging.ParseLevel(logLevel)
-	logger = logging.New(level)
+	// Initialize logger
+	logging.SetDefaultStructuredLoggerWithLevel(name, version, logLevel)
+	slog.Info("starting",
+		"name", name,
+		"version", version,
+		"commit", commit,
+		"date", date,
+		"logLevel", logLevel)
 }
 
 // initConfig reads in config file and ENV variables if set.
