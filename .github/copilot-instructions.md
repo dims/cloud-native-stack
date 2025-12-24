@@ -6,7 +6,7 @@ NVIDIA Cloud Native Stack (CNS) is a reference architecture and toolkit for depl
 ## Architecture & Key Components
 - **api/**: API definitions (YAML) for CNS services.
 - **cmd/**: Entrypoints for CLI and server binaries.
-- **pkg/**: Core Go packages for CLI, client, collectors, logging, measurement, recommendation, server, snapshotter, and versioning.
+- **pkg/**: Core Go packages for CLI, client, collector, logging, measurement, recommendation, server, snapshotter, and versioning.
 - **docs/**: Install guides, playbooks (Ansible), optimizations, troubleshooting, and topologies.
 - **deployments/**: Kubernetes manifests for CNS components.
 - **examples/**: Example configurations for supported hardware.
@@ -22,7 +22,7 @@ NVIDIA Cloud Native Stack (CNS) is a reference architecture and toolkit for depl
 ## Patterns & Conventions
 - **Go Modules:** All Go code uses modules (`go.mod`).
 - **CLI Entrypoints:** Located in `cmd/eidos/main.go` and `cmd/server/main.go`.
-- **Collectors:** Extendable via `pkg/collectors/` with factory pattern.
+- **Collectors:** Extendable via `pkg/collector/` with factory pattern.
 - **Logging:** Centralized in `pkg/logging/logger.go`.
 - **Recommendations:** Types and logic in `pkg/recommendation/`.
 - **Playbooks:** YAML-based automation in `docs/playbooks/`.
@@ -39,7 +39,7 @@ NVIDIA Cloud Native Stack (CNS) is a reference architecture and toolkit for depl
 - **Feedback:** Open issues on GitHub for questions or bugs.
 
 ## Examples
-- To add a new collector, implement in `pkg/collectors/` and register in the factory.
+- To add a new collector, implement in `pkg/collector/` and register in the factory.
 - To update deployment manifests, edit files in `deployments/eidos/`.
 - To customize installation, modify playbooks in `docs/playbooks/` and hosts in `docs/playbooks/hosts`.
 

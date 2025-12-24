@@ -1,11 +1,11 @@
 # NVIDIA Cloud Native Stack
 
-NVIDIA Cloud Native Stack (CNS) combines production-ready documentation with Go-based tooling (CLI, API server, recommendation logic, and supporting libraries) to help deploy, validate, and operate GPU-accelerated Kubernetes clusters.
+NVIDIA Cloud Native Stack (CNS) combines production-ready documentation with Go-based tooling (CLI, API server, recipe logic, and supporting libraries) to help deploy, validate, and operate GPU-accelerated Kubernetes clusters.
 
 ## Repository Overview
 
 - `cmd/` – Go entry points for the CLI (`eidos`) and API server.
-- `pkg/` – Shared libraries covering recommendation logic, collectors, logging, measurement handling, and more.
+- `pkg/` – Shared libraries covering recipe logic, collector, logging, measurement handling, and more.
 - `deployments/` – Kubernetes manifests for CNS services.
 - `docs/` – Installation guides, Ansible playbooks, optimizations, troubleshooting, and the full platform README.
 - `tools/` – Utility scripts for release automation and remote builds.
@@ -31,9 +31,9 @@ All deployment, operations, and troubleshooting material now lives in [docs/READ
 	```bash
 	./bin/eidos-server
 	```
-4. Request recommendations:
+4. Request recipe:
 	```bash
-	curl "http://localhost:8080/v1/recommendations?os=ubuntu&service=eks"
+	curl "http://localhost:8080/v1/recipe?os=ubuntu&service=eks"
 	```
 
 ### CLI (`eidos`)

@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/collectors"
+	"github.com/NVIDIA/cloud-native-stack/pkg/collector"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/NVIDIA/cloud-native-stack/pkg/node"
-	"github.com/NVIDIA/cloud-native-stack/pkg/serializers"
+	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -25,15 +25,15 @@ type Snapshot struct {
 // NodeSnapshotter is a snapshotter that collects configuration from the current node.
 type NodeSnapshotter struct {
 	Version    string
-	Factory    collectors.CollectorFactory
-	Serializer serializers.Serializer
+	Factory    collector.Factory
+	Serializer serializer.Serializer
 }
 
 // Run collects configuration from the current node and outputs it to stdout.
 // It implements the Snapshotter interface.
 func (n *NodeSnapshotter) Run(ctx context.Context) error {
 	if n.Factory == nil {
-		n.Factory = collectors.NewDefaultCollectorFactory()
+		n.Factory = collector.NewDefaultFactory()
 	}
 
 	slog.Debug("starting node snapshot")
@@ -223,7 +223,7 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 
 	// Serialize output
 	if n.Serializer == nil {
-		n.Serializer = serializers.NewStdoutWriter(serializers.FormatJSON)
+		n.Serializer = serializer.NewStdoutWriter(serializer.FormatJSON)
 	}
 
 	if err := n.Serializer.Serialize(snap); err != nil {

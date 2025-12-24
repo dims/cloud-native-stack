@@ -7,8 +7,8 @@ package cli
 import (
 	"fmt"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/collectors"
-	"github.com/NVIDIA/cloud-native-stack/pkg/serializers"
+	"github.com/NVIDIA/cloud-native-stack/pkg/collector"
+	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
 	"github.com/NVIDIA/cloud-native-stack/pkg/snapshotter"
 
 	"github.com/spf13/cobra"
@@ -35,13 +35,13 @@ The snapshot can be output in JSON, YAML, or table format.`,
 		ctx := cmd.Context()
 
 		// Parse output format
-		outFormat := serializers.Format(format)
+		outFormat := serializer.Format(format)
 		if outFormat.IsUnknown() {
 			return fmt.Errorf("unknown output format: %q", outFormat)
 		}
 
 		// Create factory with configured services
-		factory := &collectors.DefaultCollectorFactory{
+		factory := &collector.DefaultFactory{
 			SystemDServices: systemdServices,
 		}
 
@@ -49,7 +49,7 @@ The snapshot can be output in JSON, YAML, or table format.`,
 		ns := snapshotter.NodeSnapshotter{
 			Version:    version,
 			Factory:    factory,
-			Serializer: serializers.NewFileWriterOrStdout(outFormat, output),
+			Serializer: serializer.NewFileWriterOrStdout(outFormat, output),
 		}
 
 		return ns.Run(ctx)

@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/logging"
-	"github.com/NVIDIA/cloud-native-stack/pkg/recommendation"
+	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 	"github.com/NVIDIA/cloud-native-stack/pkg/server"
 )
 
@@ -37,11 +37,11 @@ func Serve() error {
 		"date", date,
 	)
 
-	// Setup recommendation handler
-	b := recommendation.NewBuilder()
+	// Setup recipe handler
+	b := recipe.NewBuilder()
 
 	r := map[string]http.HandlerFunc{
-		"/v1/recommendations": b.HandleRecommendations,
+		"/v1/recipe": b.HandleRecipes,
 	}
 
 	// Create and run server

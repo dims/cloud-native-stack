@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/serializers"
+	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
 	"github.com/google/uuid"
 )
 
@@ -45,5 +45,5 @@ func WriteError(w http.ResponseWriter, r *http.Request, statusCode int,
 		Retryable: retryable,
 	}
 
-	serializers.RespondJSON(w, statusCode, errResp)
+	serializer.RespondJSON(w, statusCode, errResp)
 }

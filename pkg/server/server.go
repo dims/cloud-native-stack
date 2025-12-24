@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/serializers"
+	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"golang.org/x/sync/errgroup"
@@ -210,7 +210,7 @@ func (s *Server) configureRootHandler() {
 				"routes":  routes,
 			}
 
-			serializers.RespondJSON(w, http.StatusOK, response)
+			serializer.RespondJSON(w, http.StatusOK, response)
 		}
 	}
 }

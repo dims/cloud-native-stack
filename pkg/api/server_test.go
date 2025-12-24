@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/recommendation"
+	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 )
 
 func TestServeIntegration(t *testing.T) {
@@ -24,12 +24,12 @@ func TestServeIntegration(t *testing.T) {
 }
 
 func TestRecommendationEndpoint(t *testing.T) {
-	b := recommendation.NewBuilder()
+	b := recipe.NewBuilder()
 
 	req := httptest.NewRequest(http.MethodGet, "/v1/recommendations", nil)
 	w := httptest.NewRecorder()
 
-	b.HandleRecommendations(w, req)
+	b.HandleRecipes(w, req)
 
 	if w.Code != http.StatusOK && w.Code != http.StatusInternalServerError {
 		t.Errorf("unexpected status code: %d", w.Code)
@@ -42,12 +42,12 @@ func TestRecommendationEndpoint(t *testing.T) {
 }
 
 func TestRecommendationEndpointMethodNotAllowed(t *testing.T) {
-	b := recommendation.NewBuilder()
+	b := recipe.NewBuilder()
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/recommendations", nil)
 	w := httptest.NewRecorder()
 
-	b.HandleRecommendations(w, req)
+	b.HandleRecipes(w, req)
 
 	if w.Code != http.StatusMethodNotAllowed {
 		t.Errorf("expected status %d, got %d", http.StatusMethodNotAllowed, w.Code)
@@ -60,7 +60,7 @@ func TestRecommendationEndpointMethodNotAllowed(t *testing.T) {
 }
 
 func TestRecommendationEndpointWithQueryParams(t *testing.T) {
-	b := recommendation.NewBuilder()
+	b := recipe.NewBuilder()
 
 	tests := []struct {
 		name       string
@@ -94,7 +94,7 @@ func TestRecommendationEndpointWithQueryParams(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/v1/recommendations"+tt.query, nil)
 			w := httptest.NewRecorder()
 
-			b.HandleRecommendations(w, req)
+			b.HandleRecipes(w, req)
 
 			if w.Code != tt.expectCode && w.Code != http.StatusInternalServerError {
 				t.Errorf("expected status %d (or 500), got %d", tt.expectCode, w.Code)
@@ -104,12 +104,12 @@ func TestRecommendationEndpointWithQueryParams(t *testing.T) {
 }
 
 func TestRecommendationEndpointCacheHeaders(t *testing.T) {
-	b := recommendation.NewBuilder()
+	b := recipe.NewBuilder()
 
 	req := httptest.NewRequest(http.MethodGet, "/v1/recommendations", nil)
 	w := httptest.NewRecorder()
 
-	b.HandleRecommendations(w, req)
+	b.HandleRecipes(w, req)
 
 	cacheControl := w.Header().Get("Cache-Control")
 	if cacheControl == "" && w.Code == http.StatusOK {
