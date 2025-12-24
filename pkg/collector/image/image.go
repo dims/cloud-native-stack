@@ -1,4 +1,4 @@
-package collector
+package image
 
 import (
 	"context"
@@ -12,14 +12,14 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// ImageCollector collects information about container images running in the cluster.
-type ImageCollector struct {
+// Collector collects information about container images running in the cluster.
+type Collector struct {
 	Clientset kubernetes.Interface
 }
 
 // Collect retrieves unique container images from all pods in the cluster.
 // This provides a snapshot of deployed images for cluster comparison.
-func (i *ImageCollector) Collect(ctx context.Context) (*measurement.Measurement, error) {
+func (i *Collector) Collect(ctx context.Context) (*measurement.Measurement, error) {
 	// Check if context is canceled
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -47,7 +47,7 @@ func (i *ImageCollector) Collect(ctx context.Context) (*measurement.Measurement,
 	return res, nil
 }
 
-func (i *ImageCollector) getClient() (kubernetes.Interface, error) {
+func (i *Collector) getClient() (kubernetes.Interface, error) {
 	if i.Clientset != nil {
 		return i.Clientset, nil
 	}
@@ -59,7 +59,7 @@ func (i *ImageCollector) getClient() (kubernetes.Interface, error) {
 }
 
 // collectContainerImages extracts unique container images from all pods.
-func (i *ImageCollector) collectContainerImages(ctx context.Context, k8sClient kubernetes.Interface) (map[string]measurement.Reading, error) {
+func (i *Collector) collectContainerImages(ctx context.Context, k8sClient kubernetes.Interface) (map[string]measurement.Reading, error) {
 	pods, err := k8sClient.CoreV1().Pods("").List(ctx, v1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pods: %w", err)

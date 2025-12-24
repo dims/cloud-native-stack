@@ -1,4 +1,4 @@
-package collector
+package k8s
 
 import (
 	"context"
@@ -20,7 +20,7 @@ func TestKubernetesCollector_Collect(t *testing.T) {
 		Platform:   "linux/amd64",
 		GoVersion:  "go1.20.7",
 	}
-	collector := &KubernetesCollector{Clientset: fakeClient}
+	collector := &Collector{Clientset: fakeClient}
 
 	m, err := collector.Collect(ctx)
 	assert.NoError(t, err)
@@ -47,7 +47,7 @@ func TestKubernetesCollector_CollectWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	collector := &KubernetesCollector{Clientset: fake.NewClientset()}
+	collector := &Collector{Clientset: fake.NewClientset()}
 	m, err := collector.Collect(ctx)
 
 	assert.Error(t, err)

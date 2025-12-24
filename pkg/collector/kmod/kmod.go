@@ -1,4 +1,4 @@
-package collector
+package kmod
 
 import (
 	"context"
@@ -9,14 +9,14 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
 
-// KModCollector collects information about loaded kernel modules from /proc/modules
+// Collector collects information about loaded kernel modules from /proc/modules
 // and parses them into KModConfig structures
-type KModCollector struct {
+type Collector struct {
 }
 
 // Collect retrieves the list of loaded kernel modules from /proc/modules
 // and parses them into KModConfig structures
-func (s *KModCollector) Collect(ctx context.Context) (*measurement.Measurement, error) {
+func (s *Collector) Collect(ctx context.Context) (*measurement.Measurement, error) {
 	// Check if context is canceled
 	if err := ctx.Err(); err != nil {
 		return nil, err

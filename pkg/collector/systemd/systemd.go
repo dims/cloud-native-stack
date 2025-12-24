@@ -1,4 +1,4 @@
-package collector
+package systemd
 
 import (
 	"context"
@@ -21,14 +21,14 @@ var (
 	}
 )
 
-// SystemDCollector is a collector that gathers configuration data from systemd services.
-type SystemDCollector struct {
+// Collector is a collector that gathers configuration data from systemd services.
+type Collector struct {
 	Services []string
 }
 
 // Collect gathers configuration data from specified systemd services.
 // It implements the Collector interface.
-func (s *SystemDCollector) Collect(ctx context.Context) (*measurement.Measurement, error) {
+func (s *Collector) Collect(ctx context.Context) (*measurement.Measurement, error) {
 	services := s.Services
 	if len(services) == 0 {
 		services = []string{"containerd.service"}

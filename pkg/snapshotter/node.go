@@ -195,13 +195,13 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 	g.Go(func() error {
 		collectorStart := time.Now()
 		defer func() {
-			snapshotCollectorDuration.WithLabelValues("smi").Observe(time.Since(collectorStart).Seconds())
+			snapshotCollectorDuration.WithLabelValues("gpu").Observe(time.Since(collectorStart).Seconds())
 		}()
-		slog.Debug("collecting SMI configuration")
-		smi := n.Factory.CreateSMICollector()
+		slog.Debug("collecting GPU configuration")
+		smi := n.Factory.CreateGPUCollector()
 		smiConfigs, err := smi.Collect(ctx)
 		if err != nil {
-			slog.Error("failed to collect SMI", slog.String("error", err.Error()))
+			slog.Error("failed to collect GPU", slog.String("error", err.Error()))
 			return fmt.Errorf("failed to collect SMI info: %w", err)
 		}
 		mu.Lock()

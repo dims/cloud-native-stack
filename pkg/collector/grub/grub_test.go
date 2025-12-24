@@ -1,4 +1,4 @@
-package collector_test
+package grub
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/collector"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
 
@@ -14,7 +13,7 @@ func TestGrubCollector_Collect_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	collector := &collector.GrubCollector{}
+	collector := &Collector{}
 	m, err := collector.Collect(ctx)
 
 	if err == nil {
@@ -37,7 +36,7 @@ func TestGrubCollector_Integration(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	collector := &collector.GrubCollector{}
+	collector := &Collector{}
 
 	m, err := collector.Collect(ctx)
 	if err != nil {
@@ -84,7 +83,7 @@ func TestGrubCollector_ValidatesParsing(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	collector := &collector.GrubCollector{}
+	collector := &Collector{}
 
 	m, err := collector.Collect(ctx)
 	if err != nil {

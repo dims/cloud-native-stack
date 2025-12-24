@@ -1,4 +1,4 @@
-package collector
+package gpu
 
 import (
 	"encoding/xml"

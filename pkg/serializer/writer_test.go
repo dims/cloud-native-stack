@@ -1,4 +1,4 @@
-package serializer_test
+package serializer
 
 import (
 	"bytes"
@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
 	"gopkg.in/yaml.v3"
 )
 
@@ -17,7 +16,7 @@ type testConfig struct {
 
 func TestWriter_SerializeJSON(t *testing.T) {
 	var buf bytes.Buffer
-	writer := serializer.NewWriter(serializer.FormatJSON, &buf)
+	writer := NewWriter(FormatJSON, &buf)
 
 	data := []testConfig{
 		{Name: "test1", Value: 123},
@@ -46,7 +45,7 @@ func TestWriter_SerializeJSON(t *testing.T) {
 
 func TestWriter_SerializeYAML(t *testing.T) {
 	var buf bytes.Buffer
-	writer := serializer.NewWriter(serializer.FormatYAML, &buf)
+	writer := NewWriter(FormatYAML, &buf)
 
 	data := []testConfig{
 		{Name: "test1", Value: 123},
@@ -75,7 +74,7 @@ func TestWriter_SerializeYAML(t *testing.T) {
 
 func TestWriter_SerializeTable(t *testing.T) {
 	var buf bytes.Buffer
-	writer := serializer.NewWriter(serializer.FormatTable, &buf)
+	writer := NewWriter(FormatTable, &buf)
 
 	data := []interface{}{
 		testConfig{Name: "test1", Value: 123},
@@ -101,7 +100,7 @@ func TestWriter_SerializeTable(t *testing.T) {
 
 func TestWriter_UnsupportedFormat(t *testing.T) {
 	var buf bytes.Buffer
-	writer := serializer.NewWriter("invalid", &buf)
+	writer := NewWriter("invalid", &buf)
 
 	err := writer.Serialize([]testConfig{})
 	if err == nil {
@@ -115,7 +114,7 @@ func TestWriter_UnsupportedFormat(t *testing.T) {
 
 func TestWriter_NilOutput(t *testing.T) {
 	// Should default to stdout
-	writer := serializer.NewStdoutWriter(serializer.FormatJSON)
+	writer := NewStdoutWriter(FormatJSON)
 
 	if writer == nil {
 		t.Fatal("Expected non-nil writer")
@@ -125,7 +124,7 @@ func TestWriter_NilOutput(t *testing.T) {
 }
 
 func TestNewWriter_DefaultsToStdout(t *testing.T) {
-	writer := serializer.NewStdoutWriter(serializer.FormatJSON)
+	writer := NewStdoutWriter(FormatJSON)
 	if writer == nil {
 		t.Fatal("Expected non-nil writer with nil output")
 	}

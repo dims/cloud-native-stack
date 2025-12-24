@@ -1,4 +1,4 @@
-package collector_test
+package kmod
 
 import (
 	"context"
@@ -6,13 +6,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/collector"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
 
 func TestKModCollector_Collect(t *testing.T) {
 	ctx := context.Background()
-	collector := &collector.KModCollector{}
+	collector := &Collector{}
 
 	// This test validates the interface works correctly
 	m, err := collector.Collect(ctx)
@@ -34,7 +33,7 @@ func TestKModCollector_Collect_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	collector := &collector.KModCollector{}
+	collector := &Collector{}
 	m, err := collector.Collect(ctx)
 
 	if err == nil {
@@ -57,7 +56,7 @@ func TestKModCollector_Integration(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	collector := &collector.KModCollector{}
+	collector := &Collector{}
 
 	m, err := collector.Collect(ctx)
 	if err != nil {

@@ -1,4 +1,4 @@
-package collector
+package sysctl
 
 import (
 	"context"
@@ -18,14 +18,14 @@ var (
 	}
 )
 
-// SysctlCollector collects sysctl configurations from /proc/sys
+// Collector collects sysctl configurations from /proc/sys
 // excluding /proc/sys/net
-type SysctlCollector struct {
+type Collector struct {
 }
 
 // Collect gathers sysctl configurations from /proc/sys, excluding /proc/sys/net
 // and returns them as a single Configuration with a map of all parameters.
-func (s *SysctlCollector) Collect(ctx context.Context) (*measurement.Measurement, error) {
+func (s *Collector) Collect(ctx context.Context) (*measurement.Measurement, error) {
 	root := "/proc/sys"
 	params := make(map[string]measurement.Reading)
 

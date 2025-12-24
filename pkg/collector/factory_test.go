@@ -1,14 +1,14 @@
-package collector_test
+package collector
 
 import (
 	"context"
 	"testing"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/collector"
+	"github.com/NVIDIA/cloud-native-stack/pkg/collector/systemd"
 )
 
 func TestDefaultCollectorFactory_CreateKModCollector(t *testing.T) {
-	factory := collector.NewDefaultFactory()
+	factory := NewDefaultFactory()
 
 	collector := factory.CreateKModCollector()
 	if collector == nil {
@@ -25,7 +25,7 @@ func TestDefaultCollectorFactory_CreateKModCollector(t *testing.T) {
 }
 
 func TestDefaultCollectorFactory_CreateSystemDCollector(t *testing.T) {
-	factory := collector.NewDefaultFactory()
+	factory := NewDefaultFactory()
 	factory.SystemDServices = []string{"test.service"}
 
 	col := factory.CreateSystemDCollector()
@@ -34,9 +34,9 @@ func TestDefaultCollectorFactory_CreateSystemDCollector(t *testing.T) {
 	}
 
 	// Verify it's configured correctly
-	systemdCollector, ok := col.(*collector.SystemDCollector)
+	systemdCollector, ok := col.(*systemd.Collector)
 	if !ok {
-		t.Fatal("Expected *SystemDCollector")
+		t.Fatal("Expected *systemd.SystemDCollector")
 	}
 
 	if len(systemdCollector.Services) != 1 || systemdCollector.Services[0] != "test.service" {
@@ -45,7 +45,7 @@ func TestDefaultCollectorFactory_CreateSystemDCollector(t *testing.T) {
 }
 
 func TestDefaultCollectorFactory_CreateGrubCollector(t *testing.T) {
-	factory := collector.NewDefaultFactory()
+	factory := NewDefaultFactory()
 
 	collector := factory.CreateGrubCollector()
 	if collector == nil {
@@ -60,7 +60,7 @@ func TestDefaultCollectorFactory_CreateGrubCollector(t *testing.T) {
 }
 
 func TestDefaultCollectorFactory_CreateSysctlCollector(t *testing.T) {
-	factory := collector.NewDefaultFactory()
+	factory := NewDefaultFactory()
 
 	collector := factory.CreateSysctlCollector()
 	if collector == nil {
@@ -75,9 +75,9 @@ func TestDefaultCollectorFactory_CreateSysctlCollector(t *testing.T) {
 }
 
 func TestDefaultCollectorFactory_AllCollectors(t *testing.T) {
-	factory := collector.NewDefaultFactory()
+	factory := NewDefaultFactory()
 
-	collectorFuncs := []func() collector.Collector{
+	collectorFuncs := []func() Collector{
 		factory.CreateKModCollector,
 		factory.CreateSystemDCollector,
 		factory.CreateGrubCollector,

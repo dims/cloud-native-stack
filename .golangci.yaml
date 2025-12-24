@@ -49,6 +49,14 @@ linters:
       multi-func: true
     dupl:
       threshold: 200
+    revive:
+      rules:
+        # Disable stuttering check - our collector types intentionally include package name
+        # for clarity when used together (e.g., gpu.GPUCollector, grub.GrubCollector)
+        - name: exported
+          disabled: false
+          arguments:
+            - disableStutteringCheck
   exclusions:
     generated: lax
     presets:

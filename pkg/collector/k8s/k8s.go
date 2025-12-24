@@ -1,4 +1,4 @@
-package collector
+package k8s
 
 import (
 	"context"
@@ -10,14 +10,14 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// KubernetesCollector collects information about the Kubernetes cluster.
-type KubernetesCollector struct {
+// Collector collects information about the Kubernetes cluster.
+type Collector struct {
 	Clientset kubernetes.Interface
 }
 
 // Collect retrieves Kubernetes cluster version information from the API server.
 // This provides cluster version details for comparison across environments.
-func (k *KubernetesCollector) Collect(ctx context.Context) (*measurement.Measurement, error) {
+func (k *Collector) Collect(ctx context.Context) (*measurement.Measurement, error) {
 	// Check if context is canceled
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func (k *KubernetesCollector) Collect(ctx context.Context) (*measurement.Measure
 	return res, nil
 }
 
-func (k *KubernetesCollector) getClient() (kubernetes.Interface, error) {
+func (k *Collector) getClient() (kubernetes.Interface, error) {
 	if k.Clientset != nil {
 		return k.Clientset, nil
 	}

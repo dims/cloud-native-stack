@@ -1,4 +1,4 @@
-package collector
+package gpu
 
 import (
 	"context"
@@ -11,14 +11,14 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
 
-// SMICollector collects NVIDIA SMI configurations from nvidia-smi command output in XML format
+// Collector collects NVIDIA SMI configurations from nvidia-smi command output in XML format
 // and parses them into NVSMIDevice structures
-type SMICollector struct {
+type Collector struct {
 }
 
 // Collect retrieves the NVIDIA SMI information by executing nvidia-smi command and
 // parses the XML output into NVSMIDevice structures
-func (s *SMICollector) Collect(ctx context.Context) (*measurement.Measurement, error) {
+func (s *Collector) Collect(ctx context.Context) (*measurement.Measurement, error) {
 	// Check if context is canceled
 	if err := ctx.Err(); err != nil {
 		return nil, err

@@ -1,11 +1,10 @@
-package collector_test
+package systemd
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/collector"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
 
@@ -13,7 +12,7 @@ func TestSystemDCollector_Collect_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	collector := &collector.SystemDCollector{
+	collector := &Collector{
 		Services: []string{"containerd.service"},
 	}
 	m, err := collector.Collect(ctx)
@@ -38,7 +37,7 @@ func TestSystemDCollector_DefaultServices(t *testing.T) {
 	ctx := context.Background()
 
 	// Test with nil services (should use default)
-	collector := &collector.SystemDCollector{}
+	collector := &Collector{}
 
 	m, err := collector.Collect(ctx)
 	if err != nil {
@@ -58,7 +57,7 @@ func TestSystemDCollector_CustomServices(t *testing.T) {
 
 	ctx := context.Background()
 
-	collector := &collector.SystemDCollector{
+	collector := &Collector{
 		Services: []string{"containerd.service", "docker.service"},
 	}
 
@@ -101,7 +100,7 @@ func TestSystemDCollector_Integration(t *testing.T) {
 
 	// This test requires systemd to be running
 	ctx := context.Background()
-	collector := &collector.SystemDCollector{
+	collector := &Collector{
 		Services: []string{"containerd.service"},
 	}
 

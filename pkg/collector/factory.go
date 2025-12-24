@@ -1,5 +1,15 @@
 package collector
 
+import (
+	"github.com/NVIDIA/cloud-native-stack/pkg/collector/gpu"
+	"github.com/NVIDIA/cloud-native-stack/pkg/collector/grub"
+	"github.com/NVIDIA/cloud-native-stack/pkg/collector/image"
+	"github.com/NVIDIA/cloud-native-stack/pkg/collector/k8s"
+	"github.com/NVIDIA/cloud-native-stack/pkg/collector/kmod"
+	"github.com/NVIDIA/cloud-native-stack/pkg/collector/sysctl"
+	"github.com/NVIDIA/cloud-native-stack/pkg/collector/systemd"
+)
+
 // Factory creates collectors with their dependencies.
 // This interface enables dependency injection for testing.
 type Factory interface {
@@ -9,7 +19,7 @@ type Factory interface {
 	CreateSysctlCollector() Collector
 	CreateKubernetesCollector() Collector
 	CreateImageCollector() Collector
-	CreateSMICollector() Collector
+	CreateGPUCollector() Collector
 }
 
 // DefaultFactory creates collectors with production dependencies.
@@ -30,37 +40,37 @@ func NewDefaultFactory() *DefaultFactory {
 
 // ComponentCollector creates a component collector.
 func (f *DefaultFactory) CreateKModCollector() Collector {
-	return &KModCollector{}
+	return &kmod.Collector{}
 }
 
-// CreateSMICollector creates an SMI collector.
-func (f *DefaultFactory) CreateSMICollector() Collector {
-	return &SMICollector{}
+// CreateSMICollector creates an GPU collector.
+func (f *DefaultFactory) CreateGPUCollector() Collector {
+	return &gpu.Collector{}
 }
 
 // CreateSystemDCollector creates a systemd collector.
 func (f *DefaultFactory) CreateSystemDCollector() Collector {
-	return &SystemDCollector{
+	return &systemd.Collector{
 		Services: f.SystemDServices,
 	}
 }
 
 // CreateGrubCollector creates a GRUB collector.
 func (f *DefaultFactory) CreateGrubCollector() Collector {
-	return &GrubCollector{}
+	return &grub.Collector{}
 }
 
 // CreateSysctlCollector creates a sysctl collector.
 func (f *DefaultFactory) CreateSysctlCollector() Collector {
-	return &SysctlCollector{}
+	return &sysctl.Collector{}
 }
 
 // CreateKubernetesCollector creates a Kubernetes API collector.
 func (f *DefaultFactory) CreateKubernetesCollector() Collector {
-	return &KubernetesCollector{}
+	return &k8s.Collector{}
 }
 
 // CreateImageCollector creates a container image collector.
 func (f *DefaultFactory) CreateImageCollector() Collector {
-	return &ImageCollector{}
+	return &image.Collector{}
 }

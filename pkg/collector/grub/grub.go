@@ -1,4 +1,4 @@
-package collector
+package grub
 
 import (
 	"context"
@@ -17,14 +17,14 @@ var (
 	}
 )
 
-// GrubCollector collects information about GRUB bootloader configurations from /proc/cmdline
+// Collector collects information about GRUB bootloader configurations from /proc/cmdline
 // and parses them into GrubConfig structures
-type GrubCollector struct {
+type Collector struct {
 }
 
 // Collect retrieves the GRUB bootloader parameters from /proc/cmdline
 // and parses them into GrubConfig structures
-func (s *GrubCollector) Collect(ctx context.Context) (*measurement.Measurement, error) {
+func (s *Collector) Collect(ctx context.Context) (*measurement.Measurement, error) {
 	// Check if context is canceled
 	if err := ctx.Err(); err != nil {
 		return nil, err

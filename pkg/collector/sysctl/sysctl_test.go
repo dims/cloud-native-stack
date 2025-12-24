@@ -1,4 +1,4 @@
-package collector_test
+package sysctl
 
 import (
 	"context"
@@ -7,14 +7,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/collector"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
 
 func TestSysctlCollector_Collect_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	collector := &collector.SysctlCollector{}
+	collector := &Collector{}
 
 	// Start collection and cancel mid-way
 	go func() {
@@ -41,7 +40,7 @@ func TestSysctlCollector_Integration(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	collector := &collector.SysctlCollector{}
+	collector := &Collector{}
 
 	m, err := collector.Collect(ctx)
 	if err != nil {
@@ -99,7 +98,7 @@ func TestSysctlCollector_ExcludesNet(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	collector := &collector.SysctlCollector{}
+	collector := &Collector{}
 
 	m, err := collector.Collect(ctx)
 	if err != nil {
@@ -130,7 +129,7 @@ func TestSysctlCollector_MultiLineKeyValueParsing(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	collector := &collector.SysctlCollector{}
+	collector := &Collector{}
 
 	m, err := collector.Collect(ctx)
 	if err != nil {
@@ -193,7 +192,7 @@ func TestSysctlCollector_SingleLineValues(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	collector := &collector.SysctlCollector{}
+	collector := &Collector{}
 
 	m, err := collector.Collect(ctx)
 	if err != nil {
@@ -240,7 +239,7 @@ func TestSysctlCollector_MixedContent(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	collector := &collector.SysctlCollector{}
+	collector := &Collector{}
 
 	m, err := collector.Collect(ctx)
 	if err != nil {
