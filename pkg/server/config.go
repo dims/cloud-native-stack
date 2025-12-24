@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -10,6 +11,12 @@ import (
 
 // Config holds server configuration
 type Config struct {
+	// Server identity
+	Name string
+
+	// Additional Handlers to be added to the server
+	Handlers map[string]http.HandlerFunc
+
 	// Server configuration
 	Address string
 	Port    int
@@ -37,6 +44,7 @@ func NewConfig() *Config {
 // parseConfig returns sensible defaults
 func parseConfig() *Config {
 	cfg := &Config{
+		Name:            "server",
 		Address:         "",
 		Port:            8080,
 		RateLimit:       100, // 100 req/s

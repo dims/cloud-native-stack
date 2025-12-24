@@ -15,7 +15,7 @@ func TestNew(t *testing.T) {
 		},
 	}
 
-	s := New(routes)
+	s := New(WithHandler(routes))
 	if s == nil {
 		t.Fatal("expected server instance, got nil")
 	}
@@ -34,8 +34,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestHealthEndpoint(t *testing.T) {
-	routes := map[string]http.HandlerFunc{}
-	s := New(routes)
+	s := New()
 
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	w := httptest.NewRecorder()
@@ -52,8 +51,7 @@ func TestHealthEndpoint(t *testing.T) {
 }
 
 func TestReadyEndpoint(t *testing.T) {
-	routes := map[string]http.HandlerFunc{}
-	s := New(routes)
+	s := New()
 
 	tests := []struct {
 		name           string
@@ -99,10 +97,11 @@ func TestRateLimiting(t *testing.T) {
 	cfg := NewConfig()
 	cfg.RateLimit = 1      // 1 req/sec
 	cfg.RateLimitBurst = 1 // burst of 1
+	cfg.Handlers = routes
 
-	s := New(routes, WithConfig(cfg))
+	s := New(WithConfig(cfg))
 
-	handler := s.withMiddleware(routes["/test"])
+	handler := s.withMiddleware(s.config.Handlers["/test"])
 
 	// First request should succeed
 	req1 := httptest.NewRequest(http.MethodGet, "/test", nil)
@@ -134,13 +133,13 @@ func TestRequestIDMiddleware(t *testing.T) {
 		},
 	}
 
-	s := New(routes)
+	s := New(WithHandler(routes))
 
 	t.Run("generates request ID when not provided", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/test", nil)
 		w := httptest.NewRecorder()
 
-		handler := s.requestIDMiddleware(routes["/test"])
+		handler := s.requestIDMiddleware(s.config.Handlers["/test"])
 		handler(w, req)
 
 		requestID := w.Header().Get("X-Request-Id")
@@ -155,7 +154,7 @@ func TestRequestIDMiddleware(t *testing.T) {
 		req.Header.Set("X-Request-Id", expectedID)
 		w := httptest.NewRecorder()
 
-		handler := s.requestIDMiddleware(routes["/test"])
+		handler := s.requestIDMiddleware(s.config.Handlers["/test"])
 		handler(w, req)
 
 		requestID := w.Header().Get("X-Request-Id")
@@ -170,7 +169,7 @@ func TestRequestIDMiddleware(t *testing.T) {
 		req.Header.Set("X-Request-Id", invalidID)
 		w := httptest.NewRecorder()
 
-		handler := s.requestIDMiddleware(routes["/test"])
+		handler := s.requestIDMiddleware(s.config.Handlers["/test"])
 		handler(w, req)
 
 		requestID := w.Header().Get("X-Request-Id")
@@ -189,7 +188,7 @@ func TestPanicRecovery(t *testing.T) {
 		"/panic": panicHandler,
 	}
 
-	s := New(routes)
+	s := New(WithHandler(routes))
 
 	req := httptest.NewRequest(http.MethodGet, "/panic", nil)
 	w := httptest.NewRecorder()
@@ -211,8 +210,12 @@ func TestGracefulShutdown(t *testing.T) {
 		},
 	}
 
-	s := New(routes)
-	s.config.ShutdownTimeout = 100 * time.Millisecond
+	cfg := NewConfig()
+	cfg.Port = 18080 // Use a different port to avoid conflicts
+	cfg.ShutdownTimeout = 100 * time.Millisecond
+	cfg.Handlers = routes
+
+	s := New(WithConfig(cfg))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -238,4 +241,150 @@ func TestGracefulShutdown(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Error("shutdown timed out")
 	}
+}
+
+func TestDefaultRootHandler(t *testing.T) {
+	routes := map[string]http.HandlerFunc{
+		"/api/v1/test": func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		},
+	}
+
+	s := New(WithHandler(routes))
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+
+	// Get the root handler
+	handler := s.config.Handlers["/"]
+	if handler == nil {
+		t.Fatal("expected default root handler to be created")
+	}
+
+	handler(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	// Check that response contains routes
+	body := w.Body.String()
+	if body == "" {
+		t.Error("expected non-empty response body")
+	}
+
+	// Should contain the test route
+	if !contains(body, "/api/v1/test") {
+		t.Error("expected response to contain /api/v1/test route")
+	}
+}
+
+func TestDefaultRootHandlerMethodNotAllowed(t *testing.T) {
+	s := New()
+
+	req := httptest.NewRequest(http.MethodPost, "/", nil)
+	w := httptest.NewRecorder()
+
+	handler := s.config.Handlers["/"]
+	handler(w, req)
+
+	if w.Code != http.StatusMethodNotAllowed {
+		t.Errorf("expected status %d, got %d", http.StatusMethodNotAllowed, w.Code)
+	}
+}
+
+func TestCustomRootHandlerNotOverridden(t *testing.T) {
+	customCalled := false
+	routes := map[string]http.HandlerFunc{
+		"/": func(w http.ResponseWriter, _ *http.Request) {
+			customCalled = true
+			w.WriteHeader(http.StatusOK)
+		},
+	}
+
+	s := New(WithHandler(routes))
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+
+	handler := s.config.Handlers["/"]
+	handler(w, req)
+
+	if !customCalled {
+		t.Error("expected custom root handler to be called, not default")
+	}
+}
+
+func TestWithName(t *testing.T) {
+	customName := "custom-api-server"
+	s := New(WithName(customName))
+
+	if s.config.Name != customName {
+		t.Errorf("expected server name %s, got %s", customName, s.config.Name)
+	}
+}
+
+func TestWithHandler(t *testing.T) {
+	routes := map[string]http.HandlerFunc{
+		"/api/test": func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		},
+	}
+
+	s := New(WithHandler(routes))
+
+	if len(s.config.Handlers) < 1 {
+		t.Error("expected handlers to be set")
+	}
+
+	if _, exists := s.config.Handlers["/api/test"]; !exists {
+		t.Error("expected /api/test handler to exist")
+	}
+
+	// Should also have root handler added by default
+	if _, exists := s.config.Handlers["/"]; !exists {
+		t.Error("expected default root handler to be created")
+	}
+}
+
+func TestWithConfig(t *testing.T) {
+	cfg := NewConfig()
+	cfg.Name = "test-server"
+	cfg.Port = 9090
+	cfg.RateLimit = 500
+
+	s := New(WithConfig(cfg))
+
+	if s.config.Name != "test-server" {
+		t.Errorf("expected name test-server, got %s", s.config.Name)
+	}
+
+	if s.config.Port != 9090 {
+		t.Errorf("expected port 9090, got %d", s.config.Port)
+	}
+
+	if s.config.RateLimit != 500 {
+		t.Errorf("expected rate limit 500, got %v", s.config.RateLimit)
+	}
+}
+
+func TestDefaultServerName(t *testing.T) {
+	s := New()
+
+	if s.config.Name != "server" {
+		t.Errorf("expected default name 'server', got %s", s.config.Name)
+	}
+}
+
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && (s[:len(substr)] == substr || s[len(s)-len(substr):] == substr || containsMiddle(s, substr)))
+}
+
+func containsMiddle(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
 }

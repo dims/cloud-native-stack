@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/NVIDIA/cloud-native-stack/pkg/serializers"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"golang.org/x/sync/errgroup"
@@ -37,9 +38,22 @@ func WithConfig(cfg *Config) Option {
 	}
 }
 
+// WithName sets the server name in the configuration
+func WithName(name string) Option {
+	return func(s *Server) {
+		s.config.Name = name
+	}
+}
+
+// WithHandler adds custom handlers to the server
+func WithHandler(handlers map[string]http.HandlerFunc) Option {
+	return func(s *Server) {
+		s.config.Handlers = handlers
+	}
+}
+
 // New creates a new server instance with the given routes and options.
-// New creates a new server instance with the given routes and options.
-func New(routes map[string]http.HandlerFunc, opts ...Option) *Server {
+func New(opts ...Option) *Server {
 	config := parseConfig()
 
 	s := &Server{
@@ -63,8 +77,11 @@ func New(routes map[string]http.HandlerFunc, opts ...Option) *Server {
 	mux.HandleFunc("/ready", s.handleReady)
 	mux.Handle("/metrics", promhttp.Handler())
 
+	// setup root handler
+	s.configureRootHandler()
+
 	// setup application routes
-	for path, handler := range routes {
+	for path, handler := range s.config.Handlers {
 		mux.HandleFunc(path, s.withMiddleware(handler))
 	}
 
@@ -155,4 +172,37 @@ func (s *Server) Run(ctx context.Context) error {
 
 	slog.Debug("server stopped gracefully")
 	return nil
+}
+
+// configureRootHandler creates a default handler for the root path that lists available routes
+func (s *Server) configureRootHandler() {
+	// Initialize handlers map if nil
+	if s.config.Handlers == nil {
+		s.config.Handlers = make(map[string]http.HandlerFunc)
+	}
+
+	if _, exists := s.config.Handlers["/"]; !exists {
+		s.config.Handlers["/"] = func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodGet {
+				http.Error(w, ErrCodeMethodNotAllowed, http.StatusMethodNotAllowed)
+				return
+			}
+
+			routes := make([]string, 0)
+
+			// Add application routes
+			for path := range s.config.Handlers {
+				if path != "/" { // Don't include self
+					routes = append(routes, path)
+				}
+			}
+
+			response := map[string]interface{}{
+				"service": s.config.Name,
+				"routes":  routes,
+			}
+
+			serializers.RespondJSON(w, http.StatusOK, response)
+		}
+	}
 }

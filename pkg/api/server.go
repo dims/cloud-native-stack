@@ -25,8 +25,10 @@ var (
 
 // Serve starts the API server and blocks until shutdown.
 // It configures logging, sets up routes, and handles graceful shutdown.
-// Returns an error if the server fails to start or encounters an error during execution.
+// Returns an error if the server fails to start or encounters a fatal error.
 func Serve() error {
+	ctx := context.Background()
+
 	logging.SetDefaultStructuredLogger(name, version)
 	slog.Info("starting",
 		"name", name,
@@ -35,13 +37,17 @@ func Serve() error {
 		"date", date,
 	)
 
+	// Setup recommendation handler
 	b := recommendation.NewBuilder()
 
 	r := map[string]http.HandlerFunc{
 		"/v1/recommendations": b.HandleRecommendations,
 	}
 
-	if err := server.New(r).Run(context.Background()); err != nil {
+	// Create and run server
+	s := server.New(server.WithName(name), server.WithHandler(r))
+
+	if err := s.Run(ctx); err != nil {
 		slog.Error("server exited with error", "error", err)
 		return err
 	}

@@ -8,6 +8,6 @@ import (
 
 func main() {
 	if err := api.Serve(); err != nil {
-		log.Fatalf("server error: %v", err)
+		log.Fatal(err)
 	}
 }
