@@ -72,11 +72,11 @@ func TestImageCollector_Collect(t *testing.T) {
 
 	data := imageSubtype.Data
 	if assert.Len(t, data, 2) {
-		reading, ok := data["repo/image:tag"]
+		reading, ok := data["image:tag"]
 		if assert.True(t, ok) {
 			assert.Equal(t, "ns/pod-a:c1", reading.Any())
 		}
-		initReading, ok := data["repo/init:latest"]
+		initReading, ok := data["init:latest"]
 		if assert.True(t, ok) {
 			assert.Equal(t, "ns/pod-a:init-init", initReading.Any())
 		}

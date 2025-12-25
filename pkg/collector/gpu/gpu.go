@@ -65,20 +65,20 @@ func getSMIReadings(data []byte) (map[string]measurement.Reading, error) {
 		return smiData, nil
 	}
 
-	for idx, gpu := range smiDevice.GPUs {
-		prefix := fmt.Sprintf("gpu[%d]", idx)
-		key := func(field string) string {
-			return fmt.Sprintf("%s.%s", prefix, field)
-		}
-		smiData[key(measurement.KeyGPUModel)] = measurement.Str(gpu.ProductName)
-		smiData[key("product-architecture")] = measurement.Str(gpu.ProductArchitecture)
-		smiData[key("display-mode")] = measurement.Str(gpu.DisplayMode)
-		smiData[key("display-active")] = measurement.Str(gpu.DisplayActive)
-		smiData[key("persistence-mode")] = measurement.Str(gpu.PersistenceMode)
-		smiData[key("addressing-mode")] = measurement.Str(gpu.AddressingMode)
-		smiData[key("vbios-version")] = measurement.Str(gpu.VbiosVersion)
-		smiData[key("gsp-firmware-version")] = measurement.Str(gpu.GspFirmwareVersion)
+	// Only include details for the first GPU to keep output concise
+	gpu := smiDevice.GPUs[0]
+	prefix := "gpu[0]"
+	key := func(field string) string {
+		return fmt.Sprintf("%s.%s", prefix, field)
 	}
+	smiData[key(measurement.KeyGPUModel)] = measurement.Str(gpu.ProductName)
+	smiData[key("product-architecture")] = measurement.Str(gpu.ProductArchitecture)
+	smiData[key("display-mode")] = measurement.Str(gpu.DisplayMode)
+	smiData[key("display-active")] = measurement.Str(gpu.DisplayActive)
+	smiData[key("persistence-mode")] = measurement.Str(gpu.PersistenceMode)
+	smiData[key("addressing-mode")] = measurement.Str(gpu.AddressingMode)
+	smiData[key("vbios-version")] = measurement.Str(gpu.VbiosVersion)
+	smiData[key("gsp-firmware-version")] = measurement.Str(gpu.GspFirmwareVersion)
 
 	return smiData, nil
 }

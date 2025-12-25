@@ -42,7 +42,7 @@ spec:
         fsGroupChangePolicy: "OnRootMismatch"
       containers:
         - name: eidos
-          image: ghcr.io/mchmarny/eidos-api-server:v0.6.0
+          image: ghcr.io/mchmarny/eidos:v0.6.1
           command: ["/bin/sh", "-c"]
           env:
             - name: NODE_NAME
@@ -53,14 +53,8 @@ spec:
             - |
               set -e
               echo "Starting eidos snapshot collection..."
-
-              # Run eidos directly (reads from mounted host paths)
-              if /ko-app/eidos snapshot -o yaml > /tmp/eidos-snapshot.yaml; then
-                cat /tmp/eidos-snapshot.yaml
-              else
-                echo "Error: Failed to collect snapshot" >&2
-                exit 1
-              fi
+              /ko-app/eidos snapshot --format yaml --output /tmp/eidos-snapshot.yaml
+              cat /tmp/eidos-snapshot.yaml
           resources:
             requests:
               cpu: "1"

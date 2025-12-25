@@ -24,7 +24,9 @@ func (k *Collector) collectContainerImages(ctx context.Context) (map[string]meas
 		if imageRef == "" {
 			return
 		}
-		imageLocations[imageRef] = append(imageLocations[imageRef], location)
+		// Strip registry prefix to get just image:tag
+		imageName := stripRegistryPrefix(imageRef)
+		imageLocations[imageName] = append(imageLocations[imageName], location)
 	}
 	for _, pod := range pods.Items {
 		// Check for context cancellation
@@ -53,4 +55,19 @@ func (k *Collector) collectContainerImages(ctx context.Context) (map[string]meas
 
 	slog.Debug("collected container images", slog.Int("count", len(images)))
 	return images, nil
+}
+
+// stripRegistryPrefix removes the registry domain from image references.
+// Examples:
+//   - "registry.k8s.io/pause:3.9" -> "pause:3.9"
+//   - "docker.io/library/nginx:latest" -> "nginx:latest"
+//   - "ghcr.io/org/image:v1.0" -> "image:v1.0"
+func stripRegistryPrefix(imageRef string) string {
+	// Find the last slash which separates the image name from registry/org path
+	lastSlash := strings.LastIndex(imageRef, "/")
+	if lastSlash == -1 {
+		// No slashes, already just image:tag
+		return imageRef
+	}
+	return imageRef[lastSlash+1:]
 }
