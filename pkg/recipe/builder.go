@@ -25,6 +25,13 @@ var (
 // Option is a functional option for configuring the Builder
 type Option func(*Builder)
 
+// WithVersion sets the Builder version string.
+func WithVersion(version string) Option {
+	return func(b *Builder) {
+		b.Version = version
+	}
+}
+
 // NewBuilder creates a new Builder with the provided options.
 func NewBuilder(opts ...Option) *Builder {
 	b := &Builder{}

@@ -38,7 +38,9 @@ func Serve() error {
 	)
 
 	// Setup recipe handler
-	b := recipe.NewBuilder()
+	b := recipe.NewBuilder(
+		recipe.WithVersion(version),
+	)
 
 	r := map[string]http.HandlerFunc{
 		"/v1/recipe": b.HandleRecipes,
