@@ -12,7 +12,7 @@ import (
 
 // Collector collects information about the Kubernetes cluster.
 type Collector struct {
-	Clientset kubernetes.Interface
+	ClientSet kubernetes.Interface
 }
 
 // Collect retrieves Kubernetes cluster version information from the API server.
@@ -28,6 +28,7 @@ func (k *Collector) Collect(ctx context.Context) (*measurement.Measurement, erro
 		return nil, err
 	}
 
+	// Server Version
 	serverVersion, err := k8sClient.Discovery().ServerVersion()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get kubernetes version: %w", err)
@@ -41,11 +42,22 @@ func (k *Collector) Collect(ctx context.Context) (*measurement.Measurement, erro
 
 	slog.Debug("collected kubernetes version", slog.String("version", serverVersion.GitVersion))
 
+	// Cluster Images
+	images, err := k.collectContainerImages(ctx, k8sClient)
+	if err != nil {
+		return nil, fmt.Errorf("failed to collect container images: %w", err)
+	}
+
 	res := &measurement.Measurement{
 		Type: measurement.TypeK8s,
 		Subtypes: []measurement.Subtype{
 			{
+				Name: "server",
 				Data: versionInfo, // no need for filtering, all fields explicitly collected
+			},
+			{
+				Name: "images",
+				Data: images,
 			},
 		},
 	}
@@ -54,12 +66,13 @@ func (k *Collector) Collect(ctx context.Context) (*measurement.Measurement, erro
 }
 
 func (k *Collector) getClient() (kubernetes.Interface, error) {
-	if k.Clientset != nil {
-		return k.Clientset, nil
+	if k.ClientSet != nil {
+		return k.ClientSet, nil
 	}
-	k8sClient, _, err := client.GetKubeClient("")
+	var err error
+	k.ClientSet, _, err = client.GetKubeClient("")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get kubernetes client: %w", err)
 	}
-	return k8sClient, nil
+	return k.ClientSet, nil
 }

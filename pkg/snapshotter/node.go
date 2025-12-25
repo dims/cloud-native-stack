@@ -77,25 +77,6 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 		return nil
 	})
 
-	// Collect images
-	g.Go(func() error {
-		collectorStart := time.Now()
-		defer func() {
-			snapshotCollectorDuration.WithLabelValues("image").Observe(time.Since(collectorStart).Seconds())
-		}()
-		slog.Debug("collecting container images")
-		ic := n.Factory.CreateImageCollector()
-		images, err := ic.Collect(ctx)
-		if err != nil {
-			slog.Error("failed to collect container images", slog.String("error", err.Error()))
-			return fmt.Errorf("failed to collect container images: %w", err)
-		}
-		mu.Lock()
-		snap.Measurements = append(snap.Measurements, images)
-		mu.Unlock()
-		return nil
-	})
-
 	// Collect k8s resources
 	g.Go(func() error {
 		collectorStart := time.Now()

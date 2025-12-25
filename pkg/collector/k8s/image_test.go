@@ -1,4 +1,4 @@
-package image
+package k8s
 
 import (
 	"context"
@@ -26,7 +26,7 @@ func TestImageCollector_Collect(t *testing.T) {
 			},
 		},
 	)
-	collector := &Collector{Clientset: fakeClient}
+	collector := &Collector{ClientSet: fakeClient}
 
 	m, err := collector.Collect(ctx)
 	assert.NoError(t, err)
@@ -52,7 +52,7 @@ func TestImageCollector_CollectWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	collector := &Collector{Clientset: fake.NewClientset()}
+	collector := &Collector{ClientSet: fake.NewClientset()}
 	m, err := collector.Collect(ctx)
 
 	assert.Error(t, err)

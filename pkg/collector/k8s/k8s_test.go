@@ -20,7 +20,7 @@ func TestKubernetesCollector_Collect(t *testing.T) {
 		Platform:   "linux/amd64",
 		GoVersion:  "go1.20.7",
 	}
-	collector := &Collector{Clientset: fakeClient}
+	collector := &Collector{ClientSet: fakeClient}
 
 	m, err := collector.Collect(ctx)
 	assert.NoError(t, err)
@@ -47,7 +47,7 @@ func TestKubernetesCollector_CollectWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	collector := &Collector{Clientset: fake.NewClientset()}
+	collector := &Collector{ClientSet: fake.NewClientset()}
 	m, err := collector.Collect(ctx)
 
 	assert.Error(t, err)

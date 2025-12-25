@@ -3,7 +3,6 @@ package collector
 import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/collector/gpu"
 	"github.com/NVIDIA/cloud-native-stack/pkg/collector/grub"
-	"github.com/NVIDIA/cloud-native-stack/pkg/collector/image"
 	"github.com/NVIDIA/cloud-native-stack/pkg/collector/k8s"
 	"github.com/NVIDIA/cloud-native-stack/pkg/collector/kmod"
 	"github.com/NVIDIA/cloud-native-stack/pkg/collector/sysctl"
@@ -18,7 +17,6 @@ type Factory interface {
 	CreateGrubCollector() Collector
 	CreateSysctlCollector() Collector
 	CreateKubernetesCollector() Collector
-	CreateImageCollector() Collector
 	CreateGPUCollector() Collector
 }
 
@@ -68,9 +66,4 @@ func (f *DefaultFactory) CreateSysctlCollector() Collector {
 // CreateKubernetesCollector creates a Kubernetes API collector.
 func (f *DefaultFactory) CreateKubernetesCollector() Collector {
 	return &k8s.Collector{}
-}
-
-// CreateImageCollector creates a container image collector.
-func (f *DefaultFactory) CreateImageCollector() Collector {
-	return &image.Collector{}
 }
