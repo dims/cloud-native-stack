@@ -1,4 +1,4 @@
-package grub
+package os
 
 import (
 	"context"
@@ -48,22 +48,35 @@ func TestGrubCollector_Integration(t *testing.T) {
 		t.Fatalf("Collect() failed: %v", err)
 	}
 
-	// Should have exactly one measurement with one subtype containing all boot parameters
+	// Should return measurement with TypeOS and three subtypes: grub, sysctl, kmod
 	if m == nil {
 		t.Fatal("Expected non-nil measurement")
 	}
 
-	if m.Type != measurement.TypeGrub {
-		t.Errorf("Expected type %s, got %s", measurement.TypeGrub, m.Type)
+	if m.Type != measurement.TypeOS {
+		t.Errorf("Expected type %s, got %s", measurement.TypeOS, m.Type)
 	}
 
-	if len(m.Subtypes) != 1 {
-		t.Errorf("Expected exactly 1 subtype, got %d", len(m.Subtypes))
+	if len(m.Subtypes) != 3 {
+		t.Errorf("Expected exactly 3 subtypes (grub, sysctl, kmod), got %d", len(m.Subtypes))
 		return
 	}
 
+	// Find the grub subtype
+	var grubSubtype *measurement.Subtype
+	for i := range m.Subtypes {
+		if m.Subtypes[i].Name == "grub" {
+			grubSubtype = &m.Subtypes[i]
+			break
+		}
+	}
+
+	if grubSubtype == nil {
+		t.Fatal("Expected to find grub subtype")
+	}
+
 	// Validate that Data is a map
-	props := m.Subtypes[0].Data
+	props := grubSubtype.Data
 	if props == nil {
 		t.Error("Expected non-nil Data map")
 		return
@@ -98,7 +111,20 @@ func TestGrubCollector_ValidatesParsing(t *testing.T) {
 		t.Fatal("Expected at least one subtype")
 	}
 
-	props := m.Subtypes[0].Data
+	// Find grub subtype
+	var grubSubtype *measurement.Subtype
+	for i := range m.Subtypes {
+		if m.Subtypes[i].Name == "grub" {
+			grubSubtype = &m.Subtypes[i]
+			break
+		}
+	}
+
+	if grubSubtype == nil {
+		t.Fatal("Expected to find grub subtype")
+	}
+
+	props := grubSubtype.Data
 
 	// Check that we can parse both key-only and key=value formats
 	hasKeyOnly := false

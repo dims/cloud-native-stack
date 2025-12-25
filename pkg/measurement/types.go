@@ -19,23 +19,17 @@ func (mt Type) String() string {
 }
 
 const (
-	TypeGrub    Type = "Grub"
-	TypeImage   Type = "Image"
-	TypeKMod    Type = "KMod"
 	TypeK8s     Type = "K8s"
 	TypeGPU     Type = "GPU"
-	TypeSysctl  Type = "Sysctl"
+	TypeOS      Type = "OS"
 	TypeSystemD Type = "SystemD"
 )
 
 // Types is the list of all supported measurement types.
 var Types = []Type{
-	TypeGrub,
-	TypeImage,
-	TypeKMod,
 	TypeK8s,
 	TypeGPU,
-	TypeSysctl,
+	TypeOS,
 	TypeSystemD,
 }
 

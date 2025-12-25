@@ -1,4 +1,4 @@
-package sysctl
+package os
 
 import (
 	"context"
@@ -52,22 +52,35 @@ func TestSysctlCollector_Integration(t *testing.T) {
 		t.Fatalf("Collect() failed: %v", err)
 	}
 
-	// Should return exactly one measurement with one subtype
+	// Should return measurement with TypeOS and three subtypes
 	if m == nil {
 		t.Fatal("Expected non-nil measurement")
 	}
 
-	if m.Type != measurement.TypeSysctl {
-		t.Errorf("Expected type %s, got %s", measurement.TypeSysctl, m.Type)
+	if m.Type != measurement.TypeOS {
+		t.Errorf("Expected type %s, got %s", measurement.TypeOS, m.Type)
 	}
 
-	if len(m.Subtypes) != 1 {
-		t.Errorf("Expected 1 subtype, got %d", len(m.Subtypes))
+	if len(m.Subtypes) != 3 {
+		t.Errorf("Expected 3 subtypes, got %d", len(m.Subtypes))
 		return
 	}
 
+	// Find the sysctl subtype
+	var sysctlSubtype *measurement.Subtype
+	for i := range m.Subtypes {
+		if m.Subtypes[i].Name == "sysctl" {
+			sysctlSubtype = &m.Subtypes[i]
+			break
+		}
+	}
+
+	if sysctlSubtype == nil {
+		t.Fatal("Expected to find sysctl subtype")
+	}
+
 	// Validate that Data is a map
-	params := m.Subtypes[0].Data
+	params := sysctlSubtype.Data
 	if params == nil {
 		t.Error("Expected non-nil Data map")
 		return
@@ -113,7 +126,20 @@ func TestSysctlCollector_ExcludesNet(t *testing.T) {
 		return
 	}
 
-	params := m.Subtypes[0].Data
+	// Find sysctl subtype
+	var sysctlSubtype *measurement.Subtype
+	for i := range m.Subtypes {
+		if m.Subtypes[i].Name == "sysctl" {
+			sysctlSubtype = &m.Subtypes[i]
+			break
+		}
+	}
+
+	if sysctlSubtype == nil {
+		return
+	}
+
+	params := sysctlSubtype.Data
 
 	// Ensure no network parameters are included
 	for key := range params {
@@ -144,7 +170,20 @@ func TestSysctlCollector_MultiLineKeyValueParsing(t *testing.T) {
 		t.Fatal("Expected non-nil measurement with subtypes")
 	}
 
-	params := m.Subtypes[0].Data
+	// Find sysctl subtype
+	var sysctlSubtype *measurement.Subtype
+	for i := range m.Subtypes {
+		if m.Subtypes[i].Name == "sysctl" {
+			sysctlSubtype = &m.Subtypes[i]
+			break
+		}
+	}
+
+	if sysctlSubtype == nil {
+		t.Fatal("Expected to find sysctl subtype")
+	}
+
+	params := sysctlSubtype.Data
 
 	// Check if /proc/sys/sunrpc/transports exists and has been parsed
 	// This file typically contains lines like: "tcp 1048576\nudp 32768\nrdma 1048576"
@@ -207,7 +246,20 @@ func TestSysctlCollector_SingleLineValues(t *testing.T) {
 		t.Fatal("Expected non-nil measurement with subtypes")
 	}
 
-	params := m.Subtypes[0].Data
+	// Find sysctl subtype
+	var sysctlSubtype *measurement.Subtype
+	for i := range m.Subtypes {
+		if m.Subtypes[i].Name == "sysctl" {
+			sysctlSubtype = &m.Subtypes[i]
+			break
+		}
+	}
+
+	if sysctlSubtype == nil {
+		t.Fatal("Expected to find sysctl subtype")
+	}
+
+	params := sysctlSubtype.Data
 
 	// Single-line files should be stored with their original path (not split)
 	// Check for common single-value sysctl parameters
@@ -254,7 +306,20 @@ func TestSysctlCollector_MixedContent(t *testing.T) {
 		return
 	}
 
-	params := m.Subtypes[0].Data
+	// Find sysctl subtype
+	var sysctlSubtype *measurement.Subtype
+	for i := range m.Subtypes {
+		if m.Subtypes[i].Name == "sysctl" {
+			sysctlSubtype = &m.Subtypes[i]
+			break
+		}
+	}
+
+	if sysctlSubtype == nil {
+		return
+	}
+
+	params := sysctlSubtype.Data
 
 	// Verify that no values contain unprocessed multi-line content with key-value pattern
 	for key, val := range params {

@@ -1,7 +1,9 @@
 base:
-  - type: KMod
+  - type: os
     subtypes:
-      - data:
+
+      - name: kmod
+        data:
           ecc: true
           gdrdrv: true
           gpu_sched: true
@@ -36,9 +38,8 @@ base:
           sunrpc: RPC framework for networked GPU operations
           ttm: Translation Table Manager for GPU memory management
 
-  - type: Grub
-    subtypes:
-      - data:
+      - name: grub
+        data:
           BOOT_IMAGE: /boot/vmlinuz-6.8.0-1028
           apparmor: "1"
           audit: "1"
@@ -60,42 +61,9 @@ base:
           nokaslr: Deterministic kernel addressing for consistent GPU latency
           numa_balancing: Disable auto-migration for predictable GPU memory locality
           security: Security framework (minimal GPU impact)
-  - type: SystemD
-    subtypes:
-      - subtype: containerd.service
+
+      - name: sysctl
         data:
-          CPUAccounting: true
-          CPUQuotaPerSecUSec: 18446744073709551615
-          CPUSchedulingPolicy: "0"
-          CPUShares: 18446744073709551615
-          CPUWeight: 18446744073709551615
-          Delegate: true
-          DelegateControllers: '[cpu cpuacct cpuset io blkio memory devices pids bpf-firewall bpf-devices bpf-foreign bpf-socket-bind]'
-          EffectiveCPUs: '[255 255 255 255 255 255 255 255 255 255 255 255 255 255 255 255 255 255 0 0 0 0 0 0]'
-          EffectiveMemoryNodes: '[3 0 0 0 0 0 0 0]'
-          IOSchedulingClass: "2"
-          IOSchedulingPriority: "4"
-          IOWeight: 18446744073709551615
-          LimitNOFILE: 18446744073709551615
-          LimitNPROC: 18446744073709551615
-        context:
-          CPUAccounting: Enables CPU usage tracking for container workloads
-          CPUQuotaPerSecUSec: Unlimited CPU quota for GPU containers
-          CPUSchedulingPolicy: Default scheduling policy
-          CPUShares: Unlimited CPU shares
-          CPUWeight: Unlimited CPU weight allows full CPU access for GPU containers
-          Delegate: Allows container runtime to manage cgroups for GPU resource isolation
-          DelegateControllers: Full cgroup delegation for GPU device and memory control
-          EffectiveCPUs: CPU affinity mask for containerd process
-          EffectiveMemoryNodes: NUMA node assignment for optimal GPU-CPU memory access
-          IOSchedulingClass: Best-effort I/O scheduling class
-          IOSchedulingPriority: I/O priority for container storage operations
-          IOWeight: Unlimited I/O weight
-          LimitNOFILE: Unlimited file descriptors for container connections
-          LimitNPROC: Unlimited process count for GPU containers
-  - type: Sysctl
-    subtypes:
-      - data:
           /proc/sys/fs/aio-max-nr: "65536"
           /proc/sys/fs/file-max: "9223372036854775807"
           /proc/sys/fs/inotify/max_user_watches: "524288"
@@ -145,15 +113,52 @@ base:
           /proc/sys/vm/overcommit_memory: Always allow memory overcommit for flexible GPU container allocation
           /proc/sys/vm/swappiness: Swap tendency (lower values keep GPU-related memory resident)
           /proc/sys/vm/zone_reclaim_mode: Disable NUMA zone reclaim for consistent cross-node GPU access
-  - type: K8s
+
+  - type: systemd
     subtypes:
-      - data:
+      - subtype: containerd.service
+        data:
+          CPUAccounting: true
+          CPUQuotaPerSecUSec: 18446744073709551615
+          CPUSchedulingPolicy: "0"
+          CPUShares: 18446744073709551615
+          CPUWeight: 18446744073709551615
+          Delegate: true
+          DelegateControllers: '[cpu cpuacct cpuset io blkio memory devices pids bpf-firewall bpf-devices bpf-foreign bpf-socket-bind]'
+          EffectiveCPUs: '[255 255 255 255 255 255 255 255 255 255 255 255 255 255 255 255 255 255 0 0 0 0 0 0]'
+          EffectiveMemoryNodes: '[3 0 0 0 0 0 0 0]'
+          IOSchedulingClass: "2"
+          IOSchedulingPriority: "4"
+          IOWeight: 18446744073709551615
+          LimitNOFILE: 18446744073709551615
+          LimitNPROC: 18446744073709551615
+        context:
+          CPUAccounting: Enables CPU usage tracking for container workloads
+          CPUQuotaPerSecUSec: Unlimited CPU quota for GPU containers
+          CPUSchedulingPolicy: Default scheduling policy
+          CPUShares: Unlimited CPU shares
+          CPUWeight: Unlimited CPU weight allows full CPU access for GPU containers
+          Delegate: Allows container runtime to manage cgroups for GPU resource isolation
+          DelegateControllers: Full cgroup delegation for GPU device and memory control
+          EffectiveCPUs: CPU affinity mask for containerd process
+          EffectiveMemoryNodes: NUMA node assignment for optimal GPU-CPU memory access
+          IOSchedulingClass: Best-effort I/O scheduling class
+          IOSchedulingPriority: I/O priority for container storage operations
+          IOWeight: Unlimited I/O weight
+          LimitNOFILE: Unlimited file descriptors for container connections
+          LimitNPROC: Unlimited process count for GPU containers
+  
+  - type: k8s
+    subtypes:
+
+      - name: server
+        data:
           version: v1.33.5
         context:
           version: Kubernetes version for GPU orchestration
-  - type: Image
-    subtypes:
-      - data:
+  
+      - name: image
+        data:
           container-toolkit: v1.17.8
           dcgm: 4.3.1-1
           dcgm-exporter: "4.3.1"
@@ -183,9 +188,12 @@ base:
           mpi-operator: MPI job orchestration for distributed multi-GPU training
           node-feature-discovery: Discovers GPU hardware features for optimal workload placement
           training-operator: Kubernetes operator for distributed ML training on GPUs
-  - type: GPU
+
+  - type: gpu
     subtypes:
-      - data:
+      
+      - name: smi
+        data:
           addressing-mode: ATS
           cuda-version: "13.1"
           display-active: Disabled
@@ -201,15 +209,17 @@ base:
           gsp-firmware-version: GPU System Processor firmware managing GPU scheduling and resource allocation
           persistence-mode: Controls GPU state retention (enabled mode reduces initialization latency)
           vbios-version: GPU BIOS firmware version determining hardware initialization and clock settings
+
 overlays:
   - key:
       #  ?service=eks&os=ubuntu
       service: eks
       os: ubuntu
     types:
-      - type: Grub
+      - type: os
         subtypes:
-          - data:
+          - name: grub
+            data:
               BOOT_IMAGE: /boot/vmlinuz-6.8.0-1028-aws
             context:
               BOOT_IMAGE: AWS-optimized kernel image version
@@ -218,21 +228,22 @@ overlays:
       service: eks
       gpu: gb200
     types:
-      - type: K8s
+      - type: k8s
         subtypes:
-          - data:
+          - name: server
+            data:
               version: v1.33
             context:
               version: Minimum AWS EKS Kubernetes version to support DRA for GB200 GPUs
-      - type: KMod
-        subtypes:
-          - data:
-              efa: true
-            context:
-              efa: AWS EFA support for GPU clusters
-      - type: Image
-        subtypes:
-          - data:
+          - name: image
+            data:
               aws-efa-k8s-device-plugin: v0.5.3
             context:
               aws-efa-k8s-device-plugin: EFA device plugin for high-speed GPU-to-GPU networking
+      - type: os
+        subtypes:
+          - name: kmod
+            data:
+              efa: true
+            context:
+              efa: AWS EFA support for GPU clusters

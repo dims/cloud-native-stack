@@ -1,4 +1,4 @@
-package kmod
+package os
 
 import (
 	"context"
@@ -68,22 +68,35 @@ func TestKModCollector_Integration(t *testing.T) {
 		t.Fatalf("Collect() failed: %v", err)
 	}
 
-	// Should return exactly one measurement with one subtype
+	// Should return measurement with TypeOS and three subtypes
 	if m == nil {
 		t.Fatal("Expected non-nil measurement")
 	}
 
-	if m.Type != measurement.TypeKMod {
-		t.Errorf("Expected type %s, got %s", measurement.TypeKMod, m.Type)
+	if m.Type != measurement.TypeOS {
+		t.Errorf("Expected type %s, got %s", measurement.TypeOS, m.Type)
 	}
 
-	if len(m.Subtypes) != 1 {
-		t.Errorf("Expected 1 subtype, got %d", len(m.Subtypes))
+	if len(m.Subtypes) != 3 {
+		t.Errorf("Expected 3 subtypes, got %d", len(m.Subtypes))
 		return
 	}
 
+	// Find the kmod subtype
+	var kmodSubtype *measurement.Subtype
+	for i := range m.Subtypes {
+		if m.Subtypes[i].Name == "kmod" {
+			kmodSubtype = &m.Subtypes[i]
+			break
+		}
+	}
+
+	if kmodSubtype == nil {
+		t.Fatal("Expected to find kmod subtype")
+	}
+
 	// Validate that Data contains module names
-	data := m.Subtypes[0].Data
+	data := kmodSubtype.Data
 	if data == nil {
 		t.Error("Expected non-nil Data map")
 		return

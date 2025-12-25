@@ -26,10 +26,22 @@ func TestKubernetesCollector_Collect(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, m)
 	assert.Equal(t, measurement.TypeK8s, m.Type)
-	assert.Len(t, m.Subtypes, 1)
-	assert.NotNil(t, m.Subtypes[0].Data)
+	// Should have 2 subtypes: server and image
+	assert.Len(t, m.Subtypes, 2)
 
-	data := m.Subtypes[0].Data
+	// Find the server subtype
+	var serverSubtype *measurement.Subtype
+	for i := range m.Subtypes {
+		if m.Subtypes[i].Name == "server" {
+			serverSubtype = &m.Subtypes[i]
+			break
+		}
+	}
+	if !assert.NotNil(t, serverSubtype, "Expected to find server subtype") {
+		return
+	}
+
+	data := serverSubtype.Data
 	if assert.Len(t, data, 3) {
 		if reading, ok := data["version"]; assert.True(t, ok) {
 			assert.Equal(t, "v1.28.0", reading.Any())

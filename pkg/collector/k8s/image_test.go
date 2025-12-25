@@ -31,11 +31,23 @@ func TestImageCollector_Collect(t *testing.T) {
 	m, err := collector.Collect(ctx)
 	assert.NoError(t, err)
 	assert.NotNil(t, m)
-	assert.Equal(t, measurement.TypeImage, m.Type)
-	assert.Len(t, m.Subtypes, 1)
-	assert.NotNil(t, m.Subtypes[0].Data)
+	assert.Equal(t, measurement.TypeK8s, m.Type)
+	// Should have 2 subtypes: server and image
+	assert.Len(t, m.Subtypes, 2)
 
-	data := m.Subtypes[0].Data
+	// Find the image subtype
+	var imageSubtype *measurement.Subtype
+	for i := range m.Subtypes {
+		if m.Subtypes[i].Name == "image" {
+			imageSubtype = &m.Subtypes[i]
+			break
+		}
+	}
+	if !assert.NotNil(t, imageSubtype, "Expected to find image subtype") {
+		return
+	}
+
+	data := imageSubtype.Data
 	if assert.Len(t, data, 2) {
 		reading, ok := data["repo/image:tag"]
 		if assert.True(t, ok) {

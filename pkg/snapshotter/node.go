@@ -96,25 +96,6 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 		return nil
 	})
 
-	// Collect kernel modules
-	g.Go(func() error {
-		collectorStart := time.Now()
-		defer func() {
-			snapshotCollectorDuration.WithLabelValues("kmod").Observe(time.Since(collectorStart).Seconds())
-		}()
-		slog.Debug("collecting kernel modules")
-		km := n.Factory.CreateKModCollector()
-		kMod, err := km.Collect(ctx)
-		if err != nil {
-			slog.Error("failed to collect kmod", slog.String("error", err.Error()))
-			return fmt.Errorf("failed to collect kMod info: %w", err)
-		}
-		mu.Lock()
-		snap.Measurements = append(snap.Measurements, kMod)
-		mu.Unlock()
-		return nil
-	})
-
 	// Collect systemd
 	g.Go(func() error {
 		collectorStart := time.Now()
@@ -134,18 +115,18 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 		return nil
 	})
 
-	// Collect grub
+	// Collect OS
 	g.Go(func() error {
 		collectorStart := time.Now()
 		defer func() {
-			snapshotCollectorDuration.WithLabelValues("grub").Observe(time.Since(collectorStart).Seconds())
+			snapshotCollectorDuration.WithLabelValues("os").Observe(time.Since(collectorStart).Seconds())
 		}()
-		slog.Debug("collecting grub configuration")
-		g := n.Factory.CreateGrubCollector()
+		slog.Debug("collecting OS configuration")
+		g := n.Factory.CreateOSCollector()
 		grub, err := g.Collect(ctx)
 		if err != nil {
-			slog.Error("failed to collect grub", slog.String("error", err.Error()))
-			return fmt.Errorf("failed to collect grub info: %w", err)
+			slog.Error("failed to collect OS", slog.String("error", err.Error()))
+			return fmt.Errorf("failed to collect OS info: %w", err)
 		}
 		mu.Lock()
 		snap.Measurements = append(snap.Measurements, grub)
@@ -153,26 +134,7 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 		return nil
 	})
 
-	// Collect sysctl
-	g.Go(func() error {
-		collectorStart := time.Now()
-		defer func() {
-			snapshotCollectorDuration.WithLabelValues("sysctl").Observe(time.Since(collectorStart).Seconds())
-		}()
-		slog.Debug("collecting sysctl configuration")
-		s := n.Factory.CreateSysctlCollector()
-		sysctl, err := s.Collect(ctx)
-		if err != nil {
-			slog.Error("failed to collect sysctl", slog.String("error", err.Error()))
-			return fmt.Errorf("failed to collect sysctl info: %w", err)
-		}
-		mu.Lock()
-		snap.Measurements = append(snap.Measurements, sysctl)
-		mu.Unlock()
-		return nil
-	})
-
-	// Collect SMI
+	// Collect GPU
 	g.Go(func() error {
 		collectorStart := time.Now()
 		defer func() {

@@ -20,12 +20,9 @@ func TestType_String(t *testing.T) {
 		mt   Type
 		want string
 	}{
-		{"Grub", TypeGrub, "Grub"},
-		{"Image", TypeImage, "Image"},
-		{"KMod", TypeKMod, "KMod"},
 		{"K8s", TypeK8s, "K8s"},
 		{"SMI", TypeGPU, "GPU"},
-		{"Sysctl", TypeSysctl, "Sysctl"},
+		{"OS", TypeOS, "OS"},
 		{"SystemD", TypeSystemD, "SystemD"},
 	}
 	for _, tt := range tests {
@@ -44,8 +41,8 @@ func TestParseType(t *testing.T) {
 		want   Type
 		wantOk bool
 	}{
-		{"valid grub", "Grub", TypeGrub, true},
 		{"valid k8s", "K8s", TypeK8s, true},
+		{"valid os", "OS", TypeOS, true},
 		{"invalid", "Invalid", "", false},
 		{"empty", "", "", false},
 		{"lowercase", "grub", "", false},

@@ -1,4 +1,4 @@
-package sysctl
+package os
 
 import (
 	"context"
@@ -18,20 +18,15 @@ var (
 	}
 )
 
-// Collector collects sysctl configurations from /proc/sys
-// excluding /proc/sys/net
-type Collector struct {
-}
-
-// Collect gathers sysctl configurations from /proc/sys, excluding /proc/sys/net
-// and returns them as a single Configuration with a map of all parameters.
-func (s *Collector) Collect(ctx context.Context) (*measurement.Measurement, error) {
+// collectSysctl gathers sysctl configurations from /proc/sys, excluding /proc/sys/net
+// and returns them as a subtype with file paths as keys and their contents as values.
+func (c *Collector) collectSysctl(ctx context.Context) (*measurement.Subtype, error) {
 	root := "/proc/sys"
 	params := make(map[string]measurement.Reading)
 
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			return fmt.Errorf("failed to walk dir: %w", err)
+			return fmt.Errorf("failed to walk directory %s: %w", path, err)
 		}
 
 		// Check if context is canceled
@@ -103,16 +98,12 @@ func (s *Collector) Collect(ctx context.Context) (*measurement.Measurement, erro
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to capture sysctl config: %w", err)
+		return nil, fmt.Errorf("failed to collect sysctl parameters: %w", err)
 	}
 
-	res := &measurement.Measurement{
-		Type: measurement.TypeSysctl,
-		Subtypes: []measurement.Subtype{
-			{
-				Data: measurement.FilterOut(params, filterOutSysctlKeys),
-			},
-		},
+	res := &measurement.Subtype{
+		Name: "sysctl",
+		Data: measurement.FilterOut(params, filterOutSysctlKeys),
 	}
 
 	return res, nil

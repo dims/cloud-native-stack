@@ -56,7 +56,7 @@ func (k *Collector) Collect(ctx context.Context) (*measurement.Measurement, erro
 				Data: versionInfo, // no need for filtering, all fields explicitly collected
 			},
 			{
-				Name: "images",
+				Name: "image",
 				Data: images,
 			},
 		},

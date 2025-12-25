@@ -7,23 +7,6 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/collector/systemd"
 )
 
-func TestDefaultCollectorFactory_CreateKModCollector(t *testing.T) {
-	factory := NewDefaultFactory()
-
-	collector := factory.CreateKModCollector()
-	if collector == nil {
-		t.Fatal("Expected non-nil collector")
-	}
-
-	// Verify it implements Collector interface
-	ctx := context.Background()
-	_, err := collector.Collect(ctx)
-	if err != nil {
-		// Error is acceptable (file might not exist), just verify interface works
-		t.Logf("Collect returned error (acceptable): %v", err)
-	}
-}
-
 func TestDefaultCollectorFactory_CreateSystemDCollector(t *testing.T) {
 	factory := NewDefaultFactory()
 	factory.SystemDServices = []string{"test.service"}
@@ -44,25 +27,10 @@ func TestDefaultCollectorFactory_CreateSystemDCollector(t *testing.T) {
 	}
 }
 
-func TestDefaultCollectorFactory_CreateGrubCollector(t *testing.T) {
+func TestDefaultCollectorFactory_CreateOSCollector(t *testing.T) {
 	factory := NewDefaultFactory()
 
-	collector := factory.CreateGrubCollector()
-	if collector == nil {
-		t.Fatal("Expected non-nil collector")
-	}
-
-	ctx := context.Background()
-	_, err := collector.Collect(ctx)
-	if err != nil {
-		t.Logf("Collect returned error (acceptable): %v", err)
-	}
-}
-
-func TestDefaultCollectorFactory_CreateSysctlCollector(t *testing.T) {
-	factory := NewDefaultFactory()
-
-	collector := factory.CreateSysctlCollector()
+	collector := factory.CreateOSCollector()
 	if collector == nil {
 		t.Fatal("Expected non-nil collector")
 	}
@@ -78,10 +46,8 @@ func TestDefaultCollectorFactory_AllCollectors(t *testing.T) {
 	factory := NewDefaultFactory()
 
 	collectorFuncs := []func() Collector{
-		factory.CreateKModCollector,
 		factory.CreateSystemDCollector,
-		factory.CreateGrubCollector,
-		factory.CreateSysctlCollector,
+		factory.CreateOSCollector,
 	}
 
 	for i, createFunc := range collectorFuncs {

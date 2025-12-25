@@ -37,6 +37,7 @@ func (s *Collector) Collect(ctx context.Context) (*measurement.Measurement, erro
 		Type: measurement.TypeGPU,
 		Subtypes: []measurement.Subtype{
 			{
+				Name: "smi",
 				Data: smiReadings, // no need for filtering here since we control the fields in getSMIReadings
 			},
 		},

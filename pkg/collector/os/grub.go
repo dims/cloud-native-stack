@@ -1,4 +1,4 @@
-package grub
+package os
 
 import (
 	"context"
@@ -12,19 +12,14 @@ import (
 
 var (
 	// Keys to filter out from GRUB config for privacy/security
-	filterOutGrabKeys = []string{
+	filterOutGrubKeys = []string{
 		"root",
 	}
 )
 
-// Collector collects information about GRUB bootloader configurations from /proc/cmdline
-// and parses them into GrubConfig structures
-type Collector struct {
-}
-
-// Collect retrieves the GRUB bootloader parameters from /proc/cmdline
-// and parses them into GrubConfig structures
-func (s *Collector) Collect(ctx context.Context) (*measurement.Measurement, error) {
+// collectGRUB retrieves the GRUB bootloader parameters from /proc/cmdline
+// and returns them as a subtype with key-value pairs for each boot parameter.
+func (c *Collector) collectGRUB(ctx context.Context) (*measurement.Subtype, error) {
 	// Check if context is canceled
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -69,13 +64,9 @@ func (s *Collector) Collect(ctx context.Context) (*measurement.Measurement, erro
 		props[key] = measurement.Str(val)
 	}
 
-	res := &measurement.Measurement{
-		Type: measurement.TypeGrub,
-		Subtypes: []measurement.Subtype{
-			{
-				Data: measurement.FilterOut(props, filterOutGrabKeys),
-			},
-		},
+	res := &measurement.Subtype{
+		Name: "grub",
+		Data: measurement.FilterOut(props, filterOutGrubKeys),
 	}
 
 	return res, nil

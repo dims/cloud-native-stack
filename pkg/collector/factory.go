@@ -2,20 +2,16 @@ package collector
 
 import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/collector/gpu"
-	"github.com/NVIDIA/cloud-native-stack/pkg/collector/grub"
 	"github.com/NVIDIA/cloud-native-stack/pkg/collector/k8s"
-	"github.com/NVIDIA/cloud-native-stack/pkg/collector/kmod"
-	"github.com/NVIDIA/cloud-native-stack/pkg/collector/sysctl"
+	"github.com/NVIDIA/cloud-native-stack/pkg/collector/os"
 	"github.com/NVIDIA/cloud-native-stack/pkg/collector/systemd"
 )
 
 // Factory creates collectors with their dependencies.
 // This interface enables dependency injection for testing.
 type Factory interface {
-	CreateKModCollector() Collector
 	CreateSystemDCollector() Collector
-	CreateGrubCollector() Collector
-	CreateSysctlCollector() Collector
+	CreateOSCollector() Collector
 	CreateKubernetesCollector() Collector
 	CreateGPUCollector() Collector
 }
@@ -36,11 +32,6 @@ func NewDefaultFactory() *DefaultFactory {
 	}
 }
 
-// ComponentCollector creates a component collector.
-func (f *DefaultFactory) CreateKModCollector() Collector {
-	return &kmod.Collector{}
-}
-
 // CreateSMICollector creates an GPU collector.
 func (f *DefaultFactory) CreateGPUCollector() Collector {
 	return &gpu.Collector{}
@@ -54,13 +45,8 @@ func (f *DefaultFactory) CreateSystemDCollector() Collector {
 }
 
 // CreateGrubCollector creates a GRUB collector.
-func (f *DefaultFactory) CreateGrubCollector() Collector {
-	return &grub.Collector{}
-}
-
-// CreateSysctlCollector creates a sysctl collector.
-func (f *DefaultFactory) CreateSysctlCollector() Collector {
-	return &sysctl.Collector{}
+func (f *DefaultFactory) CreateOSCollector() Collector {
+	return &os.Collector{}
 }
 
 // CreateKubernetesCollector creates a Kubernetes API collector.
