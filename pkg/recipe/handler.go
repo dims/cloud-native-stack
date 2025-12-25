@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	recipeCacheTTLInSec = 600 * 1000 // 10 minutes
+	recipeCacheTTLInSec = 600 // 10 minutes in seconds
 )
 
 // HandleRecipes processes recipe requests and returns recipes.

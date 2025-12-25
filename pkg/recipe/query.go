@@ -1,3 +1,29 @@
+// Package recipe implements a rule-based configuration system for generating
+// optimized system configurations based on environment context.
+//
+// Query Matching:
+//
+// The recipe system uses an asymmetric matching algorithm where rules (overlays)
+// match against candidate queries. A rule matches a candidate when every populated
+// field in the rule is satisfied by the candidate:
+//
+//   - Empty/zero fields in the rule act as wildcards (match anything)
+//   - Matching is asymmetric: rule.IsMatch(candidate) ≠ candidate.IsMatch(rule)
+//
+// Example:
+//
+//	rule := Query{Os: OSUbuntu}  // wildcard for other fields
+//	candidate := Query{Os: OSUbuntu, GPU: GPUH100}
+//	rule.IsMatch(candidate)      // true - rule matches broader candidate
+//	candidate.IsMatch(rule)      // false - candidate too specific for rule
+//
+// Recipe Construction:
+//
+// Recipes are built by:
+//  1. Starting with base measurements (apply to all queries)
+//  2. Layering matching overlays on top (environment-specific)
+//  3. Deep cloning all data to prevent mutation
+//  4. Optionally stripping context metadata if not requested
 package recipe
 
 import (
@@ -49,6 +75,29 @@ func (q *Query) IsEmpty() bool {
 		q.K8s == zeroVersion &&
 		q.GPU == "" &&
 		q.Intent == ""
+}
+
+// Validate checks if the query has valid field values and combinations.
+func (q *Query) Validate() error {
+	if q == nil {
+		return fmt.Errorf("query cannot be nil")
+	}
+
+	// Validate enum types
+	if q.Os != "" && q.Os != OSAny && !q.Os.IsValid() {
+		return fmt.Errorf("invalid os family: %s", q.Os)
+	}
+	if q.Service != "" && q.Service != ServiceAny && !q.Service.IsValid() {
+		return fmt.Errorf("invalid service type: %s", q.Service)
+	}
+	if q.GPU != "" && q.GPU != GPUAny && !q.GPU.IsValid() {
+		return fmt.Errorf("invalid gpu type: %s", q.GPU)
+	}
+	if q.Intent != "" && q.Intent != IntentAny && !q.Intent.IsValid() {
+		return fmt.Errorf("invalid intent type: %s", q.Intent)
+	}
+
+	return nil
 }
 
 // IsMatch reports whether the rule (receiver) applies to the candidate query, only
@@ -185,6 +234,7 @@ const (
 	ServiceAny ServiceType = anyValue
 	ServiceEKS ServiceType = "eks"
 	ServiceGKE ServiceType = "gke"
+	ServiceAKS ServiceType = "aks"
 )
 
 // String returns the string representation of the service type.
@@ -195,7 +245,7 @@ func (s ServiceType) String() string {
 // IsValid returns true if the service type is a valid supported value.
 func (s ServiceType) IsValid() bool {
 	switch s {
-	case ServiceAny, ServiceEKS, ServiceGKE:
+	case ServiceAny, ServiceEKS, ServiceGKE, ServiceAKS:
 		return true
 	default:
 		return false
@@ -204,7 +254,7 @@ func (s ServiceType) IsValid() bool {
 
 // SupportedServiceTypes returns all supported service type values.
 func SupportedServiceTypes() []ServiceType {
-	return []ServiceType{ServiceAny, ServiceEKS, ServiceGKE}
+	return []ServiceType{ServiceAny, ServiceEKS, ServiceGKE, ServiceAKS}
 }
 
 // ParseServiceType parses the service type from query parameters.

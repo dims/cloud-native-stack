@@ -4,34 +4,47 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"sync"
 	"time"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/collector"
-	"github.com/NVIDIA/cloud-native-stack/pkg/k8s/node"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
 
 	"golang.org/x/sync/errgroup"
 )
 
+// Snapshot represents the collected configuration snapshot of a node.
 type Snapshot struct {
-	Kind         string                     `json:"kind,omitempty" yaml:"kind,omitempty"`
-	APIVersion   string                     `json:"apiVersion,omitempty" yaml:"apiVersion,omitempty"`
-	Metadata     map[string]string          `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+	// Kind is the type of the snapshot object.
+	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
+
+	// APIVersion is the API version of the snapshot object.
+	APIVersion string `json:"apiVersion,omitempty" yaml:"apiVersion,omitempty"`
+
+	// Metadata contains key-value pairs with metadata about the snapshot.
+	Metadata map[string]string `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+
+	// Measurements contains the collected measurements from various collectors.
 	Measurements []*measurement.Measurement `json:"measurements" yaml:"measurements"`
 }
 
 // NodeSnapshotter is a snapshotter that collects configuration from the current node.
 type NodeSnapshotter struct {
-	Version    string
-	Factory    collector.Factory
+	// Version is the snapshotter version.
+	Version string
+
+	// Factory is the collector factory to use. If nil, the default factory is used.
+	Factory collector.Factory
+
+	// Serializer is the serializer to use for output. If nil, a default stdout JSON serializer is used.
 	Serializer serializer.Serializer
 }
 
-// Run collects configuration from the current node and outputs it to stdout.
+// Run collects configuration measurements from the current node and serializes the snapshot.
 // It implements the Snapshotter interface.
-func (n *NodeSnapshotter) Run(ctx context.Context) error {
+func (n *NodeSnapshotter) Measure(ctx context.Context) error {
 	if n.Factory == nil {
 		n.Factory = collector.NewDefaultFactory()
 	}
@@ -53,31 +66,26 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 		Kind:         "Snapshot",
 		APIVersion:   "snapshot.dgxc.io/v1",
 		Metadata:     make(map[string]string),
-		Measurements: make([]*measurement.Measurement, 0, 8), // Pre-allocate capacity for 8 collectors
+		Measurements: make([]*measurement.Measurement, 0),
 	}
 
-	// Collect node metadata
+	// Collect metadata
 	g.Go(func() error {
 		collectorStart := time.Now()
 		defer func() {
 			snapshotCollectorDuration.WithLabelValues("metadata").Observe(time.Since(collectorStart).Seconds())
 		}()
-		slog.Debug("collecting node metadata")
-		nd, err := node.Get(ctx, node.GetOptions{})
-		if err != nil {
-			slog.Error("failed to get node info", slog.String("error", err.Error()))
-			return fmt.Errorf("failed to get node info: %w", err)
-		}
+		nodeName := getNodeName()
 		mu.Lock()
 		snap.Metadata["snapshot-version"] = n.Version
-		snap.Metadata["source-node"] = nd.Name
-		snap.Metadata["snapshot-timestamp"] = time.Now().UTC().Format(time.RFC3339)
+		snap.Metadata["source-node"] = nodeName
+		snap.Metadata["measurement-timestamp"] = time.Now().UTC().Format(time.RFC3339)
 		mu.Unlock()
-		slog.Debug("obtained node metadata", slog.String("name", nd.Name), slog.String("namespace", nd.Namespace))
+		slog.Debug("obtained node metadata", slog.String("name", nodeName), slog.String("version", n.Version))
 		return nil
 	})
 
-	// Collect k8s resources
+	// Collect Kubernetes configuration
 	g.Go(func() error {
 		collectorStart := time.Now()
 		defer func() {
@@ -96,7 +104,7 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 		return nil
 	})
 
-	// Collect systemd
+	// Collect SystemD services
 	g.Go(func() error {
 		collectorStart := time.Now()
 		defer func() {
@@ -175,4 +183,26 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// getNodeName retrieves the current node name from environment variables.
+// It checks NODE_NAME first (typically set via Downward API), then falls back
+// to KUBERNETES_NODE_NAME, and finally HOSTNAME as a last resort.
+func getNodeName() string {
+	// Preferred: NODE_NAME set via Downward API
+	if nodeName := os.Getenv("NODE_NAME"); nodeName != "" {
+		return nodeName
+	}
+
+	// Alternative: KUBERNETES_NODE_NAME
+	if nodeName := os.Getenv("KUBERNETES_NODE_NAME"); nodeName != "" {
+		return nodeName
+	}
+
+	// Last resort: HOSTNAME (may be pod name, not node name)
+	if hostname := os.Getenv("HOSTNAME"); hostname != "" {
+		return hostname
+	}
+
+	return ""
 }

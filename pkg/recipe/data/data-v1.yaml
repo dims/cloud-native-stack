@@ -2,7 +2,7 @@ base:
   - type: os
     subtypes:
 
-      - name: kmod
+      - subtype: kmod
         data:
           ecc: true
           gdrdrv: true
@@ -38,7 +38,7 @@ base:
           sunrpc: RPC framework for networked GPU operations
           ttm: Translation Table Manager for GPU memory management
 
-      - name: grub
+      - subtype: grub
         data:
           BOOT_IMAGE: /boot/vmlinuz-6.8.0-1028
           apparmor: "1"
@@ -62,7 +62,7 @@ base:
           numa_balancing: Disable auto-migration for predictable GPU memory locality
           security: Security framework (minimal GPU impact)
 
-      - name: sysctl
+      - subtype: sysctl
         data:
           /proc/sys/fs/aio-max-nr: "65536"
           /proc/sys/fs/file-max: "9223372036854775807"
@@ -151,13 +151,13 @@ base:
   - type: k8s
     subtypes:
 
-      - name: server
+      - subtype: server
         data:
           version: v1.33.5
         context:
           version: Kubernetes version for GPU orchestration
   
-      - name: image
+      - subtype: image
         data:
           container-toolkit: v1.17.8
           dcgm: 4.3.1-1
@@ -192,7 +192,7 @@ base:
   - type: gpu
     subtypes:
       
-      - name: smi
+      - subtype: smi
         data:
           addressing-mode: ATS
           cuda-version: "13.1"
@@ -218,7 +218,7 @@ overlays:
     types:
       - type: os
         subtypes:
-          - name: grub
+          - subtype: grub
             data:
               BOOT_IMAGE: /boot/vmlinuz-6.8.0-1028-aws
             context:
@@ -230,19 +230,19 @@ overlays:
     types:
       - type: k8s
         subtypes:
-          - name: server
+          - subtype: server
             data:
               version: v1.33
             context:
               version: Minimum AWS EKS Kubernetes version to support DRA for GB200 GPUs
-          - name: image
+          - subtype: image
             data:
               aws-efa-k8s-device-plugin: v0.5.3
             context:
               aws-efa-k8s-device-plugin: EFA device plugin for high-speed GPU-to-GPU networking
       - type: os
         subtypes:
-          - name: kmod
+          - subtype: kmod
             data:
               efa: true
             context:

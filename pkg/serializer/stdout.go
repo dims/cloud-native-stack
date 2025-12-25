@@ -6,6 +6,19 @@ import (
 )
 
 // StdoutSerializer is a serializer that outputs snapshot data to stdout in JSON format.
+//
+// Deprecated: Use Writer with NewStdoutWriter(FormatJSON) instead for more flexibility
+// and consistent API. StdoutSerializer is maintained for backward compatibility.
+//
+// Example migration:
+//
+//	// Old:
+//	// s := &StdoutSerializer{}
+//	// s.Serialize(data)
+//
+//	// New:
+//	// w := NewStdoutWriter(FormatJSON)
+//	// w.Serialize(data)
 type StdoutSerializer struct {
 }
 

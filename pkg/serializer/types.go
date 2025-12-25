@@ -1,3 +1,27 @@
+// Package serializer provides utilities for serializing data to various formats.
+//
+// The package supports three main output formats:
+//   - JSON: Machine-readable structured data with proper indentation
+//   - YAML: Human-readable configuration format
+//   - Table: Human-readable tabular output with flattened keys
+//
+// Usage:
+//
+//	writer := serializer.NewWriter(serializer.FormatJSON, os.Stdout)
+//	defer writer.Close() // Important: close to release file handles
+//	if err := writer.Serialize(data); err != nil {
+//		log.Fatal(err)
+//	}
+//
+// For HTTP responses:
+//
+//	serializer.RespondJSON(w, http.StatusOK, data)
+//
+// The package automatically handles:
+//   - Proper content-type headers for HTTP responses
+//   - Buffering to prevent partial responses on errors
+//   - Flattening nested structures for table format
+//   - Resource cleanup via Close() method
 package serializer
 
 // Serializer is an interface for serializing snapshot data.

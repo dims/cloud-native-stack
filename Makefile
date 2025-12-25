@@ -82,7 +82,7 @@ qualify: test lint scan ## Qualifies the current codebase (test, lint, scan)
 server: ## Starts a local development server
 	@set -e; \
 	echo "Starting local development server"; \
-	LOG_LEVEL=debug go run cmd/server/main.go
+	LOG_LEVEL=debug go run cmd/eidos-api-server/main.go
 
 .PHONY: build
 build: tidy ## Builds the release for the current OS and architecture

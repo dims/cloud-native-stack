@@ -1,4 +1,4 @@
-package client
+package k8s
 
 import (
 	"fmt"
@@ -11,12 +11,12 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
-// GetKubeClient creates a Kubernetes client from the given kubeconfig file.
+// getKubeClient creates a Kubernetes client from the given kubeconfig file.
 // If kubeconfig is empty, it will look for the KUBECONFIG environment variable
 // or the default kubeconfig file in the user's home directory.
 // It returns the Kubernetes client and the rest.Config used to create it.
 // If an error occurs during the process, it returns nil and the error.
-func GetKubeClient(kubeconfig string) (*kubernetes.Clientset, *rest.Config, error) {
+func getKubeClient(kubeconfig string) (*kubernetes.Clientset, *rest.Config, error) {
 	if kubeconfig == "" {
 		kubeconfig = os.Getenv("KUBECONFIG")
 

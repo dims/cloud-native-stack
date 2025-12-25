@@ -58,7 +58,7 @@ The snapshot can be output in JSON, YAML, or table format.`,
 				Serializer: serializer.NewFileWriterOrStdout(outFormat, cmd.String("output")),
 			}
 
-			return ns.Run(ctx)
+			return ns.Measure(ctx)
 		},
 	}
 }

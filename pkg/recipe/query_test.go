@@ -206,8 +206,9 @@ func TestParseServiceType(t *testing.T) {
 		{name: "default", values: url.Values{}, want: ServiceAny},
 		{name: "valid env", values: url.Values{QueryParamEnvironment: {"eks"}}, want: ServiceEKS},
 		{name: "valid service alias", values: url.Values{QueryParamService: {"gke"}}, want: ServiceGKE},
-		{name: "invalid env", values: url.Values{QueryParamEnvironment: {"aks"}}, wantErr: true},
-		{name: "invalid service alias", values: url.Values{QueryParamService: {"aks"}}, wantErr: true},
+		{name: "valid aks", values: url.Values{QueryParamService: {"aks"}}, want: ServiceAKS},
+		{name: "invalid env", values: url.Values{QueryParamEnvironment: {"unknown"}}, wantErr: true},
+		{name: "invalid service alias", values: url.Values{QueryParamService: {"unknown"}}, wantErr: true},
 	}
 
 	for _, tt := range tests {

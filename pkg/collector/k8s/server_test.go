@@ -6,28 +6,18 @@ import (
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/stretchr/testify/assert"
-	"k8s.io/apimachinery/pkg/version"
-	fakediscovery "k8s.io/client-go/discovery/fake"
-	"k8s.io/client-go/kubernetes/fake"
 )
 
 func TestKubernetesCollector_Collect(t *testing.T) {
 	ctx := context.Background()
-	fakeClient := fake.NewClientset()
-	fakeDiscovery := fakeClient.Discovery().(*fakediscovery.FakeDiscovery)
-	fakeDiscovery.FakedServerVersion = &version.Info{
-		GitVersion: "v1.28.0",
-		Platform:   "linux/amd64",
-		GoVersion:  "go1.20.7",
-	}
-	collector := &Collector{ClientSet: fakeClient}
+	collector := createTestCollector()
 
 	m, err := collector.Collect(ctx)
 	assert.NoError(t, err)
 	assert.NotNil(t, m)
 	assert.Equal(t, measurement.TypeK8s, m.Type)
-	// Should have 2 subtypes: server and image
-	assert.Len(t, m.Subtypes, 2)
+	// Should have 3 subtypes: server, image, and policy
+	assert.Len(t, m.Subtypes, 3)
 
 	// Find the server subtype
 	var serverSubtype *measurement.Subtype
@@ -59,10 +49,13 @@ func TestKubernetesCollector_CollectWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	collector := &Collector{ClientSet: fake.NewClientset()}
+	collector := createTestCollector()
 	m, err := collector.Collect(ctx)
 
 	assert.Error(t, err)
 	assert.Nil(t, m)
 	assert.Equal(t, context.Canceled, err)
 }
+
+// Helper function defined in image_test.go
+// Reused here to avoid duplication across test files

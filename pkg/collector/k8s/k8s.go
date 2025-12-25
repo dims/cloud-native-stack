@@ -3,16 +3,16 @@ package k8s
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/k8s/client"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 // Collector collects information about the Kubernetes cluster.
 type Collector struct {
-	ClientSet kubernetes.Interface
+	ClientSet  kubernetes.Interface
+	RestConfig *rest.Config
 }
 
 // Collect retrieves Kubernetes cluster version information from the API server.
@@ -23,29 +23,25 @@ func (k *Collector) Collect(ctx context.Context) (*measurement.Measurement, erro
 		return nil, err
 	}
 
-	k8sClient, err := k.getClient()
-	if err != nil {
+	if err := k.getClient(); err != nil {
 		return nil, err
 	}
-
-	// Server Version
-	serverVersion, err := k8sClient.Discovery().ServerVersion()
+	// Cluster Version
+	versions, err := k.collectServer(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get kubernetes version: %w", err)
+		return nil, fmt.Errorf("failed to collect server version: %w", err)
 	}
-
-	versionInfo := map[string]measurement.Reading{
-		"version":   measurement.Str(serverVersion.GitVersion),
-		"platform":  measurement.Str(serverVersion.Platform),
-		"goVersion": measurement.Str(serverVersion.GoVersion),
-	}
-
-	slog.Debug("collected kubernetes version", slog.String("version", serverVersion.GitVersion))
 
 	// Cluster Images
-	images, err := k.collectContainerImages(ctx, k8sClient)
+	images, err := k.collectContainerImages(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to collect container images: %w", err)
+	}
+
+	// Cluster Policies
+	policies, err := k.collectClusterPolicies(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to collect cluster policies: %w", err)
 	}
 
 	res := &measurement.Measurement{
@@ -53,11 +49,15 @@ func (k *Collector) Collect(ctx context.Context) (*measurement.Measurement, erro
 		Subtypes: []measurement.Subtype{
 			{
 				Name: "server",
-				Data: versionInfo, // no need for filtering, all fields explicitly collected
+				Data: versions,
 			},
 			{
 				Name: "image",
 				Data: images,
+			},
+			{
+				Name: "policy",
+				Data: policies,
 			},
 		},
 	}
@@ -65,14 +65,14 @@ func (k *Collector) Collect(ctx context.Context) (*measurement.Measurement, erro
 	return res, nil
 }
 
-func (k *Collector) getClient() (kubernetes.Interface, error) {
-	if k.ClientSet != nil {
-		return k.ClientSet, nil
+func (k *Collector) getClient() error {
+	if k.ClientSet != nil && k.RestConfig != nil {
+		return nil
 	}
 	var err error
-	k.ClientSet, _, err = client.GetKubeClient("")
+	k.ClientSet, k.RestConfig, err = getKubeClient("")
 	if err != nil {
-		return nil, fmt.Errorf("failed to get kubernetes client: %w", err)
+		return fmt.Errorf("failed to get kubernetes client: %w", err)
 	}
-	return k.ClientSet, nil
+	return nil
 }

@@ -36,16 +36,23 @@ func (f Format) IsUnknown() bool {
 }
 
 // Writer handles serialization of configuration data to various formats.
+// Close must be called to release file handles when using NewFileWriterOrStdout.
 type Writer struct {
 	format Format
 	output io.Writer
+	closer io.Closer
 }
 
 // NewWriter creates a new Writer with the specified format and output destination.
 // If output is nil, os.Stdout will be used.
+// If format is unknown, defaults to JSON format.
 func NewWriter(format Format, output io.Writer) *Writer {
 	if output == nil {
 		output = os.Stdout
+	}
+	if format.IsUnknown() {
+		slog.Warn("unknown format, defaulting to JSON", "format", format)
+		format = FormatJSON
 	}
 	return &Writer{
 		format: format,
@@ -53,8 +60,9 @@ func NewWriter(format Format, output io.Writer) *Writer {
 	}
 }
 
-// NewFileWriterOrPanic creates a new Writer that outputs to the specified file path in the given format.
-// It panics if the file cannot be created.
+// NewFileWriterOrStdout creates a new Writer that outputs to the specified file path in the given format.
+// If the file cannot be created or path is empty, it falls back to stdout.
+// Remember to call Close() on the returned Writer to ensure the file is properly closed.
 func NewFileWriterOrStdout(format Format, path string) *Writer {
 	trimmed := strings.TrimSpace(path)
 	if trimmed == "" {
@@ -67,18 +75,38 @@ func NewFileWriterOrStdout(format Format, path string) *Writer {
 		return NewStdoutWriter(format)
 	}
 
+	if format.IsUnknown() {
+		slog.Warn("unknown format, defaulting to JSON", "format", format)
+		format = FormatJSON
+	}
+
 	return &Writer{
 		format: format,
 		output: file,
+		closer: file,
 	}
 }
 
 // NewStdoutWriter creates a new Writer that outputs to stdout in the specified format.
 func NewStdoutWriter(format Format) *Writer {
+	if format.IsUnknown() {
+		slog.Warn("unknown format, defaulting to JSON", "format", format)
+		format = FormatJSON
+	}
 	return &Writer{
 		format: format,
 		output: os.Stdout,
 	}
+}
+
+// Close releases any resources associated with the Writer.
+// It should be called when done writing, especially for file-based writers.
+// It's safe to call Close multiple times or on stdout-based writers.
+func (w *Writer) Close() error {
+	if w.closer != nil {
+		return w.closer.Close()
+	}
+	return nil
 }
 
 // Serialize outputs the given configuration data in the configured format.
