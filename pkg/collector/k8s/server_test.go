@@ -47,7 +47,7 @@ func TestKubernetesCollector_Collect(t *testing.T) {
 	}
 }
 
-func TestKubernetesCollector_CollectWithCancelledContext(t *testing.T) {
+func TestKubernetesCollector_CollectWithCanceledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.TODO())
 	cancel() // Cancel immediately
 

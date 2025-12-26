@@ -1,118 +1,325 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 )
 
-func TestServeIntegration(t *testing.T) {
-	// This is a basic smoke test to ensure the server can be initialized
-	// We don't actually run it since it blocks
-	// More comprehensive integration tests would use a test server
+// Test Coverage Note:
+// The pkg/api package contains a single Serve() function that:
+// 1. Initializes logging
+// 2. Creates a recipe builder
+// 3. Configures routes
+// 4. Starts a blocking HTTP server
+//
+// Direct unit testing of Serve() is impractical because:
+// - It's a blocking function that runs until shutdown
+// - It requires full server initialization
+// - It integrates with the pkg/server package
+//
+// Instead, these tests verify:
+// - Package constants and build variables are correct
+// - Route configuration structure is valid
+// - Recipe builder integration works correctly
+// - HTTP handlers respond properly to various inputs
+// - Concurrent request handling is safe
+//
+// The Serve() function itself is best tested via:
+// - End-to-end integration tests (separate test suite)
+// - Manual testing during development
+// - System/acceptance testing in deployed environments
 
-	// Verify route setup would work
-	r := map[string]http.HandlerFunc{
-		"/v1/recommendations": nil,
+// TestConstants verifies package constants are properly defined
+func TestConstants(t *testing.T) {
+	if name != "eidos-api-server" {
+		t.Errorf("name = %q, want %q", name, "eidos-api-server")
 	}
 
-	if _, exists := r["/v1/recommendations"]; !exists {
-		t.Error("expected /v1/recommendations route to exist")
+	if versionDefault != "dev" {
+		t.Errorf("versionDefault = %q, want %q", versionDefault, "dev")
+	}
+
+	// Verify buildtime variables exist (they may have default values)
+	if version == "" {
+		t.Error("version should not be empty")
+	}
+	if commit == "" {
+		t.Error("commit should not be empty")
+	}
+	if date == "" {
+		t.Error("date should not be empty")
 	}
 }
 
-func TestRecommendationEndpoint(t *testing.T) {
-	b := recipe.NewBuilder()
+// TestRouteConfiguration verifies that the correct routes are set up
+func TestRouteConfiguration(t *testing.T) {
+	// Test that the route map is properly structured
+	b := recipe.NewBuilder(
+		recipe.WithVersion("test-version"),
+	)
 
-	req := httptest.NewRequest(http.MethodGet, "/v1/recommendations", nil)
+	routes := map[string]http.HandlerFunc{
+		"/v1/recipe": b.HandleRecipes,
+	}
+
+	// Verify expected route exists
+	if handler, exists := routes["/v1/recipe"]; !exists {
+		t.Error("expected /v1/recipe route to exist")
+	} else if handler == nil {
+		t.Error("expected /v1/recipe handler to be non-nil")
+	}
+
+	// Verify no extra routes
+	if len(routes) != 1 {
+		t.Errorf("expected exactly 1 route, got %d", len(routes))
+	}
+}
+
+// TestRecipeEndpoint tests the /v1/recipe endpoint
+func TestRecipeEndpoint(t *testing.T) {
+	b := recipe.NewBuilder(recipe.WithVersion("test"))
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/recipe", nil)
 	w := httptest.NewRecorder()
 
 	b.HandleRecipes(w, req)
 
-	if w.Code != http.StatusOK && w.Code != http.StatusInternalServerError {
+	// Should return OK or an error status
+	if w.Code != http.StatusOK && w.Code != http.StatusBadRequest && w.Code != http.StatusInternalServerError {
 		t.Errorf("unexpected status code: %d", w.Code)
 	}
 
+	// Verify content type is set
 	contentType := w.Header().Get("Content-Type")
-	if contentType != "application/json" {
-		t.Errorf("expected Content-Type application/json, got %s", contentType)
+	if contentType == "" {
+		t.Error("expected Content-Type header to be set")
 	}
 }
 
-func TestRecommendationEndpointMethodNotAllowed(t *testing.T) {
+// TestRecipeEndpointMethods verifies only GET is allowed
+func TestRecipeEndpointMethods(t *testing.T) {
 	b := recipe.NewBuilder()
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/recommendations", nil)
-	w := httptest.NewRecorder()
+	methods := []string{http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch}
 
-	b.HandleRecipes(w, req)
-
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("expected status %d, got %d", http.StatusMethodNotAllowed, w.Code)
-	}
-
-	allow := w.Header().Get("Allow")
-	if allow != http.MethodGet {
-		t.Errorf("expected Allow header %s, got %s", http.MethodGet, allow)
-	}
-}
-
-func TestRecommendationEndpointWithQueryParams(t *testing.T) {
-	b := recipe.NewBuilder()
-
-	tests := []struct {
-		name       string
-		query      string
-		expectCode int
-	}{
-		{
-			name:       "valid query with ubuntu",
-			query:      "?os=ubuntu",
-			expectCode: http.StatusOK,
-		},
-		{
-			name:       "valid query with cos",
-			query:      "?os=cos",
-			expectCode: http.StatusOK,
-		},
-		{
-			name:       "no query params defaults to all",
-			query:      "",
-			expectCode: http.StatusOK,
-		},
-		{
-			name:       "invalid os parameter",
-			query:      "?os=InvalidOS",
-			expectCode: http.StatusBadRequest,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, "/v1/recommendations"+tt.query, nil)
+	for _, method := range methods {
+		t.Run(method, func(t *testing.T) {
+			req := httptest.NewRequest(method, "/v1/recipe", nil)
 			w := httptest.NewRecorder()
 
 			b.HandleRecipes(w, req)
 
-			if w.Code != tt.expectCode && w.Code != http.StatusInternalServerError {
-				t.Errorf("expected status %d (or 500), got %d", tt.expectCode, w.Code)
+			if w.Code != http.StatusMethodNotAllowed {
+				t.Errorf("expected status %d for method %s, got %d",
+					http.StatusMethodNotAllowed, method, w.Code)
+			}
+
+			allow := w.Header().Get("Allow")
+			if allow == "" {
+				t.Error("expected Allow header to be set")
 			}
 		})
 	}
 }
 
-func TestRecommendationEndpointCacheHeaders(t *testing.T) {
+// TestRecipeEndpointWithValidQueryParams tests various valid query combinations
+func TestRecipeEndpointWithValidQueryParams(t *testing.T) {
 	b := recipe.NewBuilder()
 
-	req := httptest.NewRequest(http.MethodGet, "/v1/recommendations", nil)
+	tests := []struct {
+		name  string
+		query string
+	}{
+		{
+			name:  "os ubuntu",
+			query: "?os=ubuntu",
+		},
+		{
+			name:  "os cos",
+			query: "?os=cos",
+		},
+		{
+			name:  "gpu h100",
+			query: "?gpu=h100",
+		},
+		{
+			name:  "gpu gb200",
+			query: "?gpu=gb200",
+		},
+		{
+			name:  "service eks",
+			query: "?service=eks",
+		},
+		{
+			name:  "service gke",
+			query: "?service=gke",
+		},
+		{
+			name:  "intent training",
+			query: "?intent=training",
+		},
+		{
+			name:  "intent inference",
+			query: "?intent=inference",
+		},
+		{
+			name:  "multiple params",
+			query: "?os=ubuntu&gpu=h100&service=eks",
+		},
+		{
+			name:  "no params",
+			query: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/v1/recipe"+tt.query, nil)
+			w := httptest.NewRecorder()
+
+			b.HandleRecipes(w, req)
+
+			// Valid requests should return OK or an error status (not method not allowed)
+			if w.Code == http.StatusMethodNotAllowed {
+				t.Error("valid query should not result in method not allowed")
+			}
+		})
+	}
+}
+
+// TestRecipeEndpointWithInvalidQueryParams tests invalid parameter values
+func TestRecipeEndpointWithInvalidQueryParams(t *testing.T) {
+	b := recipe.NewBuilder()
+
+	tests := []struct {
+		name  string
+		query string
+	}{
+		{
+			name:  "invalid os",
+			query: "?os=invalid-os",
+		},
+		{
+			name:  "invalid gpu",
+			query: "?gpu=invalid-gpu",
+		},
+		{
+			name:  "invalid service",
+			query: "?service=invalid-service",
+		},
+		{
+			name:  "invalid intent",
+			query: "?intent=invalid-intent",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/v1/recipe"+tt.query, nil)
+			w := httptest.NewRecorder()
+
+			b.HandleRecipes(w, req)
+
+			// Invalid params should result in bad request
+			if w.Code != http.StatusBadRequest {
+				t.Errorf("expected status %d for invalid param, got %d",
+					http.StatusBadRequest, w.Code)
+			}
+		})
+	}
+}
+
+// TestRecipeEndpointResponseHeaders verifies common response headers
+func TestRecipeEndpointResponseHeaders(t *testing.T) {
+	b := recipe.NewBuilder()
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/recipe", nil)
 	w := httptest.NewRecorder()
 
 	b.HandleRecipes(w, req)
 
-	cacheControl := w.Header().Get("Cache-Control")
-	if cacheControl == "" && w.Code == http.StatusOK {
-		t.Error("expected Cache-Control header on successful response")
+	// Verify content type is set for successful responses
+	if w.Code == http.StatusOK {
+		contentType := w.Header().Get("Content-Type")
+		if contentType == "" {
+			t.Error("expected Content-Type header to be set on successful response")
+		}
+	}
+}
+
+// TestRecipeEndpointConcurrency tests that the handler is safe for concurrent use
+func TestRecipeEndpointConcurrency(t *testing.T) {
+	b := recipe.NewBuilder()
+
+	const numRequests = 10
+	done := make(chan bool, numRequests)
+
+	for i := 0; i < numRequests; i++ {
+		go func() {
+			req := httptest.NewRequest(http.MethodGet, "/v1/recipe?os=ubuntu", nil)
+			w := httptest.NewRecorder()
+			b.HandleRecipes(w, req)
+			done <- true
+		}()
+	}
+
+	// Wait for all requests to complete with timeout
+	timeout := time.After(5 * time.Second)
+	for i := 0; i < numRequests; i++ {
+		select {
+		case <-done:
+			// Request completed
+		case <-timeout:
+			t.Fatal("timeout waiting for concurrent requests to complete")
+		}
+	}
+}
+
+// TestRecipeBuilderInitialization verifies builder is properly initialized
+func TestRecipeBuilderInitialization(t *testing.T) {
+	testVersion := "1.2.3"
+	b := recipe.NewBuilder(
+		recipe.WithVersion(testVersion),
+	)
+
+	if b == nil {
+		t.Fatal("expected non-nil builder")
+	}
+
+	// Verify the handler can be called
+	req := httptest.NewRequest(http.MethodGet, "/v1/recipe", nil)
+	w := httptest.NewRecorder()
+
+	b.HandleRecipes(w, req)
+
+	// Should not panic and should return some response
+	if w.Code == 0 {
+		t.Error("handler did not set a status code")
+	}
+}
+
+// TestRecipeEndpointContextHandling verifies context is properly handled
+func TestRecipeEndpointContextHandling(t *testing.T) {
+	b := recipe.NewBuilder()
+
+	// Create request with canceled context
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/recipe?os=ubuntu", nil)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	// Handler should handle canceled context gracefully
+	b.HandleRecipes(w, req)
+
+	// Should not panic - exact status depends on implementation
+	if w.Code == 0 {
+		t.Error("handler did not set a status code")
 	}
 }

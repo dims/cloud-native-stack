@@ -101,7 +101,7 @@ func TestImageCollector_Collect(t *testing.T) {
 	}
 }
 
-func TestImageCollector_CollectWithCancelledContext(t *testing.T) {
+func TestImageCollector_CollectWithCanceledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.TODO())
 	cancel() // Cancel immediately
 

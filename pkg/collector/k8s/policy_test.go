@@ -127,7 +127,7 @@ func TestPolicyCollector_EmptyCluster(t *testing.T) {
 	assert.Empty(t, policies, "Expected no policies in empty cluster")
 }
 
-func TestPolicyCollector_WithCancelledContext(t *testing.T) {
+func TestPolicyCollector_WithCanceledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.TODO())
 	cancel() // Cancel immediately
 

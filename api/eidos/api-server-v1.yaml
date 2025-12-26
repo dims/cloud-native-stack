@@ -5,7 +5,7 @@ info:
   description: >
     Returns optimized system configuration recipes (measurements and component recommendations)
     for a given combination of platform parameters (OS, kernel, service, Kubernetes, GPU, intent).
-    
+
     The recipe system uses a rule-based overlay architecture where base measurements are layered
     with environment-specific overlays based on query matching.
 
