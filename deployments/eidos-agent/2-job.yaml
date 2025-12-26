@@ -52,9 +52,9 @@ spec:
           args:
             - |
               set -e
-              /ko-app/eidos --debug snapshot -t yaml -o /tmp/snapshot.yaml
+              /ko-app/eidos --debug snapshot -t yaml -o /export/snapshot.yaml
               cat /tmp/snapshot.yaml
-              /ko-app/eidos --debug recommend -t yaml -f /tmp/snapshot.yaml -i training -o /tmp/recommend.yaml
+              /ko-app/eidos --debug recommend -t yaml -f /export/snapshot.yaml -i training -o /export/recommend.yaml
           resources:
             requests:
               cpu: "1"
@@ -77,6 +77,8 @@ spec:
               readOnly: true
             - name: tmp
               mountPath: /tmp
+            - name: export
+              mountPath: /export
       volumes:
         - name: run-systemd
           hostPath:
@@ -84,3 +86,5 @@ spec:
             type: Directory
         - name: tmp
           emptyDir: {}
+        - name: export
+          emptyDir: {}  # map this to PVC for shared dat exports

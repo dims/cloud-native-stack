@@ -3,6 +3,7 @@ package recipe
 import (
 	"time"
 
+	"github.com/NVIDIA/cloud-native-stack/pkg/header"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
 
@@ -13,6 +14,8 @@ const (
 
 // Recipe represents the recipe response structure.
 type Recipe struct {
+	*header.Header
+
 	PayloadVersion string                     `json:"payloadVersion" yaml:"payloadVersion"`
 	BuilderVersion string                     `json:"builderVersion" yaml:"builderVersion"`
 	GeneratedAt    time.Time                  `json:"generatedAt" yaml:"generatedAt"`

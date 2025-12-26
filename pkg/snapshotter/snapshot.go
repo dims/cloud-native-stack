@@ -48,9 +48,6 @@ func (n *NodeSnapshotter) Measure(ctx context.Context) error {
 
 	// Initialize snapshot structure
 	snap := &Snapshot{
-		Kind:         "Snapshot",
-		APIVersion:   "snapshot.dgxc.io/v1",
-		Metadata:     make(map[string]string),
 		Measurements: make([]*measurement.Measurement, 0),
 	}
 
@@ -62,9 +59,9 @@ func (n *NodeSnapshotter) Measure(ctx context.Context) error {
 		}()
 		nodeName := k8s.GetNodeName()
 		mu.Lock()
+		snap.Set("Snapshot")
 		snap.Metadata["snapshot-version"] = n.Version
 		snap.Metadata["source-node"] = nodeName
-		snap.Metadata["measurement-timestamp"] = time.Now().UTC().Format(time.RFC3339)
 		mu.Unlock()
 		slog.Debug("obtained node metadata", slog.String("name", nodeName), slog.String("version", n.Version))
 		return nil

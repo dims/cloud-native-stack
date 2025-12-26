@@ -3,6 +3,7 @@ package snapshotter
 import (
 	"context"
 
+	"github.com/NVIDIA/cloud-native-stack/pkg/header"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
 
@@ -14,14 +15,7 @@ type Snapshotter interface {
 
 // Snapshot represents the collected configuration snapshot of a node.
 type Snapshot struct {
-	// Kind is the type of the snapshot object.
-	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
-
-	// APIVersion is the API version of the snapshot object.
-	APIVersion string `json:"apiVersion,omitempty" yaml:"apiVersion,omitempty"`
-
-	// Metadata contains key-value pairs with metadata about the snapshot.
-	Metadata map[string]string `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+	*header.Header
 
 	// Measurements contains the collected measurements from various collectors.
 	Measurements []*measurement.Measurement `json:"measurements" yaml:"measurements"`

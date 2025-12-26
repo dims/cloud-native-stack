@@ -92,6 +92,10 @@ func (r *ConfigRecommender) Recommend(ctx context.Context, intent recipe.IntentT
 		return nil, fmt.Errorf("error building recipe: %w", err)
 	}
 
+	// Set recommendation version header
+	rec.Set("Recommendation")
+	rec.Metadata["recommender-version"] = r.Version
+
 	// Track successful recommendation generation
 	recommendGenerateTotal.WithLabelValues("success").Inc()
 
