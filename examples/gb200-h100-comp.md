@@ -2,12 +2,12 @@
 
 ## Files Compared
 
-| System | Source | Node                      |
-|--------|--------|---------------------------|
-| H100   | AWS    | `ip-10-0-233-106.ec2.internal` |
-| GB200  | AWS    | `ip-10-0-205-119.ec2.internal` |
+| System | Source | Node | Snapshot Version |
+|--------|--------|------|------------------|
+| H100   | AWS EKS | `ip-10-0-158-18.ec2.internal` | v0.6.8 |
+| GB200  | AWS EKS | `ip-10-0-160-248.ec2.internal` | v0.6.6 |
 
-Both snapshots use `snapshot.dgxc.io/v1`, version `v0.5.6`.
+Both snapshots use `snapshot.dgxc.io/v1` API version.
 
 > Meaningful config and capability diffs only. Ignores order, timestamps, and other expected runtime noise.
 
@@ -17,21 +17,131 @@ Both snapshots use `snapshot.dgxc.io/v1`, version `v0.5.6`.
 
 | Category | Classification | Notes |
 |----------|----------------|-------|
-| Kernel & Boot | Different | Same kernel family (6.8 AWS), different patch level and flags |
-| CPU Architecture | Different | H100 is x86_64; GB200 is ARM64 |
-| Crypto Acceleration | Different | Architecture-specific crypto modules |
-| NUMA / Memory Policy | Different | Explicit NUMA tuning only on GB200 |
-| Kubernetes | Both Present | Different versions: H100 (v1.30.14-eks), GB200 (v1.33.5-eks) |
-| Container Runtime | Equivalent | containerd configuration aligned |
-| GPU Stack | Equivalent | NVIDIA + GDR present on both |
-| Networking / RDMA | Equivalent | EFA + RDMA stacks aligned |
-| Docker | Equivalent (disabled) | Inactive on both |
-| Kubelet systemd unit | Equivalent (inactive) | Inactive on both |
-
+| Kernel & Boot | Different | Same kernel family (6.8 AWS), different patch levels |
+| CPU Architecture | **Different** | H100 is **ARM64**; GB200 is **ARM64** (both) |
+| Platform | Different | H100 reports arm64; GB200 reports amd64 for K8s |
+| GPU Architecture | **Different** | H100 is **Hopper**; GB200 is **Blackwell** |
+| GPU Count | Different | H100: 8 GPUs; GB200: 4 GPUs |
+| GPU Driver | Different | H100: 570.133.20; GB200: 580.82.07 |
+| CUDA Version | Different | H100: 12.8; GB200: 13.1 |
+| Kubernetes | Different | H100: v1.30.14-eks; GB200: v1.33.5-eks |
+| GPU Operator | Different | H100: v25.3.0; GB200: v25.3.3 |
+| Container Runtime | Equivalent | containerd on both |
+| DCGM Version | Different | H100: 4.1.1-2; GB200: 4.3.1-1 |
+| Container Toolkit | Different | H100: v1.17.5; GB200: v1.17.8 |
 
 ⸻
 
-## 2. Kernel & Boot Configuration (Grub)
+## 2. GPU Hardware Comparison
+
+### GPU Architecture & Model
+
+| Attribute | H100 | GB200 |
+|-----------|------|-------|
+| Model | NVIDIA H100 80GB HBM3 | NVIDIA GB200 |
+| Architecture | Hopper | Blackwell |
+| GPU Count | 8 | 4 |
+| Driver Version | 570.133.20 | 580.82.07 |
+| CUDA Version | 12.8 | 13.1 |
+| Addressing Mode | HMM | ATS |
+| Display Mode | Enabled | Deprecated |
+| Persistence Mode | Disabled | Disabled |
+| GSP Firmware | 570.133.20 | 580.82.07 |
+| VBIOS Version | 96.00.BC.00.01 | 97.00.B9.00.69 |
+
+**Classification:** Fundamental architectural difference. GB200 represents next-gen Blackwell architecture vs H100's Hopper. GB200 uses ATS (Address Translation Services) vs H100's HMM (Heterogeneous Memory Management).
+
+⸻
+
+## 3. Kubernetes & Container Stack
+
+### Kubernetes Version
+
+| System | K8s Version | Go Version | Platform |
+|--------|-------------|------------|----------|
+| H100 | v1.30.14-eks-3025e55 | go1.24.9 | linux/arm64 |
+| GB200 | v1.33.5-eks-3025e55 | go1.24.6 | linux/amd64 |
+
+**Classification:** GB200 runs newer K8s (v1.33 vs v1.30), but platform reporting differs (arm64 vs amd64).
+
+### GPU Operator & DCGM Stack
+
+| Component | H100 | GB200 |
+|-----------|------|-------|
+| GPU Operator | v25.3.0 | v25.3.3 |
+| DCGM | 4.1.1-2-ubuntu22.04 | 4.3.1-1-ubuntu22.04 |
+| DCGM Exporter | 4.1.1-4.0.4-ubuntu22.04 | 4.3.1-4.4.0-ubuntu22.04 |
+| Device Plugin | v0.17.1 | v0.17.4 |
+| Driver Manager | v0.8.0 | v0.8.1 |
+| MIG Manager | v0.12.1-ubuntu20.04 | v0.12.3-ubuntu20.04 |
+| Container Toolkit | v1.17.5-ubuntu20.04 | v1.17.8-ubuntu20.04 |
+
+**Classification:** GB200 runs newer versions across the entire GPU stack.
+
+### Container Images Deployed
+
+#### Unique to H100
+- Run:ai suite (scheduler, workload controllers, pod-group controllers, etc.)
+- Knative serving stack (activator, autoscaler, controller, webhook, kourier)
+- NIM Operator (k8s-nim-operator: v2.0.1)
+- NATS messaging (nats, nats-box, nats-server-config-reloader)
+- LeaderWorkerSet (lws: 0.7.0)
+- Grafana Alloy (alloy: v1.4.3)
+- Kyverno policy engine (v1.14.3-nv.2)
+- Grove Operator (v0.1.0-alpha.3)
+
+#### Unique to GB200
+- DRA Driver (k8s-dra-driver-gpu: v25.8.0)
+- ArgoCD (v2.14.3)
+- Bitnami images (kubectl, mongodb, nginx)
+- Cert Manager suite
+- Janitor (dgxc-janitor: 1.17.3)
+- Enhanced NVSentinel suite (fault-quarantine, fault-remediation modules)
+
+#### Common Components (Different Versions)
+| Component | H100 | GB200 |
+|-----------|------|-------|
+| amazon-k8s-cni | v1.19.2-eksbuild.1 | v1.20.1-eksbuild.1 |
+| kube-proxy | v1.30.6-minimal | v1.33.0 |
+| driver | 570.133.20 | 580.82.07 |
+| gpu-operator | v25.3.0 | v25.3.3 |
+
+**Assessment:** H100 is heavily Run:ai-focused with workload orchestration. GB200 has DRA support and ArgoCD for GitOps.
+
+⸻
+
+## 4. GPU Operator ClusterPolicy Configuration
+
+### Key Policy Differences
+
+#### Device Plugin Strategy
+- **H100:** Standard configuration
+- **GB200:** Enhanced with `DP_DISABLE_HEALTHCHECKS=109` and `DEVICE_LIST_STRATEGY=volume-mounts`
+
+#### Driver Configuration
+| Setting | H100 | GB200 |
+|---------|------|-------|
+| driver.version | 570.133.20 | 580.82.07 |
+| driver.upgradePolicy.autoUpgrade | true | true |
+| driver.rdma.enabled | true | true |
+| driver.rdma.useHostMofed | false | false |
+
+#### MIG Configuration
+| Setting | H100 | GB200 |
+|---------|------|-------|
+| mig.strategy | single | single |
+| migManager.config.default | all-disabled | all-disabled |
+| migManager.config.name | default-mig-parted-config | default-mig-parted-config |
+
+#### CDI (Container Device Interface)
+- **H100:** cdi.enabled=true, cdi.default=false
+- **GB200:** cdi.enabled=true, cdi.default=false
+
+**Classification:** Both have similar policy structure with version-appropriate configurations. GB200 uses newer driver and has enhanced device plugin settings.
+
+⸻
+
+## 5. Kernel & Boot Configuration
 
 ### Kernel Version
 
@@ -40,111 +150,75 @@ Both snapshots use `snapshot.dgxc.io/v1`, version `v0.5.6`.
 | H100 | 6.8.0-1024-aws |
 | GB200 | 6.8.0-1028-aws |
 
-**Classification:** Patch-level skew only; same kernel line.
+**Classification:** GB200 uses slightly newer kernel patch level.
 
-### Boot Flags – Real Differences
+### Boot Flags – Key Differences
 
 | Flag | H100 | GB200 |
 |------|------|-------|
-| init_on_alloc | not set | 0 |
-| numa_balancing | default | disable |
 | hugepages | 5128 | 5128 |
 | hugepagesz | 2M | 2M |
+| numa_balancing | default | disable |
+| init_on_alloc | not set | 0 |
 | nokaslr | enabled | enabled |
+| audit | 1 | 1 |
+| audit_backlog_limit | 8192 | 8192 |
 
-**Interpretation:** GB200 explicitly disables NUMA auto-balancing and init-on-alloc, indicating tighter control over memory placement and determinism. H100 relies on kernel defaults.
-
-⸻
-
-## 3. CPU Architecture & Crypto Stack
-
-### Architecture Evidence
-
-**H100 (x86_64-oriented modules):**
-- aesni_intel
-- sha256_ssse3
-- ghash_clmulni_intel
-
-**GB200 (ARM64-oriented modules):**
-- aes_ce, sha*_ce
-- sm3, sm4
-- polyval_ce
-
-**Classification:** Fundamental architectural difference. Expected and correct for GB200-class systems.
+**Interpretation:** GB200 explicitly disables NUMA auto-balancing and init-on-alloc for tighter control over memory placement and determinism. Both have identical security auditing and huge pages configuration.
 
 ⸻
 
-## 4. Kernel Module Inventory (KMod)
-
-### GPU / NVIDIA Stack
-
-| Module | H100 | GB200 |
-|--------|------|-------|
-| nvidia | ✓ | ✓ |
-| nvidia_uvm | ✓ | ✓ |
-| nvidia_modeset | ✓ | ✓ |
-| gdrdrv | ✓ | ✓ |
-| ecc | ✓ | ✓ |
-
-**Assessment:** No gap. GPU driver and GDR plumbing are aligned.
-
-### Networking & RDMA
-
-Both snapshots include:
-- efa
-- ib_core, ib_uverbs
-- rdma_cm, iw_cm
-- rpcrdma, sunrpc
-
-**Assessment:** No meaningful difference. RDMA and EFA parity is good.
-
-### Filesystem / Storage Stack
-
-- **H100:** Includes full Lustre client stack (lustre, lmv, mdc, osc, ptlrpc, etc.)
-- **GB200:** Lustre modules not present
-
-**Classification:** True functional gap. H100 nodes are Lustre-capable; GB200 nodes are not configured with Lustre support.
-
-⸻
-
-## 5. Kubernetes Presence
-
-| Aspect | H100 | GB200 |
-|--------|------|-------|
-| Kubernetes metadata | Present | Present |
-| Reported version | v1.30.14-eks-3025e55 | v1.33.5-eks-3025e55 |
-| Build date | 2025-11-11T03:22:24Z | 2025-11-11T03:21:21Z |
-| Go version | go1.24.9 | go1.24.6 |
-| Platform | linux/amd64 | linux/amd64 |
-
-**Classification:** Both nodes have Kubernetes installed, but GB200 is running a newer version (v1.33.5 vs v1.30.14). Both are EKS builds from similar timeframes with minor Go version differences.
-
-⸻
-
-## 6. systemd: containerd
+## 6. systemd Services
 
 ### containerd.service
 
 - Active and enabled on both nodes
-- Identical drop-ins (999-tuning-tuning.conf)
-- Same cgroup delegation, limits, restart policy
+- Same drop-ins and configuration structure
+- Identical cgroup delegation, limits, restart policy
+- Runtime differences (CPUUsageNSec, MemoryCurrent) are expected variance
 
-Observed differences are limited to runtime counters:
-- CPUUsageNSec
-- MemoryCurrent
-- TasksCurrent
-
-**Classification:** Runtime variance only. No configuration drift.
+**Classification:** No meaningful configuration drift.
 
 ⸻
 
-## 7. Docker & Kubelet Units
+## 7. Key Functional Differences Summary
 
-| Unit | H100 | GB200 |
-|------|------|-------|
-| docker.service | inactive / not-found | inactive / not-found |
-| kubelet.service | inactive | inactive |
+### 1. GPU Generation Gap
+- **H100:** Hopper architecture (compute capability 9.0), HMM addressing
+- **GB200:** Blackwell architecture (next-gen), ATS addressing
+- **Impact:** GB200 has architectural advances in memory coherence and compute capabilities
 
-**Assessment:** No difference.
+### 2. Workload Orchestration
+- **H100:** Run:ai-centric with advanced scheduling, pod groups, queue management
+- **GB200:** ArgoCD GitOps-focused, DRA support, enhanced monitoring
+- **Impact:** Different operational models - H100 for complex multi-tenant scheduling, GB200 for GitOps and modern resource management
 
+### 3. Kubernetes Version Skew
+- **H100:** v1.30 (stable, Run:ai validated)
+- **GB200:** v1.33 (latest, DRA support)
+- **Impact:** GB200 can leverage newer K8s features like DRA for GPU resource allocation
 
+### 4. GPU Stack Versions
+- GB200 runs newer versions across driver, DCGM, operators
+- **Impact:** Access to latest bug fixes, features, and performance improvements
+
+### 5. Observability Stack
+- **H100:** Alloy + Prometheus + Run:ai metrics
+- **GB200:** Prometheus + Enhanced NVSentinel (fault detection/remediation)
+- **Impact:** Different monitoring philosophies - H100 more observability-focused, GB200 more fault-prevention focused
+
+⸻
+
+## 8. Recommendations
+
+1. **Version Alignment:** Consider standardizing on similar K8s and GPU Operator versions if both systems need to run identical workloads
+
+2. **Run:ai on GB200:** If Run:ai orchestration is needed on GB200, deploy the Run:ai suite
+
+3. **DRA on H100:** If H100 needs DRA support, upgrade to K8s v1.26+ and deploy DRA driver
+
+4. **Driver Parity:** Both use appropriate drivers for their GPU architecture; maintain version currency for security
+
+5. **Policy Harmonization:** The ClusterPolicy configurations are largely compatible; consider using a common baseline with architecture-specific overrides
+
+6. **Monitoring Strategy:** Evaluate whether to standardize on one observability stack vs maintaining architecture-specific tooling
