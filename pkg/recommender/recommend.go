@@ -13,22 +13,24 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/version"
 )
 
-// ConfigRecommender is a recommender that suggests configuration changes.
-// Implements the Recommender interface.
+// ConfigRecommender generates configuration recommendations based on system snapshots.
+// It analyzes snapshot data, extracts relevant system information, and uses the
+// recipe builder to generate tailored configuration recipes for the target intent.
 type ConfigRecommender struct {
 	Version string
 }
 
-// Option is a functional option for configuring the ConfigRecommender
+// Option is a functional option for configuring ConfigRecommender instances.
 type Option func(*ConfigRecommender)
 
+// WithVersion returns an Option that sets the ConfigRecommender version string.
 func WithVersion(version string) Option {
 	return func(r *ConfigRecommender) {
 		r.Version = version
 	}
 }
 
-// New creates a new ConfigRecommender with the provided options.
+// New creates a new ConfigRecommender instance with the provided functional options.
 func New(opts ...Option) *ConfigRecommender {
 	s := &ConfigRecommender{}
 
@@ -40,7 +42,11 @@ func New(opts ...Option) *ConfigRecommender {
 	return s
 }
 
-// Recommend generates configuration recommendations based on the provided snapshot.
+// Recommend generates configuration recommendations based on the provided snapshot and intent.
+// It extracts system information from the snapshot, constructs a query, and uses the
+// recipe builder to generate a tailored Recipe. The intent specifies the workload type
+// (e.g., training, inference) to optimize recommendations accordingly.
+// Returns an error if the snapshot is nil, empty, intent is invalid, or query extraction fails.
 func (r *ConfigRecommender) Recommend(ctx context.Context, intent recipe.IntentType, snap *snapshotter.Snapshot) (*recipe.Recipe, error) {
 	if snap == nil {
 		return nil, fmt.Errorf("snapshot cannot be nil")

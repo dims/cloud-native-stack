@@ -42,10 +42,10 @@ const (
 	KeyActive        = "active"
 )
 
-// Type represents the type of measurement.
+// Type represents the category of a measurement (e.g., Kubernetes, GPU, OS, SystemD).
 type Type string
 
-// String returns the string representation of the Type.
+// String returns the string representation of the measurement Type.
 func (mt Type) String() string {
 	return string(mt)
 }
@@ -65,7 +65,8 @@ var Types = []Type{
 	TypeSystemD,
 }
 
-// ParseMeasurementType parses a string into a Type.
+// ParseType parses a string into a measurement Type.
+// Returns the Type and true if parsing succeeds, or empty Type and false if the string is invalid.
 func ParseType(s string) (Type, bool) {
 	for _, mt := range Types {
 		if string(mt) == s {
@@ -75,13 +76,16 @@ func ParseType(s string) (Type, bool) {
 	return "", false
 }
 
-// Measurement represents a collected measurements with its type and associated data.
+// Measurement represents collected data of a specific type with multiple subtypes.
+// Each measurement contains a category (Type) and one or more Subtypes with their associated data.
 type Measurement struct {
 	Type     Type      `json:"type" yaml:"type"`
 	Subtypes []Subtype `json:"subtypes,omitempty" yaml:"subtypes,omitempty"`
 }
 
-// Subtype represents a subtype of measurement with its associated data.
+// Subtype represents a specific subcategory of measurement with associated data.
+// Data contains the actual measurements as key-value pairs.
+// Context provides additional metadata about the measurement environment.
 type Subtype struct {
 	Name    string             `json:"subtype,omitempty" yaml:"subtype,omitempty"`
 	Data    map[string]Reading `json:"data" yaml:"data"`

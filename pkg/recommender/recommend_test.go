@@ -73,7 +73,7 @@ func TestConfigRecommender_Recommend(t *testing.T) {
 		{
 			name:      "snapshot with no measurements",
 			intent:    recipe.IntentTraining,
-			snapshot:  &snapshotter.Snapshot{},
+			snapshot:  snapshotter.NewSnapshot(),
 			wantError: true,
 			errMsg:    "snapshot contains no measurements",
 		},
@@ -184,7 +184,7 @@ func TestQueryFromSnapshot(t *testing.T) {
 		{
 			name:      "empty measurements",
 			intent:    recipe.IntentTraining,
-			snapshot:  &snapshotter.Snapshot{},
+			snapshot:  snapshotter.NewSnapshot(),
 			wantError: true,
 			errMsg:    "snapshot contains no measurements",
 		},

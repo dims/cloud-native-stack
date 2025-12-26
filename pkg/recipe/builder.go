@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"gopkg.in/yaml.v3"
@@ -21,17 +22,18 @@ var (
 	defaultBuilder = &Builder{}
 )
 
-// Option is a functional option for configuring the Builder
+// Option is a functional option for configuring Builder instances.
 type Option func(*Builder)
 
-// WithVersion sets the Builder version string.
+// WithVersion returns an Option that sets the Builder version string.
+// The version is included in recipe metadata for tracking purposes.
 func WithVersion(version string) Option {
 	return func(b *Builder) {
 		b.Version = version
 	}
 }
 
-// NewBuilder creates a new Builder with the provided options.
+// NewBuilder creates a new Builder instance with the provided functional options.
 func NewBuilder(opts ...Option) *Builder {
 	b := &Builder{}
 
@@ -42,23 +44,34 @@ func NewBuilder(opts ...Option) *Builder {
 	return b
 }
 
-// Builder constructs Recipe payloads based on queries.
+// Builder constructs Recipe payloads based on Query specifications.
+// It loads recommendation data, applies overlays based on query matching,
+// and generates tailored configuration recipes.
 type Builder struct {
 	Version string
 }
 
-// BuildRecipe creates a Recipe based on the query using a shared
-// default Builder instance. Prefer using Builder directly when custom settings
-// like cache TTL are required.
+// BuildRecipe creates a Recipe based on the provided query using a shared default Builder.
+// This is a convenience function for simple use cases.
+// For custom configuration or control over Builder settings, create a Builder instance directly.
 func BuildRecipe(ctx context.Context, q *Query) (*Recipe, error) {
 	return defaultBuilder.Build(ctx, q)
 }
 
 // Build creates a Recipe payload for the provided query.
+// It loads the recipe store, applies matching overlays, and returns
+// a Recipe with base measurements merged with overlay-specific configurations.
+// Context is included in the response only if Query.IncludeContext is true.
 func (b *Builder) Build(ctx context.Context, q *Query) (*Recipe, error) {
 	if q == nil {
 		return nil, fmt.Errorf("query cannot be nil")
 	}
+
+	// Track overall build duration
+	start := time.Now()
+	defer func() {
+		recipeBuiltDuration.Observe(time.Since(start).Seconds())
+	}()
 
 	store, err := loadStore(ctx)
 	if err != nil {
@@ -78,6 +91,7 @@ func (b *Builder) Build(ctx context.Context, q *Query) (*Recipe, error) {
 		if overlay.Key.IsMatch(q) {
 			merged, index = mergeOverlayMeasurements(merged, index, overlay.Types)
 			r.MatchedRules = append(r.MatchedRules, overlay.Key.String())
+			recipeRuleMatchTotal.WithLabelValues("matched").Inc()
 		}
 	}
 

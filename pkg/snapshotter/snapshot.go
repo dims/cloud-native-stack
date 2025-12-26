@@ -9,13 +9,14 @@ import (
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/collector"
 	"github.com/NVIDIA/cloud-native-stack/pkg/collector/k8s"
-	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
 
 	"golang.org/x/sync/errgroup"
 )
 
-// NodeSnapshotter is a snapshotter that collects configuration from the current node.
+// NodeSnapshotter collects system configuration measurements from the current node.
+// It coordinates multiple collectors in parallel to gather data about Kubernetes,
+// GPU hardware, OS configuration, and systemd services, then serializes the results.
 type NodeSnapshotter struct {
 	// Version is the snapshotter version.
 	Version string
@@ -27,8 +28,10 @@ type NodeSnapshotter struct {
 	Serializer serializer.Serializer
 }
 
-// Run collects configuration measurements from the current node and serializes the snapshot.
-// It implements the Snapshotter interface.
+// Measure collects configuration measurements from the current node and serializes the snapshot.
+// It runs collectors in parallel using errgroup for efficient data gathering.
+// If any collector fails, the entire operation returns an error.
+// The resulting snapshot is serialized using the configured Serializer.
 func (n *NodeSnapshotter) Measure(ctx context.Context) error {
 	if n.Factory == nil {
 		n.Factory = collector.NewDefaultFactory()
@@ -47,9 +50,7 @@ func (n *NodeSnapshotter) Measure(ctx context.Context) error {
 	g, ctx := errgroup.WithContext(ctx)
 
 	// Initialize snapshot structure
-	snap := &Snapshot{
-		Measurements: make([]*measurement.Measurement, 0),
-	}
+	snap := NewSnapshot()
 
 	// Collect metadata
 	g.Go(func() error {

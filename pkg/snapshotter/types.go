@@ -7,13 +7,23 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
 
-// Snapshotter is the interface that wraps the Run method.
-// Measure starts the snapshotter with the provided context.
+// Snapshotter defines the interface for collecting system configuration snapshots.
+// Implementations gather measurements from various system components and serialize
+// the results for analysis or recommendation generation.
 type Snapshotter interface {
 	Measure(ctx context.Context) error
 }
 
-// Snapshot represents the collected configuration snapshot of a node.
+// NewSnapshot creates a new Snapshot instance with an initialized Measurements slice.
+func NewSnapshot() *Snapshot {
+	return &Snapshot{
+		Measurements: make([]*measurement.Measurement, 0),
+	}
+}
+
+// Snapshot represents a collected configuration snapshot from a system node.
+// It contains metadata and measurements from various collectors including
+// Kubernetes, GPU, OS configuration, and systemd services.
 type Snapshot struct {
 	header.Header `json:",inline" yaml:",inline"`
 

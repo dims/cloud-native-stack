@@ -16,8 +16,10 @@ var (
 	ErrInvalidPrecision  = errors.New("version precision must be 1, 2, or 3")
 )
 
-// Version represents a semantic version with Major, Minor, and Patch components.
-// Precision indicates how many components are significant (1=Major, 2=Major.Minor, 3=Major.Minor.Patch).
+// Version represents a semantic version number with Major, Minor, and Patch components.
+// It supports flexible precision (1, 2, or 3 components) and preserves additional
+// version metadata such as build suffixes (e.g., "-eks-3025e55", "-gke.1337000").
+// The Precision field indicates how many components are significant for comparisons.
 type Version struct {
 	Major int `json:"major,omitempty" yaml:"major,omitempty"`
 	Minor int `json:"minor,omitempty" yaml:"minor,omitempty"`
@@ -30,8 +32,9 @@ type Version struct {
 	Extras string `json:"extras,omitempty" yaml:"extras,omitempty"`
 }
 
-// NewVersion creates a Version with all three components and precision 3.
-// Use ParseVersion if you need flexible precision.
+// NewVersion creates a new Version with the specified major, minor, and patch values.
+// The precision is automatically set to 3 (all components are significant).
+// Use ParseVersion for parsing version strings or creating versions with different precision.
 func NewVersion(major, minor, patch int) Version {
 	return Version{
 		Major:     major,
@@ -41,7 +44,9 @@ func NewVersion(major, minor, patch int) Version {
 	}
 }
 
-// String returns the version as a string respecting its precision
+// String returns the string representation of the Version respecting its precision.
+// Returns "Major" for precision 1, "Major.Minor" for precision 2,
+// and "Major.Minor.Patch" for precision 3. Extras are not included.
 func (v Version) String() string {
 	switch v.Precision {
 	case 1:
@@ -53,8 +58,11 @@ func (v Version) String() string {
 	}
 }
 
-// ParseVersion parses a version string in the format "Major", "Major.Minor", "Major.Minor.Patch", or with "v" prefix.
-// Returns an error if the version string is invalid.
+// ParseVersion parses a version string into a Version struct.
+// Supported formats: "1", "1.2", "1.2.3", "v1.2.3", "1.2.3-suffix", "1.2.3+metadata".
+// The "v" prefix is optional and stripped if present.
+// Additional metadata after '-' or '+' is preserved in the Extras field.
+// Returns an error if the version string is empty, has invalid components, or has too many components.
 func ParseVersion(s string) (Version, error) {
 	// Check for empty string
 	if s == "" {
@@ -116,7 +124,8 @@ func ParseVersion(s string) (Version, error) {
 }
 
 // MustParseVersion parses a version string and panics if parsing fails.
-// Useful for initializing package-level constants.
+// This function is useful for initializing package-level constants where
+// the version string is known to be valid at compile time.
 func MustParseVersion(s string) Version {
 	v, err := ParseVersion(s)
 	if err != nil {
@@ -126,7 +135,8 @@ func MustParseVersion(s string) Version {
 }
 
 // EqualsOrNewer returns true if v is equal to or newer than other.
-// Only compares components up to the precision of v (e.g., v0.1 matches v0.1.x)
+// Comparison is performed up to the precision of v.
+// For example, Version{Major:1, Minor:2, Precision:2} matches any 1.2.x version.
 func (v Version) EqualsOrNewer(other Version) bool {
 	// Always compare Major
 	if v.Major > other.Major {

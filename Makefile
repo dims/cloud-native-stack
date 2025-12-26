@@ -6,7 +6,7 @@ VERSION            ?= $(shell git describe --tags --abbrev=0 2>/dev/null || echo
 YAML_FILES         := $(shell find . -type f \( -iname "*.yml" -o -iname "*.yaml" \) ! -path "./docs/*")
 COMMIT             := $(shell git rev-parse HEAD)
 BRANCH             := $(shell git rev-parse --abbrev-ref HEAD)
-GO_VERSION	       := $(shell go version 2>/dev/null | awk '{print $$3}' | sed 's/go//')
+GO_VERSION	       := $(shell go env GOVERSION 2>/dev/null | sed 's/go//')
 GOLINT_VERSION     = $(shell golangci-lint --version 2>/dev/null | awk '{print $$4}' | sed 's/golangci-lint version //' || echo "not installed")
 KO_VERSION         = $(shell ko version 2>/dev/null || echo "not installed")
 GORELEASER_VERSION = $(shell goreleaser --version 2>/dev/null | sed -n 's/^GitVersion:[[:space:]]*//p' || echo "not installed")
@@ -81,6 +81,15 @@ server: ## Starts a local development server
 	@set -e; \
 	echo "Starting local development server"; \
 	LOG_LEVEL=debug go run cmd/eidos-api-server/main.go
+
+.PHONY: docs
+docs: ## Generates and serves Go documentation on http://localhost:6060
+	@set -e; \
+	echo "Starting Go documentation server on http://localhost:6060"; \
+	echo "Visit http://localhost:6060 to view docs"; \
+	command -v pkgsite >/dev/null 2>&1 && pkgsite -http=:6060 || \
+	(command -v godoc >/dev/null 2>&1 && godoc -http=:6060 || \
+	(echo "Installing pkgsite..." && go install golang.org/x/pkgsite/cmd/pkgsite@latest && pkgsite -http=:6060))
 
 .PHONY: build
 build: tidy ## Builds the release for the current OS and architecture

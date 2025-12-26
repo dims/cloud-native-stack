@@ -7,10 +7,10 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/collector/systemd"
 )
 
-// Factory creates collectors with their dependencies.
-// This interface enables dependency injection for testing.
+// Factory defines the interface for creating collector instances.
+// Implementations of Factory provide configured collectors for various system components.
+// This interface enables dependency injection and facilitates testing by allowing mock collectors.
 type Factory interface {
-	GetVersion() string
 	CreateSystemDCollector() Collector
 	CreateOSCollector() Collector
 	CreateKubernetesCollector() Collector
@@ -36,13 +36,17 @@ func WithVersion(version string) Option {
 	}
 }
 
-// DefaultFactory creates collectors with production dependencies.
+// DefaultFactory is the standard implementation of Factory that creates collectors
+// with production dependencies. It configures default systemd services to monitor
+// and supports version tracking.
 type DefaultFactory struct {
 	SystemDServices []string
 	Version         string
 }
 
-// NewDefaultFactory creates a factory with default settings.
+// NewDefaultFactory creates a new DefaultFactory with default configuration.
+// By default, it monitors containerd, docker, and kubelet systemd services.
+// Additional configuration can be provided via functional options.
 func NewDefaultFactory(opts ...Option) *DefaultFactory {
 	f := &DefaultFactory{
 		SystemDServices: []string{
@@ -60,17 +64,12 @@ func NewDefaultFactory(opts ...Option) *DefaultFactory {
 	return f
 }
 
-// GetVersion returns the factory version.
-func (f *DefaultFactory) GetVersion() string {
-	return f.Version
-}
-
-// CreateSMICollector creates an GPU collector.
+// CreateGPUCollector creates a GPU collector that gathers GPU hardware and driver information.
 func (f *DefaultFactory) CreateGPUCollector() Collector {
 	return &gpu.Collector{}
 }
 
-// CreateSystemDCollector creates a systemd collector.
+// CreateSystemDCollector creates a systemd collector that monitors the configured services.
 func (f *DefaultFactory) CreateSystemDCollector() Collector {
 	return &systemd.Collector{
 		Services: f.SystemDServices,

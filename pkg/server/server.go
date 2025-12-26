@@ -19,7 +19,8 @@ import (
 	"golang.org/x/time/rate"
 )
 
-// Server represents the HTTP server for handling requests.
+// Server represents the HTTP server for handling API requests.
+// It includes rate limiting, health checks, metrics, and graceful shutdown capabilities.
 type Server struct {
 	config      *Config
 	httpServer  *http.Server
@@ -28,38 +29,41 @@ type Server struct {
 	ready       bool
 }
 
-// Option is a functional option for configuring the Server
+// Option is a functional option for configuring Server instances.
 type Option func(*Server)
 
-// WithConfig sets a custom configuration for the server
+// WithConfig returns an Option that sets a custom configuration for the Server.
 func WithConfig(cfg *Config) Option {
 	return func(s *Server) {
 		s.config = cfg
 	}
 }
 
-// WithName sets the server name in the configuration
+// WithName returns an Option that sets the server name in the configuration.
 func WithName(name string) Option {
 	return func(s *Server) {
 		s.config.Name = name
 	}
 }
 
-// WithVersion sets the server version in the configuration
+// WithVersion returns an Option that sets the server version in the configuration.
 func WithVersion(version string) Option {
 	return func(s *Server) {
 		s.config.Version = version
 	}
 }
 
-// WithHandler adds custom handlers to the server
+// WithHandler returns an Option that adds custom HTTP handlers to the server.
+// The map keys are URL paths and values are the corresponding handler functions.
 func WithHandler(handlers map[string]http.HandlerFunc) Option {
 	return func(s *Server) {
 		s.config.Handlers = handlers
 	}
 }
 
-// New creates a new server instance with the given routes and options.
+// New creates a new Server instance with the provided functional options.
+// It parses environment configuration, sets up rate limiting, and configures
+// the HTTP server with health checks, metrics, and custom handlers.
 func New(opts ...Option) *Server {
 	config := parseConfig()
 
