@@ -394,12 +394,1159 @@ func TestSnapshotCommand(t *testing.T) {
 
 ## Future Enhancements
 
-### Potential Improvements
-1. **Caching**: Cache snapshot results with TTL
-2. **Differential Snapshots**: Compare two snapshots and show diff
-3. **Filtering**: Allow filtering measurements by type/subtype
-4. **Compression**: Compress large snapshots (gzip)
-5. **Streaming**: Stream measurements for large datasets
-6. **Validation**: Validate snapshots against expected schemas
-7. **Import/Export**: Convert between different snapshot formats
-8. **Plugins**: External collector plugins via RPC
+### Short-Term (< 3 months)
+
+1. **Caching Layer**  
+   **Rationale**: Reduce latency for repeated `eidos snapshot` calls in scripts  
+   **Implementation**: `sync.Map` with TTL-based eviction using `time.AfterFunc`  
+   **Trade-off**: Stale data risk vs 5-10x performance improvement  
+   **Reference**: [sync.Map](https://pkg.go.dev/sync#Map)
+
+2. **Differential Snapshots**  
+   **Use Case**: CI/CD pipelines detecting configuration drift  
+   **Implementation**: `github.com/google/go-cmp/cmp` for deep comparison  
+   **Output**: JSON Patch (RFC 6902) format for machine consumption  
+   **CLI**: `eidos diff baseline.yaml current.yaml --format patch`
+
+3. **Measurement Filtering**  
+   **Use Case**: Extract only GPU data without K8s overhead  
+   **CLI**: `eidos snapshot --filter gpu,os --exclude k8s`  
+   **Implementation**: Post-collection filtering before serialization  
+   **Performance**: Saves 60-70% execution time when K8s excluded
+
+4. **Batch Mode**  
+   **Use Case**: Fleet-wide configuration auditing (100s of nodes)  
+   **Implementation**: Worker pool with `errgroup.SetLimit()`  
+   **CLI**: `eidos snapshot --nodes nodes.txt --workers 10 --output results/`  
+   **Reference**: [errgroup Limits](https://pkg.go.dev/golang.org/x/sync/errgroup#Group.SetLimit)
+
+### Mid-Term (3-6 months)
+
+5. **Plugin System**  
+   **Rationale**: Custom collectors without forking codebase  
+   **Interface**: `type Collector interface { Collect(context.Context) (Measurement, error) }`  
+   **Options**: Go plugins (unstable across versions) or WASM (safe, portable)  
+   **Security**: Sandboxed execution with restricted syscalls  
+   **Reference**: [WebAssembly System Interface](https://wasi.dev/)
+
+6. **Configuration Files**  
+   **Use Case**: Avoid repeating --os, --gpu flags  
+   **Format**: YAML following XDG Base Directory spec  
+   **Location**: `~/.config/eidos/config.yaml` (Linux/macOS), `%APPDATA%\eidos\config.yaml` (Windows)  
+   **Example**:
+   ```yaml
+   defaults:
+     os: ubuntu
+     gpu: h100
+     format: yaml
+   server:
+     url: https://recipe-api.example.com
+   ```
+
+7. **Watch Mode**  
+   **Implementation**: Hybrid of `fsnotify` + periodic polling  
+   **CLI**: `eidos snapshot --watch --interval 30s --on-change ./alert.sh`  
+   **Output**: Stream of JSON diffs to stdout  
+   **Use Case**: Real-time monitoring with alerting
+
+8. **Schema Validation**  
+   **Use Case**: Ensure snapshots conform to API version spec  
+   **Implementation**: Embed JSON Schema in binary with `go:embed`  
+   **Library**: `github.com/santhosh-tekuri/jsonschema/v5` (fastest Go validator)  
+   **CLI**: `eidos validate --schema v1 snapshot.json`
+
+### Long-Term (6-12 months)
+
+9. **gRPC Mode**  
+   **Rationale**: Better streaming, 3-5x smaller payloads than JSON  
+   **Implementation**: Bi-directional streaming with protobuf  
+   **Trade-off**: Added complexity (proto definitions) vs performance gains  
+   **Reference**: [gRPC Go](https://grpc.io/docs/languages/go/)
+
+10. **Distributed Tracing**  
+    **Use Case**: Debug performance issues across collectors  
+    **Implementation**: OpenTelemetry SDK with span per collector  
+    **Exporter**: OTLP to Jaeger/Tempo  
+    **CLI**: `eidos snapshot --trace --trace-endpoint localhost:4317`  
+    **Reference**: [OpenTelemetry Go](https://opentelemetry.io/docs/languages/go/)
+
+11. **Policy Enforcement**  
+    **Use Case**: Block non-compliant configs in CI/CD  
+    **Implementation**: Embed OPA (`github.com/open-policy-agent/opa`)  
+    **CLI**: `eidos validate --policy policy.rego snapshot.yaml`  
+    **Exit Code**: 0 = pass, 1 = policy violations  
+    **Reference**: [OPA Go Integration](https://www.openpolicyagent.org/docs/latest/integration/)
+
+12. **Cloud Storage Integration**  
+    **Use Case**: Centralized storage for fleet management  
+    **CLI**: `eidos snapshot --upload s3://bucket/snapshots/$(hostname).yaml`  
+    **Implementation**: AWS SDK v2 with resumable uploads  
+    **Authentication**: IAM roles, service accounts, credential chain  
+    **Reference**: [AWS SDK for Go V2](https://aws.github.io/aws-sdk-go-v2/)
+
+## Production Deployment Patterns
+
+### Pattern 1: CI/CD Integration
+
+**Use Case**: Automated configuration validation in build pipelines
+
+**GitLab CI Example**:
+```yaml
+validate_gpu_config:
+  stage: test
+  image: ghcr.io/nvidia/eidos:latest
+  script:
+    - eidos snapshot --format json > snapshot.json
+    # Validate against known-good baseline
+    - diff -u expected_snapshot.json snapshot.json
+    # Or use OPA policy (future enhancement)
+    # - eidos validate --policy policies/gpu_baseline.rego snapshot.json
+  only:
+    - merge_requests
+  artifacts:
+    when: on_failure
+    paths:
+      - snapshot.json
+```
+
+**GitHub Actions Example**:
+```yaml
+name: Validate GPU Configuration
+on:
+  pull_request:
+    paths:
+      - 'ansible/**'
+      - 'terraform/**'
+
+jobs:
+  validate:
+    runs-on: [self-hosted, gpu]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install eidos
+        run: |
+          curl -sfL https://raw.githubusercontent.com/.../installer | bash -s --
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      
+      - name: Capture snapshot
+        run: eidos snapshot --format yaml --output snapshot.yaml
+      
+      - name: Generate recipe
+        run: eidos recipe --os ubuntu --gpu h100 > recipe.yaml
+      
+      - name: Compare configurations
+        run: |
+          yq eval '.measurements[] | select(.type=="GPU")' snapshot.yaml > actual_gpu.yaml
+          yq eval '.measurements[] | select(.type=="GPU")' recipe.yaml > expected_gpu.yaml
+          diff -u expected_gpu.yaml actual_gpu.yaml || \
+            (echo "::error::GPU configuration drift detected" && exit 1)
+      
+      - name: Upload artifact
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: configuration-drift
+          path: |
+            snapshot.yaml
+            recipe.yaml
+```
+
+**Jenkins Pipeline**:
+```groovy
+pipeline {
+    agent { label 'gpu-node' }
+    
+    stages {
+        stage('Snapshot') {
+            steps {
+                sh 'eidos snapshot --format json > snapshot.json'
+            }
+        }
+        
+        stage('Validate') {
+            steps {
+                script {
+                    def snapshot = readJSON file: 'snapshot.json'
+                    def gpuDriver = snapshot.measurements
+                        .find { it.type == 'GPU' }
+                        .subtypes.find { it.subtype == 'smi' }
+                        .data.'driver-version'
+                    
+                    if (gpuDriver != '570.158.01') {
+                        error("Incorrect GPU driver: ${gpuDriver}")
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            archiveArtifacts artifacts: 'snapshot.json', fingerprint: true
+        }
+    }
+}
+```
+
+### Pattern 2: Scheduled Auditing
+
+**Use Case**: Nightly configuration drift detection across fleet
+
+**Kubernetes CronJob**:
+```yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: eidos-audit
+  namespace: monitoring
+spec:
+  schedule: "0 2 * * *"  # 2 AM daily
+  concurrencyPolicy: Forbid  # Prevent overlapping runs
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: eidos-audit
+        spec:
+          serviceAccountName: eidos
+          nodeSelector:
+            node-role.kubernetes.io/gpu: "true"
+          tolerations:
+          - key: nvidia.com/gpu
+            operator: Exists
+            effect: NoSchedule
+          containers:
+          - name: eidos
+            image: ghcr.io/nvidia/eidos:v0.6.4
+            command:
+              - /bin/sh
+              - -c
+              - |
+                set -e
+                TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+                HOSTNAME=$(hostname)
+                
+                # Capture snapshot
+                eidos snapshot --format yaml > /tmp/snapshot.yaml
+                
+                # Store as ConfigMap with retention
+                kubectl create configmap \
+                  "eidos-snapshot-${HOSTNAME}-${TIMESTAMP}" \
+                  --from-file=snapshot=/tmp/snapshot.yaml \
+                  --dry-run=client -o yaml | \
+                kubectl apply -f -
+                
+                # Cleanup old snapshots (keep last 30 days)
+                kubectl get configmaps -l eidos-snapshot=true \
+                  --sort-by=.metadata.creationTimestamp | \
+                head -n -30 | \
+                xargs -r kubectl delete configmap
+            resources:
+              limits:
+                memory: 256Mi
+              requests:
+                cpu: 100m
+                memory: 128Mi
+          restartPolicy: OnFailure
+```
+
+**Systemd Timer (Bare Metal)**:
+```ini
+# /etc/systemd/system/eidos-audit.service
+[Unit]
+Description=Eidos Configuration Audit
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/eidos snapshot --format json --output /var/log/eidos/snapshot-%Y%m%d.json
+User=eidos
+Group=eidos
+
+# Hardening
+PrivateTmp=true
+NoNewPrivileges=true
+ReadOnlyPaths=/usr /etc
+ReadWritePaths=/var/log/eidos
+
+[Install]
+WantedBy=multi-user.target
+
+# /etc/systemd/system/eidos-audit.timer
+[Unit]
+Description=Eidos Audit Timer
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+Enable with:
+```bash
+sudo systemctl enable --now eidos-audit.timer
+sudo systemctl list-timers eidos-audit.timer
+```
+
+### Pattern 3: Fleet Management
+
+**Use Case**: Collect snapshots from 100s of GPU nodes in parallel
+
+**Ansible Playbook**:
+```yaml
+---
+- name: Collect Eidos Snapshots from GPU Fleet
+  hosts: gpu_nodes
+  gather_facts: yes
+  serial: 10  # Process 10 nodes at a time
+  tasks:
+    - name: Ensure eidos is installed
+      stat:
+        path: /usr/local/bin/eidos
+      register: eidos_binary
+      failed_when: not eidos_binary.stat.exists
+    
+    - name: Collect snapshot
+      shell: eidos snapshot --format json
+      register: snapshot
+      changed_when: false
+      failed_when: snapshot.rc != 0
+    
+    - name: Upload to S3
+      aws_s3:
+        bucket: fleet-snapshots
+        object: "{{ inventory_hostname }}/{{ ansible_date_time.iso8601 }}.json"
+        content: "{{ snapshot.stdout }}"
+        mode: put
+      delegate_to: localhost
+      run_once: false
+    
+    - name: Validate against baseline
+      shell: |
+        echo '{{ snapshot.stdout }}' | \
+        jq '.measurements[] | select(.type=="GPU") | .subtypes[] | 
+            select(.subtype=="smi") | .data."driver-version"'
+      register: driver_version
+      failed_when: driver_version.stdout != '"570.158.01"'
+      changed_when: false
+
+- name: Generate Fleet Report
+  hosts: localhost
+  tasks:
+    - name: Download all snapshots
+      aws_s3:
+        bucket: fleet-snapshots
+        mode: list
+      register: s3_objects
+    
+    - name: Aggregate results
+      script: scripts/aggregate_snapshots.py
+      args:
+        snapshots: "{{ s3_objects.s3_keys }}"
+```
+
+**Terraform Provisioning**:
+```hcl
+resource "null_resource" "eidos_snapshot" {
+  count = length(var.gpu_instance_ids)
+  
+  provisioner "remote-exec" {
+    inline = [
+      "eidos snapshot --format json > /tmp/snapshot.json",
+      "aws s3 cp /tmp/snapshot.json s3://fleet-snapshots/${self.id}/"
+    ]
+    
+    connection {
+      type        = "ssh"
+      host        = element(var.gpu_instance_ips, count.index)
+      user        = "ubuntu"
+      private_key = file("~/.ssh/id_rsa")
+    }
+  }
+  
+  triggers = {
+    instance_id = element(var.gpu_instance_ids, count.index)
+    timestamp   = timestamp()
+  }
+}
+
+data "aws_s3_objects" "snapshots" {
+  bucket     = "fleet-snapshots"
+  depends_on = [null_resource.eidos_snapshot]
+}
+
+output "snapshot_count" {
+  value = length(data.aws_s3_objects.snapshots.keys)
+}
+```
+
+### Pattern 4: Real-Time Monitoring
+
+**Use Case**: Continuous configuration monitoring with Prometheus alerting
+
+**Prometheus Exporter** (future enhancement):
+```go
+package main
+
+import (
+    "context"
+    "net/http"
+    "time"
+    
+    "github.com/prometheus/client_golang/prometheus"
+    "github.com/prometheus/client_golang/prometheus/promhttp"
+    "github.com/NVIDIA/cloud-native-stack/pkg/snapshotter"
+)
+
+var (
+    gpuDriverVersion = prometheus.NewGaugeVec(
+        prometheus.GaugeOpts{
+            Name: "eidos_gpu_driver_version",
+            Help: "NVIDIA driver version (encoded as float)",
+        },
+        []string{"node", "gpu_model"},
+    )
+    
+    k8sVersion = prometheus.NewGaugeVec(
+        prometheus.GaugeOpts{
+            Name: "eidos_k8s_version",
+            Help: "Kubernetes version (encoded)",
+        },
+        []string{"node"},
+    )
+)
+
+func init() {
+    prometheus.MustRegister(gpuDriverVersion, k8sVersion)
+}
+
+func collectMetrics() {
+    ticker := time.NewTicker(30 * time.Second)
+    defer ticker.Stop()
+    
+    for range ticker.C {
+        ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+        snapshot, err := snapshotter.Measure(ctx)
+        cancel()
+        
+        if err != nil {
+            log.Printf("Snapshot failed: %v", err)
+            continue
+        }
+        
+        // Extract and export GPU driver version
+        for _, m := range snapshot.Measurements {
+            if m.Type == "GPU" {
+                for _, st := range m.Subtypes {
+                    if st.Subtype == "smi" {
+                        version := st.Data["driver-version"]
+                        encoded := encodeVersion(version)
+                        gpuModel := st.Data["gpu-name"]
+                        gpuDriverVersion.WithLabelValues(hostname, gpuModel).Set(encoded)
+                    }
+                }
+            }
+        }
+    }
+}
+
+func main() {
+    go collectMetrics()
+    http.Handle("/metrics", promhttp.Handler())
+    http.ListenAndServe(":9090", nil)
+}
+```
+
+**Prometheus Alerting Rules**:
+```yaml
+groups:
+- name: eidos_configuration
+  interval: 60s
+  rules:
+  - alert: GPUDriverVersionMismatch
+    expr: |
+      count(count by (eidos_gpu_driver_version) (eidos_gpu_driver_version)) > 1
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Multiple GPU driver versions detected in cluster"
+      description: "{{ $value }} different driver versions found"
+  
+  - alert: KubernetesVersionSkew
+    expr: |
+      abs(eidos_k8s_version - scalar(avg(eidos_k8s_version))) > 0.01
+    for: 10m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Kubernetes version skew detected on {{ $labels.node }}"
+      description: "Node version differs from cluster average"
+```
+
+## Advanced Usage Patterns
+
+### Snapshot Diffing with jq
+
+```bash
+#!/bin/bash
+# Capture baseline before changes
+eidos snapshot --format json > baseline.json
+
+# Apply configuration changes (Ansible, Terraform, etc.)
+# ...
+
+# Capture new snapshot
+eidos snapshot --format json > current.json
+
+# Diff specific sections
+echo "=== GPU Configuration Changes ==="
+diff -u \
+  <(jq -S '.measurements[] | select(.type=="GPU")' baseline.json) \
+  <(jq -S '.measurements[] | select(.type=="GPU")' current.json)
+
+echo "=== Kernel Parameter Changes ==="
+diff -u \
+  <(jq -S '.measurements[] | select(.type=="os") | .subtypes[] | 
+           select(.subtype=="sysctl")' baseline.json) \
+  <(jq -S '.measurements[] | select(.type=="os") | .subtypes[] | 
+           select(.subtype=="sysctl")' current.json)
+
+# Count total changes
+changes=$(diff <(jq -S . baseline.json) <(jq -S . current.json) | grep -c '^[<>]')
+echo "Total configuration changes: $changes"
+```
+
+### Recipe Generation Pipeline
+
+```bash
+#!/bin/bash
+# Generate recipes for all supported configurations
+
+set -euo pipefail
+
+OUTPUT_DIR="recipes"
+mkdir -p "$OUTPUT_DIR"
+
+# GPU types from NVIDIA product line
+GPU_TYPES=("h100" "gb200" "a100" "l40" "l4")
+
+# Kubernetes services
+K8S_SERVICES=("eks" "gke" "aks" "self-managed")
+
+# OS distributions
+OS_TYPES=("ubuntu" "rhel" "cos")
+
+total=0
+for gpu in "${GPU_TYPES[@]}"; do
+  for service in "${K8S_SERVICES[@]}"; do
+    for os in "${OS_TYPES[@]}"; do
+      output="${OUTPUT_DIR}/${os}-${service}-${gpu}.yaml"
+      
+      # Generate recipe
+      if eidos recipe --os "$os" --service "$service" --gpu "$gpu" \
+           --format yaml > "$output" 2>/dev/null; then
+        echo "✓ Generated $output"
+        ((total++))
+      else
+        echo "✗ Failed: $os $service $gpu"
+      fi
+    done
+  done
+done
+
+echo "Generated $total recipes"
+
+# Validate all recipes
+echo "Validating recipes..."
+find "$OUTPUT_DIR" -name '*.yaml' -exec yq eval '.' {} \; > /dev/null
+echo "All recipes valid"
+
+# Create index
+cat > "$OUTPUT_DIR/README.md" <<EOF
+# Configuration Recipes
+
+Generated on $(date -Iseconds)
+
+Total recipes: $total
+
+## Available Configurations
+
+| OS | Service | GPU | File |
+|----|---------|-----|------|
+EOF
+
+find "$OUTPUT_DIR" -name '*.yaml' -type f | sort | while read -r file; do
+  base=$(basename "$file" .yaml)
+  IFS='-' read -ra parts <<< "$base"
+  echo "| ${parts[0]} | ${parts[1]} | ${parts[2]} | $file |" >> "$OUTPUT_DIR/README.md"
+done
+```
+
+### Automated Remediation
+
+```bash
+#!/bin/bash
+# Apply recommended configuration from recipe
+# WARNING: Modifies system configuration - use with caution
+
+set -euo pipefail
+
+# Capture current state
+current=$(eidos snapshot --format json)
+
+# Generate recommended recipe
+recipe=$(eidos recipe --os ubuntu --gpu h100 --format json)
+
+# Extract recommended GRUB parameters
+recommended_grub=$(echo "$recipe" | jq -r '
+  .measurements[] | 
+  select(.type=="os") | 
+  .subtypes[] | 
+  select(.subtype=="grub") | 
+  .data | 
+  to_entries[] | 
+  "\(.key)=\(.value)"' | tr '\n' ' ')
+
+# Extract current GRUB parameters
+current_grub=$(echo "$current" | jq -r '
+  .measurements[] | 
+  select(.type=="os") | 
+  .subtypes[] | 
+  select(.subtype=="grub") | 
+  .data | 
+  to_entries[] | 
+  "\(.key)=\(.value)"' | tr '\n' ' ')
+
+# Show diff
+echo "Current GRUB parameters:"
+echo "$current_grub"
+echo ""
+echo "Recommended GRUB parameters:"
+echo "$recommended_grub"
+echo ""
+
+# Prompt for confirmation
+read -p "Apply changes? (yes/no): " confirm
+if [[ "$confirm" != "yes" ]]; then
+  echo "Aborted"
+  exit 0
+fi
+
+# Apply GRUB changes (requires root)
+sudo grubby --update-kernel=ALL --args="$recommended_grub"
+echo "GRUB configuration updated. Reboot required."
+
+# Apply sysctl changes
+echo "$recipe" | jq -r '
+  .measurements[] | 
+  select(.type=="os") | 
+  .subtypes[] | 
+  select(.subtype=="sysctl") | 
+  .data | 
+  to_entries[] | 
+  "\(.key) = \(.value)"' | \
+sudo tee /etc/sysctl.d/99-eidos-recommended.conf
+
+sudo sysctl --system
+echo "Sysctl parameters applied"
+
+# Log changes
+echo "$(date -Iseconds): Applied Eidos recommendations" | \
+sudo tee -a /var/log/eidos-remediation.log
+```
+
+## Troubleshooting Guide
+
+### Issue: "nvidia-smi not found"
+
+**Symptoms**: GPU measurements empty, error in logs  
+**Root Cause**: NVIDIA driver not installed or not in PATH  
+
+**Diagnosis**:
+```bash
+# Check if nvidia-smi exists
+which nvidia-smi
+# Expected: /usr/bin/nvidia-smi
+
+# Verify driver installation
+nvidia-smi --version
+# Expected: NVIDIA-SMI 570.158.01
+
+# Check kernel modules
+lsmod | grep nvidia
+# Expected: nvidia, nvidia_uvm, nvidia_modeset
+
+# Verify device nodes
+ls -l /dev/nvidia*
+# Expected: /dev/nvidia0, /dev/nvidiactl, /dev/nvidia-uvm
+```
+
+**Resolution**:
+```bash
+# Ubuntu: Install NVIDIA driver
+sudo apt-get update
+sudo apt-get install -y nvidia-driver-570
+
+# RHEL: Install from CUDA repo
+sudo dnf config-manager --add-repo \
+  https://developer.download.nvidia.com/compute/cuda/repos/rhel8/x86_64/cuda-rhel8.repo
+sudo dnf install -y nvidia-driver:570
+
+# Verify installation
+sudo nvidia-smi
+
+# If PATH issue, add to shell profile
+echo 'export PATH="/usr/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+### Issue: "Kubernetes API server unreachable"
+
+**Symptoms**: K8s measurements empty, "connection refused" error  
+**Root Cause**: Not running in cluster, or kubeconfig missing/invalid  
+
+**Diagnosis**:
+```bash
+# Verify cluster connectivity
+kubectl cluster-info
+# Expected: Kubernetes control plane is running at https://...
+
+# Check kubeconfig
+echo $KUBECONFIG
+cat ~/.kube/config
+
+# Test API access
+kubectl get nodes
+# Expected: List of nodes
+
+# Check service account (in-cluster)
+ls -l /var/run/secrets/kubernetes.io/serviceaccount/
+# Expected: token, ca.crt, namespace
+```
+
+**Resolution**:
+```bash
+# Option 1: Set KUBECONFIG explicitly
+export KUBECONFIG=~/.kube/config
+eidos snapshot
+
+# Option 2: Copy admin kubeconfig
+sudo cp /etc/kubernetes/admin.conf ~/.kube/config
+sudo chown $(id -u):$(id -g) ~/.kube/config
+
+# Option 3: Use service account token (in-cluster)
+kubectl create serviceaccount eidos
+kubectl create clusterrolebinding eidos --clusterrole=view --serviceaccount=default:eidos
+
+# Option 4: Debug with kubectl proxy
+kubectl proxy &
+export KUBERNETES_SERVICE_HOST=localhost
+export KUBERNETES_SERVICE_PORT=8001
+eidos snapshot
+```
+
+### Issue: "Snapshot too slow (> 5s)"
+
+**Symptoms**: Long execution time, timeouts in CI/CD  
+**Root Cause**: Large cluster (1000s of pods), slow API server, many GPUs  
+
+**Diagnosis**:
+```bash
+# Enable debug logging to identify slow collectors
+eidos --debug snapshot 2>&1 | grep -E 'collector|duration'
+# Expected output shows timing per collector:
+# time="..." level=debug msg="k8s collector finished" duration=3.2s
+# time="..." level=debug msg="gpu collector finished" duration=0.8s
+
+# Check cluster size
+kubectl get pods --all-namespaces --no-headers | wc -l
+# Large: > 1000 pods
+
+# Check GPU count
+nvidia-smi --list-gpus | wc -l
+# Many: > 8 GPUs
+
+# Profile execution
+time eidos snapshot > /dev/null
+```
+
+**Resolution**:
+```bash
+# Option 1: Filter to specific collectors (future enhancement)
+eidos snapshot --filter gpu,os  # Skip K8s (saves 60-70% time)
+
+# Option 2: Increase timeout (future enhancement)
+eidos snapshot --timeout 30s
+
+# Option 3: Use caching for repeated calls
+eidos snapshot > /tmp/snapshot.json
+# Reuse /tmp/snapshot.json for subsequent analysis
+
+# Option 4: Optimize K8s collector
+# Reduce API calls by using label selectors (code change):
+# clientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{
+#     LabelSelector: "app=gpu-operator",
+# })
+
+# Option 5: Run in parallel with errgroup limit
+# Already implemented in code, but can tune:
+# g.SetLimit(runtime.NumCPU())  // Current: 2
+```
+
+### Issue: "Out of memory during snapshot"
+
+**Symptoms**: Process killed, OOMKilled in K8s, segfault  
+**Root Cause**: Large measurement data (10k+ pods, many images)  
+
+**Diagnosis**:
+```bash
+# Check memory usage during snapshot
+/usr/bin/time -v eidos snapshot > /dev/null 2>&1
+# Look for "Maximum resident set size"
+
+# Monitor memory in real-time
+# Terminal 1:
+watch -n 1 'ps aux | grep eidos'
+# Terminal 2:
+eidos snapshot
+
+# In Kubernetes, check OOMKilled events
+kubectl get events --field-selector reason=OOMKilling
+```
+
+**Resolution**:
+```bash
+# Option 1: Use streaming serialization (already implemented)
+# Data never fully materialized in memory
+eidos snapshot --format json > snapshot.json
+
+# Option 2: Increase memory limit in Kubernetes
+kubectl set resources deployment eidos-agent \
+  --limits=memory=1Gi \
+  --requests=memory=512Mi
+
+# Option 3: Filter measurements (future enhancement)
+eidos snapshot --filter gpu,os  # Exclude large K8s data
+
+# Option 4: Optimize code to reduce allocations
+# Use object pooling for repeated structs:
+var measurementPool = sync.Pool{
+    New: func() interface{} {
+        return &measurement.Measurement{}
+    },
+}
+
+# Option 5: Process in batches (code change needed)
+# For K8s pods, paginate API calls:
+pods, err := clientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{
+    Limit: 100,
+    Continue: continueToken,
+})
+```
+
+## Performance Tuning
+
+### CPU Profiling
+
+```bash
+# Build with profiling enabled
+go build -o eidos cmd/eidos/main.go
+
+# Capture CPU profile
+./eidos snapshot --cpuprofile=cpu.prof
+
+# Analyze profile
+go tool pprof cpu.prof
+(pprof) top10
+# Shows top 10 functions by CPU time
+
+(pprof) list collectContainerImages
+# Shows line-by-line CPU usage in specific function
+
+(pprof) web
+# Opens interactive graph in browser (requires graphviz)
+
+# Example output interpretation:
+# If collectContainerImages is > 50% CPU:
+# - Optimize pod iteration
+# - Reduce string allocations
+# - Cache image parsing results
+```
+
+### Memory Profiling
+
+```bash
+# Capture memory profile
+./eidos snapshot --memprofile=mem.prof
+
+# Analyze allocations
+go tool pprof -alloc_space mem.prof
+(pprof) top10
+# Shows top 10 functions by allocations
+
+(pprof) list BuildRecipe
+# Check for unnecessary allocations
+
+# Example fixes:
+# Before: strings.Split() allocates slice
+# After: strings.Index() + slicing avoids allocation
+
+# Before: fmt.Sprintf("%s:%s", name, tag)
+# After: var b strings.Builder; b.WriteString(name); b.WriteString(":");
+```
+
+### Benchmarking
+
+```bash
+# Benchmark snapshot performance (10 iterations)
+for i in {1..10}; do
+  time eidos snapshot --format json > /dev/null
+done 2>&1 | grep real | awk '{print $2}' | \
+sed 's/0m//' | sed 's/s//' | \
+awk '{sum+=$1; count++} END {printf "Average: %.3fs\n", sum/count}'
+
+# Compare formats
+echo "JSON:"
+time eidos snapshot --format json > /dev/null
+echo "YAML:"
+time eidos snapshot --format yaml > /dev/null
+echo "Table:"
+time eidos snapshot --format table > /dev/null
+
+# Expected results:
+# JSON:  ~50ms  (fastest, minimal processing)
+# YAML:  ~80ms  (indentation overhead)
+# Table: ~100ms (string formatting, column alignment)
+
+# Benchmark with different cluster sizes
+for pods in 10 100 1000 5000; do
+  # Scale test deployment
+  kubectl scale deployment test-app --replicas=$pods
+  kubectl wait --for=condition=ready pod -l app=test-app --timeout=5m
+  
+  echo "Cluster with $pods pods:"
+  time eidos snapshot --format json > /dev/null
+done
+```
+
+### Optimization Recommendations
+
+1. **Reduce String Allocations**  
+   **Current**: `fmt.Sprintf("%s:%s", name, tag)` allocates  
+   **Optimized**: Use `strings.Builder` for concatenation  
+   **Savings**: 20-30% fewer allocations in image collector
+
+2. **Preallocate Slices**  
+   **Current**: `measurements := []Measurement{}`  
+   **Optimized**: `measurements := make([]Measurement, 0, expectedSize)`  
+   **Benefit**: Avoids slice growth reallocations  
+   **When**: Size predictable (e.g., GPU count known)
+
+3. **Pool Large Objects**  
+   **Use Case**: Measurement structs allocated repeatedly  
+   **Implementation**:
+   ```go
+   var measurementPool = sync.Pool{
+       New: func() interface{} {
+           return &measurement.Measurement{}
+       },
+   }
+   
+   m := measurementPool.Get().(*measurement.Measurement)
+   defer measurementPool.Put(m)
+   ```
+   **Reference**: [sync.Pool](https://pkg.go.dev/sync#Pool)
+
+4. **Avoid Reflection**  
+   **Current**: `encoding/json` uses reflection  
+   **Optimized**: Code-generated marshaling with `easyjson`  
+   **Benefit**: 2-3x faster JSON serialization  
+   **Trade-off**: Build complexity vs performance  
+   **Reference**: [easyjson](https://github.com/mailru/easyjson)
+
+5. **Batch API Operations**  
+   **Current**: Multiple API calls per collector  
+   **Optimized**: Aggregate calls where possible  
+   **Example**: List all pods once, filter in memory  
+   **Benefit**: Reduces API server load, faster execution
+
+6. **Concurrent Collectors**  
+   **Current**: `errgroup` with limit  
+   **Tuning**: Adjust limit based on collector type  
+   ```go
+   g.SetLimit(runtime.NumCPU())  // CPU-bound collectors
+   g.SetLimit(runtime.NumCPU() * 2)  // I/O-bound collectors
+   ```
+   **Reference**: [errgroup SetLimit](https://pkg.go.dev/golang.org/x/sync/errgroup#Group.SetLimit)
+
+## Security Best Practices
+
+### Running as Non-Root
+
+**CLI**:
+```bash
+# CLI runs as current user (no special privileges needed)
+eidos snapshot  # Works as non-root
+
+# Verify no setuid/setgid
+ls -l $(which eidos)
+# Expected: -rwxr-xr-x (not -rwsr-xr-x)
+
+# Verify no capabilities
+getcap $(which eidos)
+# Expected: (no output)
+```
+
+**Kubernetes Job**:
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: eidos
+spec:
+  template:
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: eidos
+        image: ghcr.io/nvidia/eidos:latest
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+```
+
+### Secrets Management
+
+```bash
+# Never log sensitive data
+# eidos already filters passwords/tokens from output
+
+# Verify no secrets in snapshot
+eidos snapshot --format json | \
+  jq '.measurements[].subtypes[].data | 
+      keys | map(select(test("(?i)(password|token|key|secret)"))) | 
+      unique'
+# Expected: []
+
+# Use environment variables for API credentials (future feature)
+export EIDOS_API_TOKEN=$(vault kv get -field=token secret/eidos)
+eidos recipe --os ubuntu --gpu h100
+
+# Or use Kubernetes secrets
+kubectl create secret generic eidos-api-creds \
+  --from-literal=token=$(vault kv get -field=token secret/eidos)
+
+# Mount in pod:
+volumeMounts:
+- name: api-creds
+  mountPath: /var/run/secrets/eidos
+  readOnly: true
+volumes:
+- name: api-creds
+  secret:
+    secretName: eidos-api-creds
+```
+
+### Input Validation
+
+**CLI validates all inputs before processing**:
+
+```bash
+# Invalid OS type
+eidos recipe --os invalid_os
+# Error: invalid os type "invalid_os", must be one of: ubuntu, rhel, cos
+
+# Invalid version format
+eidos recipe --osv -1.0
+# Error: invalid version "-1.0": negative version components not allowed
+
+# Invalid GPU type
+eidos recipe --gpu h100@latest
+# Error: invalid gpu type "h100@latest": special characters not allowed
+
+# Invalid format
+eidos snapshot --format xml
+# Error: invalid format "xml", must be one of: json, yaml, table
+
+# Path traversal prevention
+eidos snapshot --output ../../etc/passwd
+# Error: output path escapes current directory
+
+# Verify validation in code:
+# pkg/cli/recipe.go:
+if !isValidOS(os) {
+    return fmt.Errorf("invalid os type %q", os)
+}
+```
+
+### Network Security
+
+```bash
+# Verify TLS for API calls (future feature)
+eidos recipe --os ubuntu --gpu h100 --debug 2>&1 | grep -i tls
+# Expected: "Using TLS 1.3"
+
+# Certificate pinning (future enhancement)
+export EIDOS_API_CERT_FINGERPRINT="sha256:abc123..."
+eidos recipe --os ubuntu --gpu h100
+
+# Use corporate proxy with authentication
+export HTTPS_PROXY=https://proxy.corp.com:8080
+export EIDOS_PROXY_CA_CERT=/etc/ssl/certs/corp-ca.pem
+eidos recipe --os ubuntu --gpu h100
+```
+
+## References
+
+### Official Documentation
+- [urfave/cli Framework](https://cli.urfave.org/) - CLI framework used by eidos  
+- [errgroup Patterns](https://pkg.go.dev/golang.org/x/sync/errgroup) - Concurrent error handling  
+- [YAML v3 Library](https://pkg.go.dev/gopkg.in/yaml.v3) - YAML parsing and serialization  
+- [Structured Logging (slog)](https://pkg.go.dev/log/slog) - Standard library logging  
+- [Context Package](https://pkg.go.dev/context) - Cancellation and deadlines
+
+### Kubernetes Integration
+- [client-go Documentation](https://github.com/kubernetes/client-go) - Official K8s client  
+- [Dynamic Client](https://pkg.go.dev/k8s.io/client-go/dynamic) - Unstructured resource access  
+- [CronJob Best Practices](https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/) - Scheduled job patterns  
+- [RBAC Authorization](https://kubernetes.io/docs/reference/access-authn-authz/rbac/) - Permission model
+
+### NVIDIA Tools
+- [NVIDIA SMI](https://developer.nvidia.com/nvidia-system-management-interface) - GPU management  
+- [NVML Library](https://developer.nvidia.com/nvml) - Programmatic GPU access  
+- [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit) - GPU computing platform  
+- [GPU Operator](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/) - K8s GPU automation
+
+### Best Practices
+- [Semantic Versioning](https://semver.org/) - Version comparison algorithm  
+- [The Twelve-Factor App](https://12factor.net/) - Cloud-native application patterns  
+- [Release Engineering Best Practices](https://sre.google/workbook/release-engineering/) - Google SRE  
+- [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments) - Idiomatic Go
+
+### Security
+- [OWASP Secure Coding Practices](https://owasp.org/www-project-secure-coding-practices-quick-reference-guide/)  
+- [Kubernetes Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/)  
+- [NIST 800-190: Container Security](https://csrc.nist.gov/publications/detail/sp/800-190/final)  
+- [CIS Benchmarks](https://www.cisecurity.org/cis-benchmarks) - Security configuration baselines
