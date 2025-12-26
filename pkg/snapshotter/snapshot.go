@@ -177,9 +177,22 @@ func SnapshotFromFile(path string) (*Snapshot, error) {
 
 	ser, err := serializer.NewFileReader(fileFormat, path)
 	if err != nil {
+		slog.Error("failed to create file reader", "error", err, "path", path, "format", fileFormat)
 		return nil, fmt.Errorf("failed to create serializer for %q: %w", path, err)
 	}
-	defer ser.Close()
+
+	if ser == nil {
+		slog.Error("reader is unexpectedly nil despite no error")
+		return nil, fmt.Errorf("reader is nil for %q", path)
+	}
+
+	defer func() {
+		if ser != nil {
+			if closeErr := ser.Close(); closeErr != nil {
+				slog.Warn("failed to close serializer", "error", closeErr)
+			}
+		}
+	}()
 
 	var snap Snapshot
 	if err := ser.Deserialize(&snap); err != nil {

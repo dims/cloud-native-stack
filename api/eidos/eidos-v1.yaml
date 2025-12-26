@@ -87,14 +87,6 @@ paths:
             type: string
             enum: [training, inference, ALL]
             default: ALL
-        - name: payloadVersion
-          in: query
-          required: false
-          description: >
-            Optional: request a specific payloadVersion (semver-ish string). If not provided,
-            the service returns the latest compatible payloadVersion.
-          schema:
-            type: string
       responses:
         "200":
           description: Recommendation payload for the requested parameter combination
@@ -125,10 +117,7 @@ paths:
                       kubernetes: "1.33"
                       gpu: GB200
                       intent: training
-                      payloadVersionRequested: null
                     matchedRuleId: "rule-eks-gb200-k8s133-kernel68"
-                    payloadVersion: "2025.12.0"
-                    generatedAt: "2025-12-17T12:00:00Z"
                     cnsReleases:
                       - cnsVersion: "16.0"
                         platforms:
@@ -452,9 +441,6 @@ components:
           type: string
           enum: [training, inference, ALL]
           default: ALL
-        payloadVersionRequested:
-          type: [string, "null"]
-          default: null
       required: []
 
     ComponentRecommendation:
@@ -505,19 +491,11 @@ components:
         matchedRuleId:
           type: string
           description: Identifier for the rule used to compute this recommendation.
-        payloadVersion:
-          type: string
-          pattern: '^\d{4}\.\d{1,2}\.\d+$'
-          description: Version of the returned payload schema/data.
-          examples: ["2025.12.0", "2024.1.15"]
-        generatedAt:
-          type: string
-          format: date-time
         cnsReleases:
           type: array
           items:
             $ref: "#/components/schemas/CNSReleaseRecommendation"
-      required: [request, payloadVersion, generatedAt, cnsReleases]
+      required: [request, cnsReleases]
 
     BulkResolveRequest:
       type: object

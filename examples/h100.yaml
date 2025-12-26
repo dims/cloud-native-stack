@@ -2,7 +2,7 @@ kind: Snapshot
 apiVersion: snapshot.dgxc.io/v1
 metadata:
   measurement-timestamp: "2025-12-26T15:56:39Z"
-  snapshot-version: 0.7.0
+  snapshot-version: 0.7.5
   source-node: ip-10-0-158-18.ec2.internal
 measurements:
   - type: SystemD

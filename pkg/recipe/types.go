@@ -1,8 +1,6 @@
 package recipe
 
 import (
-	"time"
-
 	"github.com/NVIDIA/cloud-native-stack/pkg/header"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
@@ -14,14 +12,11 @@ const (
 
 // Recipe represents the recipe response structure.
 type Recipe struct {
-	*header.Header
+	header.Header `json:",inline" yaml:",inline"`
 
-	PayloadVersion string                     `json:"payloadVersion" yaml:"payloadVersion"`
-	BuilderVersion string                     `json:"builderVersion" yaml:"builderVersion"`
-	GeneratedAt    time.Time                  `json:"generatedAt" yaml:"generatedAt"`
-	Request        *Query                     `json:"request,omitempty" yaml:"request,omitempty"`
-	MatchedRules   []string                   `json:"matchedRules,omitempty" yaml:"matchedRules,omitempty"`
-	Measurements   []*measurement.Measurement `json:"measurements" yaml:"measurements"`
+	Request      *Query                     `json:"request,omitempty" yaml:"request,omitempty"`
+	MatchedRules []string                   `json:"matchedRules,omitempty" yaml:"matchedRules,omitempty"`
+	Measurements []*measurement.Measurement `json:"measurements" yaml:"measurements"`
 }
 
 // Store holds base measurements for recipes.

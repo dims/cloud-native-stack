@@ -59,8 +59,6 @@ lint-yaml: ## Lints YAML files
 .PHONY: test
 test: ## Runs unit tests
 	@set -e; \
-	echo "Cleaning build cache"; \
-	go clean -cache -testcache; \
 	echo "Running tests"; \
 	go test -count=1 -race -covermode=atomic -coverprofile=coverage.out ./... || exit 1; \
 	echo "Test coverage"; \

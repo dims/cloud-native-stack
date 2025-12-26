@@ -138,17 +138,8 @@ overlays: []
 				t.Fatalf("failed to unmarshal response: %v", err)
 			}
 
-			// Verify basic structure
-			if recipe.PayloadVersion != RecipeAPIVersion {
-				t.Errorf("expected version %s, got %s", RecipeAPIVersion, recipe.PayloadVersion)
-			}
-
 			if recipe.Measurements == nil {
 				t.Error("expected measurements to be present")
-			}
-
-			if recipe.GeneratedAt.IsZero() {
-				t.Error("expected GeneratedAt to be set")
 			}
 		})
 	}

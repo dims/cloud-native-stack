@@ -54,7 +54,6 @@
 //	  - kubernetes: e.g., 1.33, 1.32, ALL (default: ALL)
 //	  - gpu: H100, GB200, A100, L40, ALL (default: ALL)
 //	  - intent: training, inference, ALL (default: ALL)
-//	  - payloadVersion: optional specific version
 //
 //	Example:
 //	  curl "http://localhost:8080/v1/recommendations?osFamily=Ubuntu&osVersion=24.04&gpu=H100&intent=training"

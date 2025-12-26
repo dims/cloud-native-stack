@@ -7,6 +7,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/urfave/cli/v3"
 
@@ -79,6 +80,11 @@ The recommendation can be output in JSON, YAML, or table format.`,
 			}
 
 			ser := serializer.NewFileWriterOrStdout(outFormat, cmd.String("output"))
+			defer func() {
+				if err := ser.Close(); err != nil {
+					slog.Warn("failed to close serializer", "error", err)
+				}
+			}()
 
 			return ser.Serialize(rec)
 		},

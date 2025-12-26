@@ -15,7 +15,7 @@ type Snapshotter interface {
 
 // Snapshot represents the collected configuration snapshot of a node.
 type Snapshot struct {
-	*header.Header
+	header.Header `json:",inline" yaml:",inline"`
 
 	// Measurements contains the collected measurements from various collectors.
 	Measurements []*measurement.Measurement `json:"measurements" yaml:"measurements"`

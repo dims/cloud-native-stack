@@ -168,7 +168,7 @@ flowchart TD
     C2 --> C3["Step 3: Match Overlays<br/>• For each overlay: IsMatch(query)<br/>• Matching: empty=any, else equal<br/>• Version matching with precision"]
     C3 --> C4["Step 4: Merge Overlay Measurements<br/>• Index by measurement.Type<br/>• Merge subtypes by name<br/>• Overlay data takes precedence"]
     C4 --> C5["Step 5: Strip Context<br/>(if not requested)"]
-    C5 --> C6["Recipe Structure:<br/>request, matchedRuleId<br/>payloadVersion, generatedAt<br/>measurements"]
+    C5 --> C6["Recipe Structure:<br/>request,<br/>measurements"]
     
     C6 --> D["serializer.NewFileWriterOrStdout<br/>(JSON/YAML/Table)"]
     
@@ -339,7 +339,6 @@ recommendations:
     reason: "Enable MIG for multi-tenant training workloads"
     priority: low
 metadata:
-  generatedAt: "2025-01-15T10:30:05Z"
   recommendationVersion: v0.7.0
 ```
 

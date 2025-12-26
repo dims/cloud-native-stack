@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"gopkg.in/yaml.v3"
@@ -67,11 +66,8 @@ func (b *Builder) Build(ctx context.Context, q *Query) (*Recipe, error) {
 	}
 
 	r := &Recipe{
-		Request:        q,
-		PayloadVersion: RecipeAPIVersion,
-		BuilderVersion: b.Version,
-		MatchedRules:   make([]string, 0),
-		GeneratedAt:    time.Now().UTC(),
+		Request:      q,
+		MatchedRules: make([]string, 0),
 	}
 
 	merged := cloneMeasurements(store.Base)

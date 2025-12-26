@@ -243,8 +243,6 @@ Shared with CLI - same logic as described in CLI architecture.
   "matchedRuleId": [
     "OS: ubuntu *, Kernel: *, Service: *, K8s: *, GPU: h100, Intent: *, Context: false"
   ],
-  "payloadVersion": "v1",
-  "generatedAt": "2025-12-25T12:00:00Z",
   "measurements": [
     {
       "type": "os",
