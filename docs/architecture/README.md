@@ -91,19 +91,14 @@ if err := g.Wait(); err != nil {
 **Architecture**: Single binary, no network dependencies  
 **Scaling**: Run on each node/machine independently
 
-```
-┌─────────────┐
-│  Developer  │
-└──────┬──────┘
-       │
-   ┌───▼────┐
-   │ eidos  │
-   └───┬────┘
-       │
-   ┌───▼────────┐
-   │ Local Node │
-   │ (K8s/GPU)  │
-   └────────────┘
+```mermaid
+flowchart TD
+    A["Developer"] --> B["eidos CLI"]
+    B --> C["Local Node<br/>(K8s/GPU)"]
+    
+    style A fill:#e3f2fd
+    style B fill:#e8f5e9
+    style C fill:#fff4e1
 ```
 
 ### Topology 2: Centralized API with Load Balancer
@@ -111,31 +106,30 @@ if err := g.Wait(); err != nil {
 **Architecture**: Multiple stateless replicas behind L7 load balancer  
 **Scaling**: Horizontal auto-scaling based on request rate/latency
 
-```
-┌─────────┐  ┌─────────┐  ┌─────────┐
-│Client 1 │  │Client 2 │  │Client N │
-└────┬────┘  └────┬────┘  └────┬────┘
-     │            │            │
-     └────────────┼────────────┘
-                  │
-           ┌──────▼───────┐
-           │ Load Balancer│
-           │   (L7/HTTPS) │
-           └──────┬───────┘
-                  │
-      ┌───────────┼───────────┐
-      │           │           │
-  ┌───▼───┐   ┌──▼────┐  ┌───▼───┐
-  │API v1 │   │API v2 │  │API v3 │
-  │Pod    │   │Pod    │  │Pod    │
-  └───┬───┘   └───┬───┘  └───-┬──┘
-      │           │           │
-      └───────────┴───────────┘
-                  │
-         ┌────────▼────────┐
-         │  Prometheus     │
-         │  (Metrics)      │
-         └─────────────────┘
+```mermaid
+flowchart TD
+    C1["Client 1"] --> LB
+    C2["Client 2"] --> LB
+    CN["Client N"] --> LB
+    
+    LB["Load Balancer<br/>(L7/HTTPS)"] --> API1
+    LB --> API2
+    LB --> API3
+    
+    API1["API v1 Pod"] --> PROM
+    API2["API v2 Pod"] --> PROM
+    API3["API v3 Pod"] --> PROM
+    
+    PROM["Prometheus<br/>(Metrics)"]
+    
+    style C1 fill:#e3f2fd
+    style C2 fill:#e3f2fd
+    style CN fill:#e3f2fd
+    style LB fill:#fff9c4
+    style API1 fill:#e8f5e9
+    style API2 fill:#e8f5e9
+    style API3 fill:#e8f5e9
+    style PROM fill:#f3e5f5
 ```
 
 ### Topology 3: Kubernetes Job Agent
@@ -143,27 +137,31 @@ if err := g.Wait(); err != nil {
 **Architecture**: Job running on GPU nodes with host access  
 **Scaling**: One Job per node or node-group
 
-```
-Kubernetes Cluster
-┌────────────────────────────────────┐
-│                                    │
-│  ┌──────────┐      ┌──────────┐    │
-│  │ GPU Node │      │ GPU Node │    │
-│  │          │      │          │    │
-│  │ ┌──────┐ │      │ ┌──────┐ │    │
-│  │ │Eidos │ │      │ │Eidos │ │    │
-│  │ │ Job  │ │      │ │ Job  │ │    │
-│  │ └──┬───┘ │      │ └──┬───┘ │    │
-│  │    │     │      │    │     │    │
-│  │    ▼     │      │    ▼     │    │
-│  │  stdout  │      │  stdout  │    │
-│  └──────────┘      └──────────┘    │
-│                                    │
-│  ┌─────────────────────────────┐   │
-│  │   ConfigMap / Secret        │   │
-│  │   (Snapshots stored here)   │   │
-│  └─────────────────────────────┘   │
-└────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph K8S["Kubernetes Cluster"]
+        subgraph NODE1["GPU Node 1"]
+            JOB1["Eidos Job"] --> OUT1["stdout"]
+        end
+        
+        subgraph NODE2["GPU Node 2"]
+            JOB2["Eidos Job"] --> OUT2["stdout"]
+        end
+        
+        OUT1 --> STORE
+        OUT2 --> STORE
+        
+        STORE["ConfigMap / Secret<br/>(Snapshots stored here)"]
+    end
+    
+    style K8S fill:#f5f5f5,stroke:#333,stroke-width:2px
+    style NODE1 fill:#fff4e1
+    style NODE2 fill:#fff4e1
+    style JOB1 fill:#e8f5e9
+    style JOB2 fill:#e8f5e9
+    style OUT1 fill:#e3f2fd
+    style OUT2 fill:#e3f2fd
+    style STORE fill:#f3e5f5
 ```
 
 ### Topology 4: Service Mesh Integration
@@ -171,37 +169,58 @@ Kubernetes Cluster
 **Architecture**: API server with sidecar proxy (Istio, Linkerd)  
 **Scaling**: Service mesh handles load balancing, circuit breaking, retries
 
-```
-┌──────────────────────────────────────┐
-│  Kubernetes Cluster (Service Mesh)   │
-│                                      │
-│  ┌────────────────────────────────┐  │
-│  │     eidos-api-server Pod       │  │
-│  │  ┌──────────┐  ┌────────────┐  │  │
-│  │  │  Envoy   │  │   eidos    │  │  │
-│  │  │  Proxy   │◄─┤    API     │  │  │
-│  │  │(mTLS/L7) │  │   Server   │  │  │
-│  │  └──────────┘  └────────────┘  │  │
-│  └────────────────────────────────┘  │
-│                                      │
-│  Observability: Grafana, Jaeger      │
-│  Security: OPA, Cert-Manager         │
-└──────────────────────────────────────┘
+```mermaid
+flowchart LR
+    subgraph MESH["Kubernetes Cluster (Service Mesh)"]
+        subgraph POD["eidos-api-server Pod"]
+            PROXY["Envoy Proxy<br/>(mTLS/L7)"] <--> API["eidos<br/>API Server"]
+        end
+        
+        OBS["Observability:<br/>Grafana, Jaeger"]
+        SEC["Security:<br/>OPA, Cert-Manager"]
+    end
+    
+    CLIENT["Clients"] --> PROXY
+    
+    style MESH fill:#f5f5f5,stroke:#333,stroke-width:2px
+    style POD fill:#fff4e1
+    style PROXY fill:#fff9c4
+    style API fill:#e8f5e9
+    style OBS fill:#e3f2fd
+    style SEC fill:#ffebee
+    style CLIENT fill:#e3f2fd
 ```
 
 ## Shared Core Packages
 
 Both components leverage shared functionality:
 
-```
-pkg/
-├── collector/      # System data collection (OS, K8s, GPU, SystemD)
-├── measurement/    # Data model for collected metrics
-├── recipe/         # Recipe building and query matching
-├── version/        # Semantic version parsing and comparison
-├── serializer/     # Output formatting (JSON, YAML, table)
-├── logging/        # Structured logging
-└── server/         # HTTP server infrastructure (API only)
+```mermaid
+flowchart TD
+    PKG["pkg/"] --> COLL
+    PKG --> MEAS
+    PKG --> REC
+    PKG --> VER
+    PKG --> SER
+    PKG --> LOG
+    PKG --> SVR
+    
+    COLL["collector/<br/>System data collection<br/>(OS, K8s, GPU, SystemD)"]
+    MEAS["measurement/<br/>Data model for<br/>collected metrics"]
+    REC["recipe/<br/>Recipe building and<br/>query matching"]
+    VER["version/<br/>Semantic version<br/>parsing & comparison"]
+    SER["serializer/<br/>Output formatting<br/>(JSON, YAML, table)"]
+    LOG["logging/<br/>Structured logging"]
+    SVR["server/<br/>HTTP server<br/>infrastructure (API only)"]
+    
+    style PKG fill:#f3e5f5
+    style COLL fill:#e8f5e9
+    style MEAS fill:#e8f5e9
+    style REC fill:#e8f5e9
+    style VER fill:#e8f5e9
+    style SER fill:#e8f5e9
+    style LOG fill:#e8f5e9
+    style SVR fill:#fff9c4
 ```
 
 ## Data Flow
