@@ -38,7 +38,7 @@ runs:
         output-file: sbom-${{ steps.name.outputs.safe }}.cdx.json
         upload-artifact: true
         upload-release-assets: auto
-    
+
     - name: Verify SBOM file
       id: find-sbom
       shell: bash
