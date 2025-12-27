@@ -19,17 +19,14 @@
 // recipe - Generate configuration recipes:
 //
 //	eidos recipe --os ubuntu --osv 24.04 --service eks --gpu h100 --intent training
+//	eidos recipe --snapshot system.yaml --intent inference --output recommendations.yaml
 //
-// Generates optimized configuration recipes based on specified environment parameters.
+// Generates optimized configuration recipes based on either:
+//   - Specified environment parameters (OS, service, GPU, intent)
+//   - Existing system snapshot (analyzes snapshot to extract parameters)
+//
 // Supports various OS families (Ubuntu, RHEL), Kubernetes services (EKS, GKE, AKS),
 // GPU types, and workload intents (training, inference).
-//
-// recommend - Generate recommendations from snapshot:
-//
-//	eidos recommend --snapshot system.yaml --intent training [--output recommendations.yaml]
-//
-// Analyzes a captured snapshot and generates tailored configuration recommendations
-// based on the specified workload intent. Produces a Recipe with optimized settings.
 //
 // # Global Flags
 //
@@ -62,9 +59,9 @@
 //
 //	eidos recipe --os ubuntu --osv 24.04 --service eks --gpu h100 --intent training --format json
 //
-// Generate recommendations with context:
+// Generate recipe from snapshot with context:
 //
-//	eidos recommend -f system.yaml -i inference --context --output recommendations.yaml
+//	eidos recipe --snapshot system.yaml --intent inference --context --output recommendations.yaml
 //
 // # Environment Variables
 //
@@ -83,8 +80,7 @@
 //
 // The CLI uses the urfave/cli/v3 framework and delegates to specialized packages:
 //   - pkg/snapshotter - System snapshot collection
-//   - pkg/recipe - Recipe generation
-//   - pkg/recommender - Snapshot analysis and recommendations
+//   - pkg/recipe - Recipe generation from queries or snapshots
 //   - pkg/serializer - Output formatting
 //   - pkg/logging - Structured logging
 //

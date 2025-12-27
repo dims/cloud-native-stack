@@ -1,8 +1,11 @@
 package recipe
 
 import (
+	"context"
+
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe/header"
+	"github.com/NVIDIA/cloud-native-stack/pkg/snapshotter"
 )
 
 const (
@@ -29,4 +32,9 @@ type Store struct {
 type Overlay struct {
 	Key   Query                      `json:"key" yaml:"key"`
 	Types []*measurement.Measurement `json:"types" yaml:"types"`
+}
+
+// Recommender defines the interface for generating recommendations based on snapshots and intent.
+type Recommender interface {
+	Recommend(ctx context.Context, intent IntentType, snap *snapshotter.Snapshot) (*Recipe, error)
 }

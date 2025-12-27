@@ -97,7 +97,7 @@ func TestQueryBuilder_Chaining(t *testing.T) {
 		WithOS(OSUbuntu).
 		WithOSVersion(OSUbuntu, "24.04").
 		WithKernel("6.8.0").
-		WithService(ServiceAKS).
+		WithService(ServiceGKE).
 		WithK8s("1.29.0").
 		WithGPU(GPUB200).
 		WithIntent(IntentInference).
@@ -119,8 +119,8 @@ func TestQueryBuilder_Chaining(t *testing.T) {
 		t.Errorf("expected Kernel %v, got %v", kernel, query.Kernel)
 	}
 
-	if query.Service != ServiceAKS {
-		t.Errorf("expected Service %s, got %s", ServiceAKS, query.Service)
+	if query.Service != ServiceGKE {
+		t.Errorf("expected Service %s, got %s", ServiceGKE, query.Service)
 	}
 
 	k8s, _ := version.ParseVersion("1.29.0")

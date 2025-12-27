@@ -7,9 +7,8 @@ import (
 )
 
 const (
-	KindRecommendation = "Recommendation"
-	KindSnapshot       = "Snapshot"
-	KindRecipe         = "Recipe"
+	KindSnapshot = "Snapshot"
+	KindRecipe   = "Recipe"
 )
 
 var (
@@ -28,7 +27,7 @@ func (k Kind) String() string {
 // IsValid checks if the Kind is one of the recognized kinds.
 func (k *Kind) IsValid() bool {
 	switch *k {
-	case KindRecommendation, KindSnapshot, KindRecipe:
+	case KindSnapshot, KindRecipe:
 		return true
 	default:
 		return false

@@ -260,7 +260,7 @@ overlays: []
 
 func TestBuildRecipe_ValidatesNilQuery(t *testing.T) {
 	builder := NewBuilder()
-	_, err := builder.Build(context.TODO(), nil)
+	_, err := builder.BuildFromQuery(context.TODO(), nil)
 	if err == nil {
 		t.Fatal("expected error for nil query")
 	}

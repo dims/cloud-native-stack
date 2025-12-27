@@ -8,12 +8,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 	ver "github.com/NVIDIA/cloud-native-stack/pkg/recipe/version"
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
+	"github.com/NVIDIA/cloud-native-stack/pkg/snapshotter"
 )
 
 func recipeCmd() *cli.Command {
@@ -32,8 +34,9 @@ func recipeCmd() *cli.Command {
 The recipe can be output in JSON, YAML, or table format.`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "os",
-				Usage: "Operating system family (e.g., ubuntu, cos)",
+				Name: "os",
+				Usage: fmt.Sprintf("Operating system family (supported values: %s)",
+					recipe.SupportedOSFamilies()),
 			},
 			&cli.StringFlag{
 				Name:  "osv",
@@ -44,24 +47,34 @@ The recipe can be output in JSON, YAML, or table format.`,
 				Usage: "Running kernel version (e.g., 5.15.0)",
 			},
 			&cli.StringFlag{
-				Name:  "service",
-				Usage: "Managed Kubernetes service type (e.g., eks, gke, or self-managed)",
+				Name: "service",
+				Usage: fmt.Sprintf("Managed Kubernetes service type (supported values: %s)",
+					recipe.SupportedServiceTypes()),
 			},
 			&cli.StringFlag{
 				Name:  "k8s",
 				Usage: "Kubernetes cluster version (e.g., v1.25.4)",
 			},
 			&cli.StringFlag{
-				Name:  "gpu",
-				Usage: "GPU type (e.g., H100, GB200)",
+				Name: "gpu",
+				Usage: fmt.Sprintf("GPU type (supported values: %s)",
+					recipe.SupportedGPUTypes()),
 			},
 			&cli.StringFlag{
 				Name:  "intent",
-				Usage: "Workload intent for a given configuration (e.g., training or inference)",
+				Value: recipe.IntentTraining.String(),
+				Usage: fmt.Sprintf("Workload intent for a given configuration (supported values: %s)",
+					recipe.SupportedIntentTypes()),
 			},
 			&cli.BoolFlag{
 				Name:  "context",
-				Usage: "Include metadata in the response for given configuration",
+				Usage: "Includes configuration metadata in the response",
+			},
+			&cli.StringFlag{
+				Name:    "snapshot",
+				Aliases: []string{"f"},
+				Usage: `File path to previously generated configuration snapshot from which to build the recipe. 
+	If provided, all other query flags with the exception of intent are ignored.`,
 			},
 			outputFlag,
 			formatFlag,
@@ -73,17 +86,52 @@ The recipe can be output in JSON, YAML, or table format.`,
 				return fmt.Errorf("unknown output format: %q", outFormat)
 			}
 
-			q, err := buildQueryFromCmd(cmd)
-			if err != nil {
-				return fmt.Errorf("error parsing recipe input parameter: %w", err)
+			// Parse intent
+			intentStr := cmd.String("intent")
+			intent := recipe.IntentType(intentStr)
+			if !intent.IsValid() {
+				return fmt.Errorf("invalid intent type: %q", intentStr)
 			}
 
-			rec, err := recipe.BuildRecipe(ctx, q)
-			if err != nil {
-				return fmt.Errorf("error building recipe: %w", err)
+			var rec *recipe.Recipe
+
+			// Create builder
+			builder := recipe.NewBuilder(
+				recipe.WithVersion(version),
+			)
+
+			// Load snapshot
+			snapFilePath := cmd.String("snapshot")
+			if snapFilePath != "" {
+				snap, err := snapshotter.SnapshotFromFile(snapFilePath)
+				if err != nil {
+					return fmt.Errorf("failed to load snapshot from %q: %w", snapFilePath, err)
+				}
+
+				rec, err = builder.BuildFromSnapshot(ctx, intent, snap)
+				if err != nil {
+					return fmt.Errorf("error building recipe from snapshot: %w", err)
+				}
+			} else {
+				q, err := buildQueryFromCmd(cmd)
+				if err != nil {
+					return fmt.Errorf("error parsing recipe input parameter: %w", err)
+				}
+
+				rec, err = builder.BuildFromQuery(ctx, q)
+				if err != nil {
+					return fmt.Errorf("error building recipe from query: %w", err)
+				}
 			}
 
-			return serializer.NewFileWriterOrStdout(outFormat, cmd.String("output")).Serialize(rec)
+			ser := serializer.NewFileWriterOrStdout(outFormat, cmd.String("output"))
+			defer func() {
+				if err := ser.Close(); err != nil {
+					slog.Warn("failed to close serializer", "error", err)
+				}
+			}()
+
+			return ser.Serialize(rec)
 		},
 	}
 }

@@ -276,7 +276,7 @@ func TestRecipeCmd_CommandStructure(t *testing.T) {
 		t.Error("Description should not be empty")
 	}
 
-	requiredFlags := []string{"os", "osv", "kernel", "service", "k8s", "gpu", "intent", "context", "output", "format"}
+	requiredFlags := []string{"os", "osv", "kernel", "service", "k8s", "gpu", "intent", "context", "snapshot", "output", "format"}
 	for _, flagName := range requiredFlags {
 		found := false
 		for _, flag := range cmd.Flags {
@@ -326,57 +326,6 @@ func TestSnapshotCmd_CommandStructure(t *testing.T) {
 
 	if cmd.Action == nil {
 		t.Error("Action should not be nil")
-	}
-}
-
-func TestRecommendCmd_CommandStructure(t *testing.T) {
-	cmd := recommendCmd()
-
-	if cmd.Name != "recommend" {
-		t.Errorf("Name = %v, want recommend", cmd.Name)
-	}
-
-	if cmd.Usage == "" {
-		t.Error("Usage should not be empty")
-	}
-
-	if cmd.Description == "" {
-		t.Error("Description should not be empty")
-	}
-
-	requiredFlags := []string{"snapshot", "intent", "output", "format"}
-	for _, flagName := range requiredFlags {
-		found := false
-		for _, flag := range cmd.Flags {
-			if hasName(flag, flagName) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Errorf("required flag %q not found", flagName)
-		}
-	}
-
-	if cmd.Action == nil {
-		t.Error("Action should not be nil")
-	}
-
-	for _, flag := range cmd.Flags {
-		if hasName(flag, "snapshot") {
-			if sf, ok := flag.(*cli.StringFlag); ok {
-				if !sf.Required {
-					t.Error("snapshot flag should be required")
-				}
-			}
-		}
-		if hasName(flag, "intent") {
-			if sf, ok := flag.(*cli.StringFlag); ok {
-				if !sf.Required {
-					t.Error("intent flag should be required")
-				}
-			}
-		}
 	}
 }
 

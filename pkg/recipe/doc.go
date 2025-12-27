@@ -73,10 +73,25 @@
 //	    recipe.WithVersion("v1.0.0"),
 //	)
 //
-//	recipe, err := builder.Build(ctx, query)
+//	recipe, err := builder.BuildFromQuery(ctx, query)
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
+//
+// Generate recipe from system snapshot:
+//
+//	builder := recipe.NewBuilder(
+//	    recipe.WithVersion("v1.0.0"),
+//	)
+//
+//	snapshot := // ... obtained from snapshotter
+//
+//	recipe, err := builder.BuildFromSnapshot(ctx, recipe.IntentTraining, snapshot)
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//
+//	// BuildFromSnapshot extracts query from snapshot and builds recipe
 //
 // Query with wildcard matching:
 //
@@ -160,10 +175,16 @@
 //
 // # Error Handling
 //
-// Builder.Build() returns errors when:
+// Builder.BuildFromQuery() returns errors when:
 //   - Query is nil
 //   - Recipe data cannot be loaded
 //   - Measurements cannot be merged
+//
+// Builder.BuildFromSnapshot() returns errors when:
+//   - Snapshot is nil or empty
+//   - Intent is invalid
+//   - Query extraction fails
+//   - Recipe building fails
 //
 // Query validation errors occur when:
 //   - Intent is invalid
@@ -185,17 +206,67 @@
 // # Integration
 //
 // The recipe package is used by:
-//   - pkg/cli - recipe command
-//   - pkg/recommender - Snapshot-based recommendations
+//   - pkg/cli - recipe command (query and snapshot modes)
 //   - pkg/server - API recipe endpoints
 //
 // It depends on:
 //   - pkg/measurement - Data structures
 //   - pkg/recipe/version - Version parsing
 //   - pkg/recipe/header - Common header types
+//   - pkg/snapshotter - Snapshot input (for BuildFromSnapshot)
 //
 // # Subpackages
 //
 //   - recipe/version - Semantic version parsing with flexible precision
 //   - recipe/header - Common header structures for API resources
+//
+// # Snapshot-Based Recipe Generation
+//
+// BuildFromSnapshot processes system snapshots, extracting relevant configuration
+// parameters (OS, kernel, Kubernetes version, GPU type, etc.) and generating
+// optimized configuration recipes based on workload intent.
+//
+// Query Extraction: Parses snapshot measurements to identify:
+//   - Operating system family and version
+//   - Kernel version (with vendor-specific handling)
+//   - Kubernetes service provider (EKS, GKE, AKS, OKE, self-managed)
+//   - Kubernetes version (with vendor-specific formats)
+//   - GPU model
+//
+// Kubernetes Service Provider Detection:
+//   - Detects cloud provider from node providerID
+//   - Maps: aws→EKS, gce→GKE, azure→AKS, oci→OKE
+//   - Falls back to "self-managed" if no provider detected
+//
+// Kubernetes Version Handling:
+//   - Extracts from server version in K8s measurements
+//   - Handles vendor-specific formats: "v1.33.5-eks-3025e55" → "1.33"
+//   - Preserves major.minor precision for matching
+//
+// Kernel Version Handling:
+//   - Extracts from node measurements
+//   - Handles vendor suffixes: "6.8.0-1028-aws" → "6.8"
+//   - Used for kernel-specific optimizations
+//
+// Operating System Detection:
+//   - Identifies OS family and version from release measurements
+//   - Maps VERSION_ID to version (e.g., "24.04")
+//   - Supports Ubuntu, RHEL, COS
+//
+// GPU Detection:
+//   - Extracts GPU model from GPU measurements
+//   - Normalizes names: "NVIDIA H100 80GB HBM3" → "H100"
+//   - Used for GPU-specific driver and operator settings
+//
+// Recipe Generation Flow:
+//
+// 1. Extract query from snapshot measurements
+// 2. Validate all extracted parameters
+// 3. Build recipe using extracted query
+// 4. Return Recipe with base settings + overlays
+//
+// The Recipe contains:
+//   - Metadata (version, creation time, matching criteria)
+//   - Base measurements (common configuration)
+//   - Overlay measurements (intent-specific optimizations)
 package recipe

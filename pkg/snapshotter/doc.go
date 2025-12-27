@@ -174,7 +174,7 @@
 //   - pkg/measurement - Data structures
 //
 // Snapshots are consumed by:
-//   - pkg/recommender - Recommendation generation
+//   - pkg/recipe - Recipe generation from snapshots
 //   - External analysis tools
 //   - Auditing and compliance systems
 package snapshotter

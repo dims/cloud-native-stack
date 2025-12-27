@@ -129,7 +129,7 @@
 //   - pkg/cli - CLI command logging
 //   - pkg/collector - Data collection logging
 //   - pkg/snapshotter - Snapshot operation logging
-//   - pkg/recommender - Recommendation generation logging
+//   - pkg/recipe - Recipe generation logging
 //
 // All components share consistent logging format and configuration.
 package logging

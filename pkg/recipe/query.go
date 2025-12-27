@@ -361,7 +361,6 @@ const (
 	ServiceAny ServiceType = anyValue
 	ServiceEKS ServiceType = "eks"
 	ServiceGKE ServiceType = "gke"
-	ServiceAKS ServiceType = "aks"
 )
 
 // String returns the string representation of the service type.
@@ -372,7 +371,7 @@ func (s ServiceType) String() string {
 // IsValid returns true if the service type is a valid supported value.
 func (s ServiceType) IsValid() bool {
 	switch s {
-	case ServiceAny, ServiceEKS, ServiceGKE, ServiceAKS:
+	case ServiceAny, ServiceEKS, ServiceGKE:
 		return true
 	default:
 		return false
@@ -381,7 +380,7 @@ func (s ServiceType) IsValid() bool {
 
 // SupportedServiceTypes returns all supported service type values.
 func SupportedServiceTypes() []ServiceType {
-	return []ServiceType{ServiceAny, ServiceEKS, ServiceGKE, ServiceAKS}
+	return []ServiceType{ServiceAny, ServiceEKS, ServiceGKE}
 }
 
 // ParseServiceType parses the service type from query parameters.

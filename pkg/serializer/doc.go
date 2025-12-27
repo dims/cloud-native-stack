@@ -184,5 +184,5 @@
 //   - pkg/cli - Command output formatting
 //   - pkg/snapshotter - Snapshot serialization
 //   - pkg/api - HTTP response encoding
-//   - pkg/recommender - Recipe output
+//   - pkg/recipe - Recipe output
 package serializer

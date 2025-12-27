@@ -12,11 +12,6 @@ func TestKind_String(t *testing.T) {
 		want string
 	}{
 		{
-			name: "Recommendation kind",
-			kind: KindRecommendation,
-			want: "Recommendation",
-		},
-		{
 			name: "Snapshot kind",
 			kind: KindSnapshot,
 			want: "Snapshot",
@@ -48,11 +43,6 @@ func TestKind_IsValid(t *testing.T) {
 		kind Kind
 		want bool
 	}{
-		{
-			name: "Recommendation is valid",
-			kind: KindRecommendation,
-			want: true,
-		},
 		{
 			name: "Snapshot is valid",
 			kind: KindSnapshot,
@@ -148,11 +138,6 @@ func TestWithKind(t *testing.T) {
 		want Kind
 	}{
 		{
-			name: "Set Recommendation kind",
-			kind: KindRecommendation,
-			want: KindRecommendation,
-		},
-		{
 			name: "Set Snapshot kind",
 			kind: KindSnapshot,
 			want: KindSnapshot,
@@ -220,17 +205,12 @@ func TestHeader_SetKind(t *testing.T) {
 		want Kind
 	}{
 		{
-			name: "Set Recommendation kind",
-			kind: KindRecommendation,
-			want: KindRecommendation,
-		},
-		{
 			name: "Set Snapshot kind",
 			kind: KindSnapshot,
 			want: KindSnapshot,
 		},
 		{
-			name: "Change kind from Snapshot to Recipe",
+			name: "Set Recipe kind",
 			kind: KindRecipe,
 			want: KindRecipe,
 		},
@@ -380,22 +360,6 @@ func TestHeader_Init(t *testing.T) {
 				}
 			},
 		},
-		{
-			name:    "Init Recommendation with version",
-			kind:    KindRecommendation,
-			version: "v2.1.0",
-			check: func(t *testing.T, h *Header) {
-				if h.Kind != KindRecommendation {
-					t.Errorf("Kind = %v, want %v", h.Kind, KindRecommendation)
-				}
-				if h.APIVersion != "recommendation.dgxc.io/v1" {
-					t.Errorf("APIVersion = %v, want recommendation.dgxc.io/v1", h.APIVersion)
-				}
-				if v := h.Metadata["recommendation-version"]; v != "v2.1.0" {
-					t.Errorf("recommendation-version = %v, want v2.1.0", v)
-				}
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -462,9 +426,6 @@ func TestHeader_Init_OverwritesExistingData(t *testing.T) {
 
 func TestConstants(t *testing.T) {
 	// Verify constant values haven't changed
-	if KindRecommendation != "Recommendation" {
-		t.Errorf("KindRecommendation = %v, want Recommendation", KindRecommendation)
-	}
 	if KindSnapshot != "Snapshot" {
 		t.Errorf("KindSnapshot = %v, want Snapshot", KindSnapshot)
 	}

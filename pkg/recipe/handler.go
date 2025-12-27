@@ -54,7 +54,7 @@ func (b *Builder) HandleRecipes(w http.ResponseWriter, r *http.Request) {
 		"intent", q.Intent.String(),
 	)
 
-	resp, err := b.Build(r.Context(), q)
+	resp, err := b.BuildFromQuery(r.Context(), q)
 	if err != nil {
 		server.WriteError(w, r, http.StatusInternalServerError, server.ErrCodeInternalError,
 			"Failed to build recipe", true, map[string]interface{}{
@@ -63,7 +63,7 @@ func (b *Builder) HandleRecipes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp.Init(header.KindRecommendation, b.Version)
+	resp.Init(header.KindRecipe, b.Version)
 
 	if resp.Request.IsEmpty() {
 		slog.Debug("stripping empty request from recipe response")

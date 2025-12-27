@@ -55,14 +55,14 @@ type Builder struct {
 // This is a convenience function for simple use cases.
 // For custom configuration or control over Builder settings, create a Builder instance directly.
 func BuildRecipe(ctx context.Context, q *Query) (*Recipe, error) {
-	return defaultBuilder.Build(ctx, q)
+	return defaultBuilder.BuildFromQuery(ctx, q)
 }
 
 // Build creates a Recipe payload for the provided query.
 // It loads the recipe store, applies matching overlays, and returns
 // a Recipe with base measurements merged with overlay-specific configurations.
 // Context is included in the response only if Query.IncludeContext is true.
-func (b *Builder) Build(ctx context.Context, q *Query) (*Recipe, error) {
+func (b *Builder) BuildFromQuery(ctx context.Context, q *Query) (*Recipe, error) {
 	if q == nil {
 		return nil, fmt.Errorf("query cannot be nil")
 	}

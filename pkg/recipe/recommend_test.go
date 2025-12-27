@@ -1,4 +1,4 @@
-package recommender
+package recipe
 
 import (
 	"context"
@@ -7,13 +7,12 @@ import (
 	"time"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
-	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe/header"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe/version"
 	"github.com/NVIDIA/cloud-native-stack/pkg/snapshotter"
 )
 
-func TestNew(t *testing.T) {
+func TestNewBuilder(t *testing.T) {
 	tests := []struct {
 		name    string
 		opts    []Option
@@ -38,7 +37,7 @@ func TestNew(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := New(tt.opts...)
+			got := NewBuilder(tt.opts...)
 			if got.Version != tt.wantVer {
 				t.Errorf("New() version = %v, want %v", got.Version, tt.wantVer)
 			}
@@ -46,47 +45,47 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestConfigRecommender_Recommend(t *testing.T) {
+func TestBuilder_BuildFromSnapshot(t *testing.T) {
 	// Create a valid test snapshot
 	validSnapshot := createTestSnapshot()
 
 	tests := []struct {
 		name      string
-		intent    recipe.IntentType
+		intent    IntentType
 		snapshot  *snapshotter.Snapshot
 		wantError bool
 		errMsg    string
 	}{
 		{
 			name:      "valid snapshot and intent",
-			intent:    recipe.IntentTraining,
+			intent:    IntentTraining,
 			snapshot:  validSnapshot,
 			wantError: false,
 		},
 		{
 			name:      "nil snapshot",
-			intent:    recipe.IntentTraining,
+			intent:    IntentTraining,
 			snapshot:  nil,
 			wantError: true,
 			errMsg:    "snapshot cannot be nil",
 		},
 		{
 			name:      "snapshot with no measurements",
-			intent:    recipe.IntentTraining,
+			intent:    IntentTraining,
 			snapshot:  snapshotter.NewSnapshot(),
 			wantError: true,
 			errMsg:    "snapshot contains no measurements",
 		},
 		{
 			name:      "invalid intent",
-			intent:    recipe.IntentType("invalid"),
+			intent:    IntentType("invalid"),
 			snapshot:  validSnapshot,
 			wantError: true,
 			errMsg:    "invalid intent type",
 		},
 		{
 			name:      "inference intent",
-			intent:    recipe.IntentInference,
+			intent:    IntentInference,
 			snapshot:  validSnapshot,
 			wantError: false,
 		},
@@ -94,10 +93,10 @@ func TestConfigRecommender_Recommend(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := New(WithVersion("v1.0.0"))
+			r := NewBuilder(WithVersion("v1.0.0"))
 			ctx := context.Background()
 
-			got, err := r.Recommend(ctx, tt.intent, tt.snapshot)
+			got, err := r.BuildFromSnapshot(ctx, tt.intent, tt.snapshot)
 
 			if tt.wantError {
 				if err == nil {
@@ -126,30 +125,30 @@ func TestConfigRecommender_Recommend(t *testing.T) {
 				return
 			}
 
-			if got.Metadata["recommendation-version"] != "v1.0.0" {
-				t.Errorf("Recommend() recommendation-version = %v, want v1.0.0",
-					got.Metadata["recommendation-version"])
+			if got.Metadata["recipe-version"] != "v1.0.0" {
+				t.Errorf("Recommend() recipe-version = %v, want v1.0.0",
+					got.Metadata["recipe-version"])
 			}
 		})
 	}
 }
 
-func TestConfigRecommender_Recommend_ContextCancellation(t *testing.T) {
-	r := New(WithVersion("v1.0.0"))
+func TestBuilder_BuildFromSnapshot_ContextCancellation(t *testing.T) {
+	r := NewBuilder(WithVersion("v1.0.0"))
 	snapshot := createTestSnapshot()
 
 	// Create a canceled context
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, err := r.Recommend(ctx, recipe.IntentTraining, snapshot)
+	_, err := r.BuildFromSnapshot(ctx, IntentTraining, snapshot)
 	if err == nil {
 		t.Error("Recommend() expected error with canceled context but got nil")
 	}
 }
 
-func TestConfigRecommender_Recommend_Timeout(t *testing.T) {
-	r := New(WithVersion("v1.0.0"))
+func TestBuilder_BuildFromSnapshot_Timeout(t *testing.T) {
+	r := NewBuilder(WithVersion("v1.0.0"))
 	snapshot := createTestSnapshot()
 
 	// Create a context with a very short timeout
@@ -159,7 +158,7 @@ func TestConfigRecommender_Recommend_Timeout(t *testing.T) {
 	// Give the context time to expire
 	time.Sleep(10 * time.Millisecond)
 
-	_, err := r.Recommend(ctx, recipe.IntentTraining, snapshot)
+	_, err := r.BuildFromSnapshot(ctx, IntentTraining, snapshot)
 	if err == nil {
 		t.Error("Recommend() expected timeout error but got nil")
 	}
@@ -168,58 +167,58 @@ func TestConfigRecommender_Recommend_Timeout(t *testing.T) {
 func TestQueryFromSnapshot(t *testing.T) {
 	tests := []struct {
 		name      string
-		intent    recipe.IntentType
+		intent    IntentType
 		snapshot  *snapshotter.Snapshot
 		wantError bool
 		errMsg    string
-		validate  func(*testing.T, *recipe.Query)
+		validate  func(*testing.T, *Query)
 	}{
 		{
 			name:      "nil snapshot",
-			intent:    recipe.IntentTraining,
+			intent:    IntentTraining,
 			snapshot:  nil,
 			wantError: true,
 			errMsg:    "snapshot cannot be nil",
 		},
 		{
 			name:      "empty measurements",
-			intent:    recipe.IntentTraining,
+			intent:    IntentTraining,
 			snapshot:  snapshotter.NewSnapshot(),
 			wantError: true,
 			errMsg:    "snapshot contains no measurements",
 		},
 		{
 			name:     "complete snapshot",
-			intent:   recipe.IntentTraining,
+			intent:   IntentTraining,
 			snapshot: createTestSnapshot(),
-			validate: func(t *testing.T, q *recipe.Query) {
-				if q.Intent != recipe.IntentTraining {
-					t.Errorf("Intent = %v, want %v", q.Intent, recipe.IntentTraining)
+			validate: func(t *testing.T, q *Query) {
+				if q.Intent != IntentTraining {
+					t.Errorf("Intent = %v, want %v", q.Intent, IntentTraining)
 				}
 				if !q.IncludeContext {
 					t.Error("IncludeContext should be true by default")
 				}
-				if q.Os != recipe.OSUbuntu {
-					t.Errorf("Os = %v, want %v", q.Os, recipe.OSUbuntu)
+				if q.Os != OSUbuntu {
+					t.Errorf("Os = %v, want %v", q.Os, OSUbuntu)
 				}
-				if q.GPU != recipe.GPUH100 {
-					t.Errorf("GPU = %v, want %v", q.GPU, recipe.GPUH100)
+				if q.GPU != GPUH100 {
+					t.Errorf("GPU = %v, want %v", q.GPU, GPUH100)
 				}
-				if q.Service != recipe.ServiceEKS {
-					t.Errorf("Service = %v, want %v", q.Service, recipe.ServiceEKS)
+				if q.Service != ServiceEKS {
+					t.Errorf("Service = %v, want %v", q.Service, ServiceEKS)
 				}
 			},
 		},
 		{
 			name:     "snapshot with partial data",
-			intent:   recipe.IntentInference,
+			intent:   IntentInference,
 			snapshot: createPartialSnapshot(),
-			validate: func(t *testing.T, q *recipe.Query) {
-				if q.Intent != recipe.IntentInference {
-					t.Errorf("Intent = %v, want %v", q.Intent, recipe.IntentInference)
+			validate: func(t *testing.T, q *Query) {
+				if q.Intent != IntentInference {
+					t.Errorf("Intent = %v, want %v", q.Intent, IntentInference)
 				}
-				if q.Os != recipe.OSUbuntu {
-					t.Errorf("Os = %v, want %v", q.Os, recipe.OSUbuntu)
+				if q.Os != OSUbuntu {
+					t.Errorf("Os = %v, want %v", q.Os, OSUbuntu)
 				}
 			},
 		},
@@ -262,7 +261,7 @@ func TestParseOSSubtypes(t *testing.T) {
 		name      string
 		subtypes  []measurement.Subtype
 		wantError bool
-		validate  func(*testing.T, *recipe.Query)
+		validate  func(*testing.T, *Query)
 	}{
 		{
 			name: "complete OS data",
@@ -281,9 +280,9 @@ func TestParseOSSubtypes(t *testing.T) {
 					},
 				},
 			},
-			validate: func(t *testing.T, q *recipe.Query) {
-				if q.Os != recipe.OSUbuntu {
-					t.Errorf("Os = %v, want %v", q.Os, recipe.OSUbuntu)
+			validate: func(t *testing.T, q *Query) {
+				if q.Os != OSUbuntu {
+					t.Errorf("Os = %v, want %v", q.Os, OSUbuntu)
 				}
 				if q.OsVersion == nil || q.OsVersion.Major != 22 || q.OsVersion.Minor != 4 {
 					t.Errorf("OsVersion = %v, want 22.4", q.OsVersion)
@@ -325,9 +324,9 @@ func TestParseOSSubtypes(t *testing.T) {
 					Data: map[string]measurement.Reading{},
 				},
 			},
-			validate: func(t *testing.T, q *recipe.Query) {
+			validate: func(t *testing.T, q *Query) {
 				// Should not populate fields if data is missing
-				if q.Os != "" && q.Os != recipe.OSAny {
+				if q.Os != "" && q.Os != OSAny {
 					t.Errorf("Os should be empty, got %v", q.Os)
 				}
 			},
@@ -336,7 +335,7 @@ func TestParseOSSubtypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			q := &recipe.Query{}
+			q := &Query{}
 			err := parseOSSubtypes(tt.subtypes, q)
 
 			if tt.wantError {
@@ -363,7 +362,7 @@ func TestParseK8sSubtypes(t *testing.T) {
 		name      string
 		subtypes  []measurement.Subtype
 		wantError bool
-		validate  func(*testing.T, *recipe.Query)
+		validate  func(*testing.T, *Query)
 	}{
 		{
 			name: "complete K8s data",
@@ -381,12 +380,12 @@ func TestParseK8sSubtypes(t *testing.T) {
 					},
 				},
 			},
-			validate: func(t *testing.T, q *recipe.Query) {
+			validate: func(t *testing.T, q *Query) {
 				if q.K8s == nil || q.K8s.String() != "1.28.0" {
 					t.Errorf("K8s = %v, want 1.28.0", q.K8s)
 				}
-				if q.Service != recipe.ServiceEKS {
-					t.Errorf("Service = %v, want %v", q.Service, recipe.ServiceEKS)
+				if q.Service != ServiceEKS {
+					t.Errorf("Service = %v, want %v", q.Service, ServiceEKS)
 				}
 			},
 		},
@@ -400,9 +399,9 @@ func TestParseK8sSubtypes(t *testing.T) {
 					},
 				},
 			},
-			validate: func(t *testing.T, q *recipe.Query) {
-				if q.Service != recipe.ServiceGKE {
-					t.Errorf("Service = %v, want %v", q.Service, recipe.ServiceGKE)
+			validate: func(t *testing.T, q *Query) {
+				if q.Service != ServiceGKE {
+					t.Errorf("Service = %v, want %v", q.Service, ServiceGKE)
 				}
 			},
 		},
@@ -434,7 +433,7 @@ func TestParseK8sSubtypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			q := &recipe.Query{}
+			q := &Query{}
 			err := parseK8sSubtypes(tt.subtypes, q)
 
 			if tt.wantError {
@@ -461,7 +460,7 @@ func TestParseGPUSubtypes(t *testing.T) {
 		name      string
 		subtypes  []measurement.Subtype
 		wantError bool
-		validate  func(*testing.T, *recipe.Query)
+		validate  func(*testing.T, *Query)
 	}{
 		{
 			name: "H100 GPU",
@@ -473,9 +472,9 @@ func TestParseGPUSubtypes(t *testing.T) {
 					},
 				},
 			},
-			validate: func(t *testing.T, q *recipe.Query) {
-				if q.GPU != recipe.GPUH100 {
-					t.Errorf("GPU = %v, want %v", q.GPU, recipe.GPUH100)
+			validate: func(t *testing.T, q *Query) {
+				if q.GPU != GPUH100 {
+					t.Errorf("GPU = %v, want %v", q.GPU, GPUH100)
 				}
 			},
 		},
@@ -489,9 +488,9 @@ func TestParseGPUSubtypes(t *testing.T) {
 					},
 				},
 			},
-			validate: func(t *testing.T, q *recipe.Query) {
-				if q.GPU != recipe.GPUB200 {
-					t.Errorf("GPU = %v, want %v", q.GPU, recipe.GPUB200)
+			validate: func(t *testing.T, q *Query) {
+				if q.GPU != GPUB200 {
+					t.Errorf("GPU = %v, want %v", q.GPU, GPUB200)
 				}
 			},
 		},
@@ -515,8 +514,8 @@ func TestParseGPUSubtypes(t *testing.T) {
 					Data: map[string]measurement.Reading{},
 				},
 			},
-			validate: func(t *testing.T, q *recipe.Query) {
-				if q.GPU != "" && q.GPU != recipe.GPUAny {
+			validate: func(t *testing.T, q *Query) {
+				if q.GPU != "" && q.GPU != GPUAny {
 					t.Errorf("GPU should be empty, got %v", q.GPU)
 				}
 			},
@@ -525,7 +524,7 @@ func TestParseGPUSubtypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			q := &recipe.Query{}
+			q := &Query{}
 			err := parseGPUSubtypes(tt.subtypes, q)
 
 			if tt.wantError {
