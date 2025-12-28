@@ -22,6 +22,33 @@ tags:
     description: Service health and readiness checks
 
 paths:
+  /:
+    get:
+      tags: [Health]
+      summary: Get service information and available routes
+      operationId: getRoot
+      description: Returns service name, version, and list of available API routes
+      responses:
+        "200":
+          description: Service information
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [service, version, routes]
+                properties:
+                  service:
+                    type: string
+                    example: eidos-api-server
+                  version:
+                    type: string
+                    example: v1.0.0
+                  routes:
+                    type: array
+                    items:
+                      type: string
+                    example: ["/v1/recipe"]
+
   /v1/recipe:
     get:
       tags: [Recipes]
@@ -245,12 +272,19 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [status]
+                required: [status, timestamp]
                 properties:
                   status:
                     type: string
                     enum: [healthy]
                     example: healthy
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: ISO 8601 timestamp of the health check
+                  reason:
+                    type: string
+                    description: Optional reason for status
 
   /ready:
     get:
@@ -265,28 +299,55 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [status]
+                required: [status, timestamp]
                 properties:
                   status:
                     type: string
                     enum: [ready]
                     example: ready
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: ISO 8601 timestamp of the readiness check
+                  reason:
+                    type: string
+                    description: Optional reason for status
         "503":
           description: Service is not ready
           content:
             application/json:
               schema:
                 type: object
-                required: [status]
+                required: [status, timestamp]
                 properties:
                   status:
                     type: string
                     enum: [not_ready]
                     example: not_ready
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: ISO 8601 timestamp of the readiness check
                   reason:
                     type: string
-                    example: "initializing"
-
+                    example: "service is initializing"
+  /metrics:
+    get:
+      tags: [Health]
+      summary: Prometheus metrics endpoint
+      operationId: getMetrics
+      description: Returns Prometheus-formatted metrics including HTTP request counts, durations, and rate limiting statistics
+      responses:
+        "200":
+          description: Prometheus metrics in text format
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: |
+                  # HELP eidos_http_requests_total Total number of HTTP requests
+                  # TYPE eidos_http_requests_total counter
+                  eidos_http_requests_total{method="GET",path="/v1/recipe",status="200"} 42
 components:
   headers:
     RequestIdResponse:
