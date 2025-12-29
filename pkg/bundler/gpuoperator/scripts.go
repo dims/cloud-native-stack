@@ -58,24 +58,15 @@ func (s *ScriptData) ToMap() map[string]interface{} {
 
 	if s.Request != nil {
 		m["Request"] = map[string]interface{}{
-			"Os":        s.Request.Os.String(),
-			"OsVersion": versionToString(s.Request.OsVersion),
-			"Service":   s.Request.Service.String(),
-			"GPU":       s.Request.GPU.String(),
-			"Intent":    s.Request.Intent.String(),
+			"Os":         s.Request.Os.String(),
+			"OsVersion":  s.Request.OsVersionString(),
+			"Kernel":     s.Request.K8sString(),
+			"Kubernetes": s.Request.K8sString(),
+			"Service":    s.Request.Service.String(),
+			"GPU":        s.Request.GPU.String(),
+			"Intent":     s.Request.Intent.String(),
 		}
 	}
 
 	return m
-}
-
-// versionToString converts a version pointer to string.
-func versionToString(v interface{}) string {
-	if v == nil {
-		return ""
-	}
-	if s, ok := v.(interface{ String() string }); ok {
-		return s.String()
-	}
-	return ""
 }

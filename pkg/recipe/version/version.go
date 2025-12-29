@@ -266,3 +266,14 @@ func (v Version) IsValid() bool {
 	}
 	return true
 }
+
+// ToString converts a version pointer to string.
+func ToString(v interface{}) string {
+	if v == nil {
+		return ""
+	}
+	if s, ok := v.(interface{ String() string }); ok {
+		return s.String()
+	}
+	return ""
+}

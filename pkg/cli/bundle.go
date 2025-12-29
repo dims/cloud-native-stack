@@ -96,6 +96,13 @@ func bundleCmd() *cli.Command {
 
 			// Return error if any bundlers failed
 			if out.HasErrors() {
+				// Log each bundler error for debugging
+				for _, bundleErr := range out.Errors {
+					slog.Error("bundler failed",
+						"bundler_type", bundleErr.BundlerType,
+						"error", bundleErr.Error,
+					)
+				}
 				return fmt.Errorf("bundle generation completed with errors: %d/%d bundlers failed",
 					len(out.Errors), len(out.Results))
 			}

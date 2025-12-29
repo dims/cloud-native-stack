@@ -257,6 +257,18 @@ func (q *Query) IsMatch(other *Query) bool {
 	return true
 }
 
+func (q *Query) OsVersionString() string {
+	return normalizeVersionValue(q.OsVersion)
+}
+
+func (q *Query) KernelString() string {
+	return normalizeVersionValue(q.Kernel)
+}
+
+func (q *Query) K8sString() string {
+	return normalizeVersionValue(q.K8s)
+}
+
 // String returns a human-readable representation of the query.
 func (q *Query) String() string {
 	return fmt.Sprintf("OS: %s %s, Kernel: %s, Service: %s, K8s: %s, GPU: %s, Intent: %s, Context: %t",

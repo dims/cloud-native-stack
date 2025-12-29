@@ -1,5 +1,5 @@
 base:
-  - type: os
+  - type: OS
     subtypes:
 
       - subtype: kmod
@@ -114,7 +114,7 @@ base:
           /proc/sys/vm/swappiness: Swap tendency (lower values keep GPU-related memory resident)
           /proc/sys/vm/zone_reclaim_mode: Disable NUMA zone reclaim for consistent cross-node GPU access
 
-  - type: systemd
+  - type: SystemD
     subtypes:
       - subtype: containerd.service
         data:
@@ -148,7 +148,7 @@ base:
           LimitNOFILE: Unlimited file descriptors for container connections
           LimitNPROC: Unlimited process count for GPU containers
 
-  - type: k8s
+  - type: K8s
     subtypes:
 
       - subtype: server
@@ -209,7 +209,7 @@ base:
           cdi: Container Device Interface enabled for GPU device injection
           rdma: RDMA support enabled for high-speed GPU networking
 
-  - type: gpu
+  - type: GPU
     subtypes:
 
       - subtype: smi
@@ -236,7 +236,7 @@ overlays:
       service: eks
       os: ubuntu
     types:
-      - type: os
+      - type: OS
         subtypes:
           - subtype: grub
             data:
@@ -248,7 +248,7 @@ overlays:
       service: eks
       gpu: gb200
     types:
-      - type: k8s
+      - type: K8s
         subtypes:
           - subtype: server
             data:
@@ -265,7 +265,7 @@ overlays:
               useOpenKernelModule: true
             context:
               useOpenKernelModule: Use open-source EFA kernel module for compatibility with GB200 GPUs
-      - type: os
+      - type: OS
         subtypes:
           - subtype: kmod
             data:
