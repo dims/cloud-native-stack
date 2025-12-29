@@ -236,6 +236,42 @@ func TestNewHttpReader_WithCustomClient(t *testing.T) {
 	}
 }
 
+func TestHttpReader_TimeoutOptions(t *testing.T) {
+	totalTimeout := 10 * time.Second
+	connectTimeout := 2 * time.Second
+	tlsTimeout := 3 * time.Second
+	headerTimeout := 4 * time.Second
+	idleTimeout := 5 * time.Second
+
+	reader := NewHttpReader(
+		WithTotalTimeout(totalTimeout),
+		WithConnectTimeout(connectTimeout),
+		WithTLSHandshakeTimeout(tlsTimeout),
+		WithResponseHeaderTimeout(headerTimeout),
+		WithIdleConnTimeout(idleTimeout),
+	)
+
+	if reader.TotalTimeout != totalTimeout {
+		t.Errorf("TotalTimeout = %v, want %v", reader.TotalTimeout, totalTimeout)
+	}
+
+	if reader.ConnectTimeout != connectTimeout {
+		t.Errorf("ConnectTimeout = %v, want %v", reader.ConnectTimeout, connectTimeout)
+	}
+
+	if reader.TLSHandshakeTimeout != tlsTimeout {
+		t.Errorf("TLSHandshakeTimeout = %v, want %v", reader.TLSHandshakeTimeout, tlsTimeout)
+	}
+
+	if reader.ResponseHeaderTimeout != headerTimeout {
+		t.Errorf("ResponseHeaderTimeout = %v, want %v", reader.ResponseHeaderTimeout, headerTimeout)
+	}
+
+	if reader.IdleConnTimeout != idleTimeout {
+		t.Errorf("IdleConnTimeout = %v, want %v", reader.IdleConnTimeout, idleTimeout)
+	}
+}
+
 func TestHttpReader_Read_Success(t *testing.T) {
 	// Create test server
 	testData := []byte("test response data")
