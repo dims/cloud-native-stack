@@ -132,40 +132,40 @@ func TestGenerateHelmValues(t *testing.T) {
 	}
 
 	// Verify extracted values from recipe match expected structure
-	if values.GPUOperatorVersion != "v25.3.3" {
-		t.Errorf("GPUOperatorVersion = %s, want v25.3.3", values.GPUOperatorVersion)
+	if v, ok := values.GPUOperatorVersion.Value.(string); !ok || v != "v25.3.3" {
+		t.Errorf("GPUOperatorVersion = %v, want v25.3.3", values.GPUOperatorVersion.Value)
 	}
 
-	if values.DriverVersion != "580.82.07" {
-		t.Errorf("DriverVersion = %s, want 580.82.07", values.DriverVersion)
+	if v, ok := values.DriverVersion.Value.(string); !ok || v != "580.82.07" {
+		t.Errorf("DriverVersion = %v, want 580.82.07", values.DriverVersion.Value)
 	}
 
-	if values.NvidiaContainerToolkitVersion != "v1.17.8" {
-		t.Errorf("NvidiaContainerToolkitVersion = %s, want v1.17.8", values.NvidiaContainerToolkitVersion)
+	if v, ok := values.NvidiaContainerToolkitVersion.Value.(string); !ok || v != "v1.17.8" {
+		t.Errorf("NvidiaContainerToolkitVersion = %v, want v1.17.8", values.NvidiaContainerToolkitVersion.Value)
 	}
 
-	if values.DevicePluginVersion != "v0.17.4" {
-		t.Errorf("DevicePluginVersion = %s, want v0.17.4", values.DevicePluginVersion)
+	if v, ok := values.DevicePluginVersion.Value.(string); !ok || v != "v0.17.4" {
+		t.Errorf("DevicePluginVersion = %v, want v0.17.4", values.DevicePluginVersion.Value)
 	}
 
-	if values.DCGMVersion != "4.3.1-1" {
-		t.Errorf("DCGMVersion = %s, want 4.3.1-1", values.DCGMVersion)
+	if v, ok := values.DCGMVersion.Value.(string); !ok || v != "4.3.1-1" {
+		t.Errorf("DCGMVersion = %v, want 4.3.1-1", values.DCGMVersion.Value)
 	}
 
-	if values.DCGMExporterVersion != "4.3.1" {
-		t.Errorf("DCGMExporterVersion = %s, want 4.3.1", values.DCGMExporterVersion)
+	if v, ok := values.DCGMExporterVersion.Value.(string); !ok || v != "4.3.1" {
+		t.Errorf("DCGMExporterVersion = %v, want 4.3.1", values.DCGMExporterVersion.Value)
 	}
 
-	if !values.UseOpenKernelModule {
+	if v, ok := values.UseOpenKernelModule.Value.(bool); !ok || !v {
 		t.Error("UseOpenKernelModule = false, want true")
 	}
 
-	if !values.EnableGDS {
+	if v, ok := values.EnableGDS.Value.(bool); !ok || !v {
 		t.Error("EnableGDS = false, want true (from RDMA)")
 	}
 
-	if values.MIGStrategy != "single" {
-		t.Errorf("MIGStrategy = %s, want single (mig=false)", values.MIGStrategy)
+	if v, ok := values.MIGStrategy.Value.(string); !ok || v != "single" {
+		t.Errorf("MIGStrategy = %v, want single (mig=false)", values.MIGStrategy.Value)
 	}
 
 	if err := values.Validate(); err != nil {
@@ -263,8 +263,8 @@ func TestHelmValues_Validate(t *testing.T) {
 			name: "valid values",
 			values: &HelmValues{
 				Namespace:      "test",
-				DriverRegistry: "nvcr.io/nvidia",
-				MIGStrategy:    "single",
+				DriverRegistry: ConfigValue{Value: "nvcr.io/nvidia"},
+				MIGStrategy:    ConfigValue{Value: "single"},
 			},
 			wantErr: false,
 		},
@@ -272,8 +272,8 @@ func TestHelmValues_Validate(t *testing.T) {
 			name: "empty namespace",
 			values: &HelmValues{
 				Namespace:      "",
-				DriverRegistry: "nvcr.io/nvidia",
-				MIGStrategy:    "single",
+				DriverRegistry: ConfigValue{Value: "nvcr.io/nvidia"},
+				MIGStrategy:    ConfigValue{Value: "single"},
 			},
 			wantErr: true,
 		},
@@ -281,8 +281,8 @@ func TestHelmValues_Validate(t *testing.T) {
 			name: "invalid MIG strategy",
 			values: &HelmValues{
 				Namespace:      "test",
-				DriverRegistry: "nvcr.io/nvidia",
-				MIGStrategy:    "invalid",
+				DriverRegistry: ConfigValue{Value: "nvcr.io/nvidia"},
+				MIGStrategy:    ConfigValue{Value: "invalid"},
 			},
 			wantErr: true,
 		},

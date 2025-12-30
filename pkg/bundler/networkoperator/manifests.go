@@ -42,15 +42,31 @@ func GenerateManifestData(recipe *recipe.Recipe, config map[string]string) *Mani
 	// Extract values from recipe (similar to HelmValues)
 	helmValues := GenerateHelmValues(recipe, config)
 
-	// Convert helm values to manifest data
-	data.EnableRDMA = helmValues.EnableRDMA
-	data.EnableSRIOV = helmValues.EnableSRIOV
-	data.EnableHostDevice = helmValues.EnableHostDevice
-	data.EnableIPAM = helmValues.EnableIPAM
-	data.DeployOFED = helmValues.DeployOFED
-	data.OFEDVersion = helmValues.OFEDVersion
-	data.NicType = helmValues.NicType
-	data.ContainerRuntimeSocket = helmValues.ContainerRuntimeSocket
+	// Convert helm values to manifest data - extract Value from ConfigValue
+	if rdma, ok := helmValues.EnableRDMA.Value.(bool); ok {
+		data.EnableRDMA = rdma
+	}
+	if sriov, ok := helmValues.EnableSRIOV.Value.(bool); ok {
+		data.EnableSRIOV = sriov
+	}
+	if hd, ok := helmValues.EnableHostDevice.Value.(bool); ok {
+		data.EnableHostDevice = hd
+	}
+	if ipam, ok := helmValues.EnableIPAM.Value.(bool); ok {
+		data.EnableIPAM = ipam
+	}
+	if ofed, ok := helmValues.DeployOFED.Value.(bool); ok {
+		data.DeployOFED = ofed
+	}
+	if ofedVer, ok := helmValues.OFEDVersion.Value.(string); ok {
+		data.OFEDVersion = ofedVer
+	}
+	if nt, ok := helmValues.NicType.Value.(string); ok {
+		data.NicType = nt
+	}
+	if crs, ok := helmValues.ContainerRuntimeSocket.Value.(string); ok {
+		data.ContainerRuntimeSocket = crs
+	}
 	data.CustomLabels = helmValues.CustomLabels
 
 	// Extract additional settings from K8s config subtype

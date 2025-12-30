@@ -12,20 +12,26 @@ const (
 	strTrue = "true"
 )
 
+// ConfigValue holds a configuration value with its context/explanation.
+type ConfigValue struct {
+	Value   interface{}
+	Context string // Human-readable explanation from recipe
+}
+
 // HelmValues represents the data structure for Network Operator Helm values.
 type HelmValues struct {
 	Timestamp              string
-	NetworkOperatorVersion string
-	OFEDVersion            string
-	EnableRDMA             bool
-	EnableSRIOV            bool
-	EnableHostDevice       bool
-	EnableIPAM             bool
-	EnableMultus           bool
-	EnableWhereabouts      bool
-	DeployOFED             bool
-	NicType                string
-	ContainerRuntimeSocket string
+	NetworkOperatorVersion ConfigValue
+	OFEDVersion            ConfigValue
+	EnableRDMA             ConfigValue
+	EnableSRIOV            ConfigValue
+	EnableHostDevice       ConfigValue
+	EnableIPAM             ConfigValue
+	EnableMultus           ConfigValue
+	EnableWhereabouts      ConfigValue
+	DeployOFED             ConfigValue
+	NicType                ConfigValue
+	ContainerRuntimeSocket ConfigValue
 	CustomLabels           map[string]string
 	Namespace              string
 }
@@ -34,15 +40,15 @@ type HelmValues struct {
 func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string) *HelmValues {
 	values := &HelmValues{
 		Timestamp:              time.Now().UTC().Format(time.RFC3339),
-		EnableRDMA:             false,
-		EnableSRIOV:            false,
-		EnableHostDevice:       true,
-		EnableIPAM:             true,
-		EnableMultus:           true,
-		EnableWhereabouts:      true,
-		DeployOFED:             false,
-		NicType:                "ConnectX",
-		ContainerRuntimeSocket: "/var/run/containerd/containerd.sock",
+		EnableRDMA:             ConfigValue{Value: false},
+		EnableSRIOV:            ConfigValue{Value: false},
+		EnableHostDevice:       ConfigValue{Value: true},
+		EnableIPAM:             ConfigValue{Value: true},
+		EnableMultus:           ConfigValue{Value: true},
+		EnableWhereabouts:      ConfigValue{Value: true},
+		DeployOFED:             ConfigValue{Value: false},
+		NicType:                ConfigValue{Value: "ConnectX"},
+		ContainerRuntimeSocket: ConfigValue{Value: "/var/run/containerd/containerd.sock"},
 		CustomLabels:           make(map[string]string),
 		Namespace:              getConfigValue(config, "namespace", "nvidia-network-operator"),
 	}
@@ -66,16 +72,21 @@ func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string) *HelmVa
 // extractK8sSettings extracts Kubernetes-related settings from measurements.
 func (v *HelmValues) extractK8sSettings(m *measurement.Measurement) {
 	for _, st := range m.Subtypes {
+		// Extract context for this subtype
+		subtypeContext := getSubtypeContext(st.Context)
+
 		// Extract version information from 'image' subtype
 		if st.Name == "image" {
 			if val, ok := st.Data["network-operator"]; ok {
 				if s, ok := val.Any().(string); ok {
-					v.NetworkOperatorVersion = s
+					ctx := getFieldContext(st.Context, "network-operator", subtypeContext)
+					v.NetworkOperatorVersion = ConfigValue{Value: s, Context: ctx}
 				}
 			}
 			if val, ok := st.Data["ofed-driver"]; ok {
 				if s, ok := val.Any().(string); ok {
-					v.OFEDVersion = s
+					ctx := getFieldContext(st.Context, "ofed-driver", subtypeContext)
+					v.OFEDVersion = ConfigValue{Value: s, Context: ctx}
 				}
 			}
 		}
@@ -85,49 +96,57 @@ func (v *HelmValues) extractK8sSettings(m *measurement.Measurement) {
 			// RDMA configuration
 			if val, ok := st.Data["rdma"]; ok {
 				if b, ok := val.Any().(bool); ok {
-					v.EnableRDMA = b
+					ctx := getFieldContext(st.Context, "rdma", subtypeContext)
+					v.EnableRDMA = ConfigValue{Value: b, Context: ctx}
 				}
 			}
 			// SR-IOV configuration
 			if val, ok := st.Data["sr-iov"]; ok {
 				if b, ok := val.Any().(bool); ok {
-					v.EnableSRIOV = b
+					ctx := getFieldContext(st.Context, "sr-iov", subtypeContext)
+					v.EnableSRIOV = ConfigValue{Value: b, Context: ctx}
 				}
 			}
 			// OFED deployment
 			if val, ok := st.Data["deploy-ofed"]; ok {
 				if b, ok := val.Any().(bool); ok {
-					v.DeployOFED = b
+					ctx := getFieldContext(st.Context, "deploy-ofed", subtypeContext)
+					v.DeployOFED = ConfigValue{Value: b, Context: ctx}
 				}
 			}
 			// Host device plugin
 			if val, ok := st.Data["host-device"]; ok {
 				if b, ok := val.Any().(bool); ok {
-					v.EnableHostDevice = b
+					ctx := getFieldContext(st.Context, "host-device", subtypeContext)
+					v.EnableHostDevice = ConfigValue{Value: b, Context: ctx}
 				}
 			}
 			// IPAM plugin
 			if val, ok := st.Data["ipam"]; ok {
 				if b, ok := val.Any().(bool); ok {
-					v.EnableIPAM = b
+					ctx := getFieldContext(st.Context, "ipam", subtypeContext)
+					v.EnableIPAM = ConfigValue{Value: b, Context: ctx}
 				}
 			}
 			// Multus CNI
 			if val, ok := st.Data["multus"]; ok {
 				if b, ok := val.Any().(bool); ok {
-					v.EnableMultus = b
+					ctx := getFieldContext(st.Context, "multus", subtypeContext)
+					v.EnableMultus = ConfigValue{Value: b, Context: ctx}
 				}
 			}
 			// Whereabouts IPAM
 			if val, ok := st.Data["whereabouts"]; ok {
 				if b, ok := val.Any().(bool); ok {
-					v.EnableWhereabouts = b
+					ctx := getFieldContext(st.Context, "whereabouts", subtypeContext)
+					v.EnableWhereabouts = ConfigValue{Value: b, Context: ctx}
 				}
 			}
 			// NIC type
 			if val, ok := st.Data["nic-type"]; ok {
 				if s, ok := val.Any().(string); ok {
-					v.NicType = s
+					ctx := getFieldContext(st.Context, "nic-type", subtypeContext)
+					v.NicType = ConfigValue{Value: s, Context: ctx}
 				}
 			}
 		}
@@ -136,14 +155,19 @@ func (v *HelmValues) extractK8sSettings(m *measurement.Measurement) {
 		if st.Name == "server" {
 			if val, ok := st.Data["container-runtime"]; ok {
 				if s, ok := val.Any().(string); ok {
+					ctx := getFieldContext(st.Context, "container-runtime", subtypeContext)
+					var socket string
 					switch s {
 					case "containerd":
-						v.ContainerRuntimeSocket = "/var/run/containerd/containerd.sock"
+						socket = "/var/run/containerd/containerd.sock"
 					case "docker":
-						v.ContainerRuntimeSocket = "/var/run/docker.sock"
+						socket = "/var/run/docker.sock"
 					case "cri-o":
-						v.ContainerRuntimeSocket = "/var/run/crio/crio.sock"
+						socket = "/var/run/crio/crio.sock"
+					default:
+						socket = "/var/run/containerd/containerd.sock"
 					}
+					v.ContainerRuntimeSocket = ConfigValue{Value: socket, Context: ctx}
 				}
 			}
 		}
@@ -153,37 +177,37 @@ func (v *HelmValues) extractK8sSettings(m *measurement.Measurement) {
 // applyConfigOverrides applies configuration overrides to values.
 func (v *HelmValues) applyConfigOverrides(config map[string]string) {
 	if val, ok := config["network_operator_version"]; ok && val != "" {
-		v.NetworkOperatorVersion = val
+		v.NetworkOperatorVersion = ConfigValue{Value: val, Context: "Override from bundler configuration"}
 	}
 	if val, ok := config["ofed_version"]; ok && val != "" {
-		v.OFEDVersion = val
+		v.OFEDVersion = ConfigValue{Value: val, Context: "Override from bundler configuration"}
 	}
 	if val, ok := config["enable_rdma"]; ok {
-		v.EnableRDMA = val == strTrue
+		v.EnableRDMA = ConfigValue{Value: val == strTrue, Context: "Override from bundler configuration"}
 	}
 	if val, ok := config["enable_sriov"]; ok {
-		v.EnableSRIOV = val == strTrue
+		v.EnableSRIOV = ConfigValue{Value: val == strTrue, Context: "Override from bundler configuration"}
 	}
 	if val, ok := config["deploy_ofed"]; ok {
-		v.DeployOFED = val == strTrue
+		v.DeployOFED = ConfigValue{Value: val == strTrue, Context: "Override from bundler configuration"}
 	}
 	if val, ok := config["enable_host_device"]; ok {
-		v.EnableHostDevice = val == strTrue
+		v.EnableHostDevice = ConfigValue{Value: val == strTrue, Context: "Override from bundler configuration"}
 	}
 	if val, ok := config["enable_ipam"]; ok {
-		v.EnableIPAM = val == strTrue
+		v.EnableIPAM = ConfigValue{Value: val == strTrue, Context: "Override from bundler configuration"}
 	}
 	if val, ok := config["enable_multus"]; ok {
-		v.EnableMultus = val == strTrue
+		v.EnableMultus = ConfigValue{Value: val == strTrue, Context: "Override from bundler configuration"}
 	}
 	if val, ok := config["enable_whereabouts"]; ok {
-		v.EnableWhereabouts = val == strTrue
+		v.EnableWhereabouts = ConfigValue{Value: val == strTrue, Context: "Override from bundler configuration"}
 	}
 	if val, ok := config["nic_type"]; ok && val != "" {
-		v.NicType = val
+		v.NicType = ConfigValue{Value: val, Context: "Override from bundler configuration"}
 	}
 	if val, ok := config["container_runtime_socket"]; ok && val != "" {
-		v.ContainerRuntimeSocket = val
+		v.ContainerRuntimeSocket = ConfigValue{Value: val, Context: "Override from bundler configuration"}
 	}
 	if val, ok := config["namespace"]; ok && val != "" {
 		v.Namespace = val
@@ -195,6 +219,30 @@ func (v *HelmValues) applyConfigOverrides(config map[string]string) {
 			v.CustomLabels[k[6:]] = val
 		}
 	}
+}
+
+// getSubtypeContext extracts the general context from subtype context map.
+func getSubtypeContext(contextMap map[string]string) string {
+	if desc, ok := contextMap["description"]; ok && desc != "" {
+		return desc
+	}
+	if reason, ok := contextMap["reason"]; ok && reason != "" {
+		return reason
+	}
+	return ""
+}
+
+// getFieldContext gets the context for a specific field, falling back to subtype context.
+func getFieldContext(contextMap map[string]string, fieldName, subtypeContext string) string {
+	// Try field-specific context first (e.g., "network-operator-context")
+	if ctx, ok := contextMap[fieldName+"-context"]; ok && ctx != "" {
+		return ctx
+	}
+	if ctx, ok := contextMap[fieldName]; ok && ctx != "" {
+		return ctx
+	}
+	// Fall back to subtype-level context
+	return subtypeContext
 }
 
 // getConfigValue gets a value from config with a default fallback.
@@ -230,10 +278,10 @@ func (v *HelmValues) Validate() error {
 	if v.Namespace == "" {
 		return fmt.Errorf("namespace cannot be empty")
 	}
-	if v.NicType == "" {
+	if nt, ok := v.NicType.Value.(string); !ok || nt == "" {
 		return fmt.Errorf("NIC type cannot be empty")
 	}
-	if v.ContainerRuntimeSocket == "" {
+	if crs, ok := v.ContainerRuntimeSocket.Value.(string); !ok || crs == "" {
 		return fmt.Errorf("container runtime socket cannot be empty")
 	}
 	return nil

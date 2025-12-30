@@ -3,43 +3,67 @@
 # Timestamp: {{ .Timestamp }}
 
 operator:
-  {{- if .NetworkOperatorVersion }}
-  tag: {{ .NetworkOperatorVersion }}
+  {{- if .NetworkOperatorVersion.Value }}
+  {{- if .NetworkOperatorVersion.Context }}
+  # {{ .NetworkOperatorVersion.Context }}
+  {{- end }}
+  tag: {{ .NetworkOperatorVersion.Value }}
   {{- end }}
 
 deployCR: true
 
+{{- if .DeployOFED.Context }}
+# {{ .DeployOFED.Context }}
+{{- end }}
 ofedDriver:
-  deploy: {{ .DeployOFED }}
-  {{- if .OFEDVersion }}
-  version: {{ .OFEDVersion }}
+  deploy: {{ .DeployOFED.Value }}
+  {{- if .OFEDVersion.Value }}
+  {{- if .OFEDVersion.Context }}
+  # {{ .OFEDVersion.Context }}
+  {{- end }}
+  version: {{ .OFEDVersion.Value }}
   {{- end }}
 
+{{- if .EnableRDMA.Context }}
+# {{ .EnableRDMA.Context }}
+{{- end }}
 rdmaSharedDevicePlugin:
-  deploy: {{ .EnableRDMA }}
-  {{- if .EnableRDMA }}
+  deploy: {{ .EnableRDMA.Value }}
+  {{- if .EnableRDMA.Value }}
   config:
     resources:
       - name: rdma_shared_device
         rdmaHcaMax: 1000
   {{- end }}
 
+{{- if .EnableSRIOV.Context }}
+# {{ .EnableSRIOV.Context }}
+{{- end }}
 sriovDevicePlugin:
-  deploy: {{ .EnableSRIOV }}
+  deploy: {{ .EnableSRIOV.Value }}
 
+{{- if .EnableIPAM.Context }}
+# {{ .EnableIPAM.Context }}
+{{- end }}
 nvIPAM:
-  deploy: {{ .EnableIPAM }}
-  {{- if .EnableIPAM }}
+  deploy: {{ .EnableIPAM.Value }}
+  {{- if .EnableIPAM.Value }}
   config:
     enableWebhook: false
   {{- end }}
 
 secondaryNetwork:
   deploy: true
+  {{- if .EnableMultus.Context }}
+  # {{ .EnableMultus.Context }}
+  {{- end }}
   multus:
-    deploy: {{ .EnableMultus }}
+    deploy: {{ .EnableMultus.Value }}
+  {{- if .EnableWhereabouts.Context }}
+  # {{ .EnableWhereabouts.Context }}
+  {{- end }}
   ipamPlugin:
-    deploy: {{ .EnableWhereabouts }}
+    deploy: {{ .EnableWhereabouts.Value }}
 
 nicFeatureDiscovery:
   deploy: true
@@ -66,6 +90,9 @@ nfd:
   enabled: true
   deployNodeFeatureRules: true
 
+{{- if .ContainerRuntimeSocket.Context }}
+# {{ .ContainerRuntimeSocket.Context }}
+{{- end }}
 # Container Runtime
 containerRuntime:
-  socket: {{ .ContainerRuntimeSocket }}
+  socket: {{ .ContainerRuntimeSocket.Value }}

@@ -40,11 +40,19 @@ func GenerateManifestData(recipe *recipe.Recipe, config map[string]string) *Mani
 	// Extract values from recipe (similar to HelmValues)
 	helmValues := GenerateHelmValues(recipe, config)
 
-	// Convert helm values to manifest data
-	data.DriverVersion = helmValues.DriverVersion
-	data.UseOpenKernelModule = helmValues.UseOpenKernelModule
-	data.MIGStrategy = helmValues.MIGStrategy
-	data.EnableGDS = helmValues.EnableGDS
+	// Convert helm values to manifest data - extract Value from ConfigValue
+	if dv, ok := helmValues.DriverVersion.Value.(string); ok {
+		data.DriverVersion = dv
+	}
+	if okm, ok := helmValues.UseOpenKernelModule.Value.(bool); ok {
+		data.UseOpenKernelModule = okm
+	}
+	if ms, ok := helmValues.MIGStrategy.Value.(string); ok {
+		data.MIGStrategy = ms
+	}
+	if gds, ok := helmValues.EnableGDS.Value.(bool); ok {
+		data.EnableGDS = gds
+	}
 	data.CustomLabels = helmValues.CustomLabels
 
 	// Extract CDI setting from K8s config subtype

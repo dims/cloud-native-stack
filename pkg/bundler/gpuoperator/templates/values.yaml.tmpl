@@ -3,58 +3,100 @@
 # Timestamp: {{ .Timestamp }}
 
 operator:
-  repository: {{ .DriverRegistry }}
-  {{- if .GPUOperatorVersion }}
-  version: {{ .GPUOperatorVersion }}
+  {{- if .DriverRegistry.Context }}
+  # {{ .DriverRegistry.Context }}
+  {{- end }}
+  repository: {{ .DriverRegistry.Value }}
+  {{- if .GPUOperatorVersion.Value }}
+  {{- if .GPUOperatorVersion.Context }}
+  # {{ .GPUOperatorVersion.Context }}
+  {{- end }}
+  version: {{ .GPUOperatorVersion.Value }}
   {{- end }}
 
 driver:
-  enabled: {{ .EnableDriver }}
-  {{- if .DriverVersion }}
-  version: "{{ .DriverVersion }}"
+  {{- if .EnableDriver.Context }}
+  # {{ .EnableDriver.Context }}
   {{- end }}
-  {{- if .UseOpenKernelModule }}
+  enabled: {{ .EnableDriver.Value }}
+  {{- if .DriverVersion.Value }}
+  {{- if .DriverVersion.Context }}
+  # {{ .DriverVersion.Context }}
+  {{- end }}
+  version: "{{ .DriverVersion.Value }}"
+  {{- end }}
+  {{- if .UseOpenKernelModule.Value }}
+  {{- if .UseOpenKernelModule.Context }}
+  # {{ .UseOpenKernelModule.Context }}
+  {{- end }}
   useOpenKernelModules: true
   {{- end }}
-  repository: {{ .DriverRegistry }}
+  {{- if .DriverRegistry.Context }}
+  # {{ .DriverRegistry.Context }}
+  {{- end }}
+  repository: {{ .DriverRegistry.Value }}
 
 toolkit:
   enabled: true
-  {{- if .NvidiaContainerToolkitVersion }}
-  version: {{ .NvidiaContainerToolkitVersion }}
+  {{- if .NvidiaContainerToolkitVersion.Value }}
+  {{- if .NvidiaContainerToolkitVersion.Context }}
+  # {{ .NvidiaContainerToolkitVersion.Context }}
+  {{- end }}
+  version: {{ .NvidiaContainerToolkitVersion.Value }}
   {{- end }}
 
 devicePlugin:
   enabled: true
-  {{- if .DevicePluginVersion }}
-  version: {{ .DevicePluginVersion }}
+  {{- if .DevicePluginVersion.Value }}
+  {{- if .DevicePluginVersion.Context }}
+  # {{ .DevicePluginVersion.Context }}
+  {{- end }}
+  version: {{ .DevicePluginVersion.Value }}
   {{- end }}
 
 dcgm:
   enabled: true
-  {{- if .DCGMVersion }}
-  version: {{ .DCGMVersion }}
+  {{- if .DCGMVersion.Value }}
+  {{- if .DCGMVersion.Context }}
+  # {{ .DCGMVersion.Context }}
+  {{- end }}
+  version: {{ .DCGMVersion.Value }}
   {{- end }}
 
 dcgmExporter:
   enabled: true
-  {{- if .DCGMExporterVersion }}
-  version: {{ .DCGMExporterVersion }}
+  {{- if .DCGMExporterVersion.Value }}
+  {{- if .DCGMExporterVersion.Context }}
+  # {{ .DCGMExporterVersion.Context }}
+  {{- end }}
+  version: {{ .DCGMExporterVersion.Value }}
   {{- end }}
 
+{{- if .MIGStrategy.Context }}
+# {{ .MIGStrategy.Context }}
+{{- end }}
 mig:
-  strategy: {{ .MIGStrategy }}
+  strategy: {{ .MIGStrategy.Value }}
 
+{{- if .EnableGDS.Context }}
+# {{ .EnableGDS.Context }}
+{{- end }}
 gds:
-  enabled: {{ .EnableGDS }}
+  enabled: {{ .EnableGDS.Value }}
 
-{{- if .VGPULicenseServer }}
+{{- if .VGPULicenseServer.Value }}
+{{- if .VGPULicenseServer.Context }}
+# {{ .VGPULicenseServer.Context }}
+{{- end }}
 vgpuManager:
   enabled: true
-  licenseServerURL: {{ .VGPULicenseServer }}
+  licenseServerURL: {{ .VGPULicenseServer.Value }}
 {{- end }}
 
-{{- if .EnableSecureBoot }}
+{{- if .EnableSecureBoot.Value }}
+{{- if .EnableSecureBoot.Context }}
+# {{ .EnableSecureBoot.Context }}
+{{- end }}
 sandboxWorkloads:
   enabled: true
   defaultWorkload: container
