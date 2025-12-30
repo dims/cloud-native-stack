@@ -3,6 +3,7 @@ package networkoperator
 import (
 	"time"
 
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/common"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 )
@@ -27,7 +28,7 @@ type ManifestData struct {
 func GenerateManifestData(recipe *recipe.Recipe, config map[string]string) *ManifestData {
 	data := &ManifestData{
 		Timestamp:              time.Now().UTC().Format(time.RFC3339),
-		Namespace:              getConfigValue(config, "namespace", "nvidia-network-operator"),
+		Namespace:              common.GetConfigValue(config, "namespace", "nvidia-network-operator"),
 		EnableRDMA:             false,
 		EnableSRIOV:            false,
 		EnableHostDevice:       true,
@@ -35,8 +36,8 @@ func GenerateManifestData(recipe *recipe.Recipe, config map[string]string) *Mani
 		DeployOFED:             false,
 		NicType:                "ConnectX",
 		ContainerRuntimeSocket: "/var/run/containerd/containerd.sock",
-		CustomLabels:           make(map[string]string),
-		CustomAnnotations:      make(map[string]string),
+		CustomLabels:           common.ExtractCustomLabels(config),
+		CustomAnnotations:      common.ExtractCustomAnnotations(config),
 	}
 
 	// Extract values from recipe (similar to HelmValues)
@@ -83,11 +84,7 @@ func GenerateManifestData(recipe *recipe.Recipe, config map[string]string) *Mani
 	}
 
 	// Custom annotations
-	for k, val := range config {
-		if len(k) > 11 && k[:11] == "annotation_" {
-			data.CustomAnnotations[k[11:]] = val
-		}
-	}
+	data.CustomAnnotations = common.ExtractCustomAnnotations(config)
 
 	return data
 }

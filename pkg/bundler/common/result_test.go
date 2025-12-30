@@ -1,4 +1,4 @@
-package bundle
+package common
 
 import (
 	"strings"
@@ -204,42 +204,6 @@ func TestFormatBytes(t *testing.T) {
 			got := formatBytes(tt.bytes)
 			if got != tt.want {
 				t.Errorf("formatBytes(%d) = %s, want %s", tt.bytes, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestComputeChecksum(t *testing.T) {
-	tests := []struct {
-		name     string
-		contents []byte
-	}{
-		{
-			name:     "empty",
-			contents: []byte{},
-		},
-		{
-			name:     "hello world",
-			contents: []byte("hello world"),
-		},
-		{
-			name:     "different",
-			contents: []byte("different"),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := ComputeChecksum(tt.contents)
-			// Just verify it returns a valid hex string of expected length
-			if len(got) != 64 {
-				t.Errorf("ComputeChecksum() returned %d chars, want 64", len(got))
-			}
-
-			// Verify it's deterministic
-			got2 := ComputeChecksum(tt.contents)
-			if got != got2 {
-				t.Error("ComputeChecksum() not deterministic")
 			}
 		})
 	}

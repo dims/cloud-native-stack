@@ -1,8 +1,6 @@
-package bundle
+package common
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"time"
 )
@@ -105,12 +103,6 @@ func formatBytes(bytes int64) string {
 	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
-// ComputeChecksum computes SHA256 checksum of file contents.
-func ComputeChecksum(contents []byte) string {
-	hash := sha256.Sum256(contents)
-	return hex.EncodeToString(hash[:])
-}
-
 // NewBundleResult creates a new BundleResult with the given type.
 func NewResult(bundlerType Type) *Result {
 	return &Result{
@@ -147,6 +139,11 @@ func (o *Output) ByType() map[Type]*Result {
 		results[r.Type] = r
 	}
 	return results
+}
+
+// GeneratedAt returns a formatted timestamp string.
+func (r *Result) GeneratedAt() string {
+	return time.Now().UTC().Format(time.RFC3339)
 }
 
 // FailedBundlers returns list of bundler types that failed.

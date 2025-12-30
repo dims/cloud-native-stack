@@ -3,6 +3,7 @@ package gpuoperator
 import (
 	"time"
 
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/common"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 )
 
@@ -22,8 +23,8 @@ type ScriptData struct {
 func GenerateScriptData(recipe *recipe.Recipe, config map[string]string) *ScriptData {
 	data := &ScriptData{
 		Timestamp:      time.Now().UTC().Format(time.RFC3339),
-		Namespace:      getConfigValue(config, "namespace", "gpu-operator"),
-		HelmRepository: getConfigValue(config, "helm_repository", "https://helm.ngc.nvidia.com/nvidia"),
+		Namespace:      common.GetConfigValue(config, "namespace", "gpu-operator"),
+		HelmRepository: common.GetConfigValue(config, "helm_repository", "https://helm.ngc.nvidia.com/nvidia"),
 		HelmChart:      "nvidia/gpu-operator",
 		Request:        recipe.Request,
 	}

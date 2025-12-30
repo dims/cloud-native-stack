@@ -3,6 +3,7 @@ package gpuoperator
 import (
 	"time"
 
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/common"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 )
@@ -27,14 +28,14 @@ type ManifestData struct {
 func GenerateManifestData(recipe *recipe.Recipe, config map[string]string) *ManifestData {
 	data := &ManifestData{
 		Timestamp:         time.Now().UTC().Format(time.RFC3339),
-		Namespace:         getConfigValue(config, "namespace", "gpu-operator"),
+		Namespace:         common.GetConfigValue(config, "namespace", "gpu-operator"),
 		EnableDriver:      true,
 		MIGStrategy:       "single",
 		EnableGDS:         false,
 		EnableVGPU:        false,
 		EnableCDI:         false,
-		CustomLabels:      make(map[string]string),
-		CustomAnnotations: make(map[string]string),
+		CustomLabels:      common.ExtractCustomLabels(config),
+		CustomAnnotations: common.ExtractCustomAnnotations(config),
 	}
 
 	// Extract values from recipe (similar to HelmValues)
@@ -79,13 +80,6 @@ func GenerateManifestData(recipe *recipe.Recipe, config map[string]string) *Mani
 	}
 	if val, ok := config["enable_cdi"]; ok {
 		data.EnableCDI = val == "true"
-	}
-
-	// Custom annotations
-	for k, val := range config {
-		if len(k) > 11 && k[:11] == "annotation_" {
-			data.CustomAnnotations[k[11:]] = val
-		}
 	}
 
 	return data

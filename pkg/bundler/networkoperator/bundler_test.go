@@ -2,11 +2,8 @@ package networkoperator
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 	"testing"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/bundle"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
@@ -170,58 +167,6 @@ func TestBundler_validateRecipe(t *testing.T) {
 			err := b.validateRecipe(tt.recipe)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("validateRecipe() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestBundler_writeFile(t *testing.T) {
-	tmpDir := t.TempDir()
-	b := NewBundler(nil)
-	result := bundle.NewResult(bundle.BundleTypeNetworkOperator)
-
-	tests := []struct {
-		name    string
-		path    string
-		content string
-		perms   os.FileMode
-		wantErr bool
-	}{
-		{
-			name:    "write regular file",
-			path:    "test.txt",
-			content: "test content",
-			perms:   0644,
-			wantErr: false,
-		},
-		{
-			name:    "write executable file",
-			path:    "test.sh",
-			content: "#!/bin/bash\necho test",
-			perms:   0755,
-			wantErr: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			fullPath := filepath.Join(tmpDir, tt.path)
-			err := b.writeFile(fullPath, tt.content, tt.perms, result)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("writeFile() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			if !tt.wantErr {
-				// Verify file exists and has correct content
-				data, err := os.ReadFile(fullPath)
-				if err != nil {
-					t.Errorf("failed to read written file: %v", err)
-					return
-				}
-				if string(data) != tt.content {
-					t.Errorf("file content = %s, want %s", string(data), tt.content)
-				}
 			}
 		})
 	}

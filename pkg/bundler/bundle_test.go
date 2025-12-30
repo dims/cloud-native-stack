@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/bundle"
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/common"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
 	"github.com/NVIDIA/cloud-native-stack/pkg/errors"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
@@ -28,8 +28,8 @@ type mockBundler struct {
 	shouldFail bool
 }
 
-func (m *mockBundler) Make(ctx context.Context, r *recipe.Recipe, outputDir string) (*bundle.Result, error) {
-	result := bundle.NewResult("mock")
+func (m *mockBundler) Make(ctx context.Context, r *recipe.Recipe, outputDir string) (*common.Result, error) {
+	result := common.NewResult("mock")
 	if m.shouldFail {
 		return result, errors.New(errors.ErrCodeInternal, "mock bundler failed")
 	}
@@ -43,8 +43,8 @@ type mockConfigurableBundler struct {
 	config *config.Config
 }
 
-func (m *mockConfigurableBundler) Make(ctx context.Context, r *recipe.Recipe, outputDir string) (*bundle.Result, error) {
-	result := bundle.NewResult("mock-configurable")
+func (m *mockConfigurableBundler) Make(ctx context.Context, r *recipe.Recipe, outputDir string) (*common.Result, error) {
+	result := common.NewResult("mock-configurable")
 	result.AddFile("test.txt", 100)
 	result.MarkSuccess()
 	return result, nil
@@ -81,7 +81,7 @@ func TestDefaultBundler_Make(t *testing.T) {
 
 	bundler := New(
 		WithRegistry(testReg),
-		WithBundlerTypes([]bundle.Type{"mock"}),
+		WithBundlerTypes([]common.Type{"mock"}),
 	)
 	output, err := bundler.Make(ctx, rec, tmpDir)
 	if err != nil {
@@ -159,7 +159,7 @@ func TestDefaultBundler_MakeWithOptions(t *testing.T) {
 	config := config.NewConfig()
 	config.Namespace = "test-namespace"
 
-	bundler := New(WithRegistry(testReg), WithBundlerTypes([]bundle.Type{"mock"}),
+	bundler := New(WithRegistry(testReg), WithBundlerTypes([]common.Type{"mock"}),
 		WithConfig(config),
 	)
 	output, err := bundler.Make(ctx, rec, tmpDir)
@@ -194,7 +194,7 @@ func TestDefaultBundler_MakeCreatesDirectory(t *testing.T) {
 
 	bundler := New(
 		WithRegistry(testReg),
-		WithBundlerTypes([]bundle.Type{"mock"}),
+		WithBundlerTypes([]common.Type{"mock"}),
 	)
 	_, err := bundler.Make(ctx, rec, tmpDir)
 	if err != nil {
@@ -269,7 +269,7 @@ func TestDefaultBundler_MakeWithFailFast(t *testing.T) {
 
 	bundler := New(
 		WithRegistry(testReg),
-		WithBundlerTypes([]bundle.Type{"mock-fail", "mock"}),
+		WithBundlerTypes([]common.Type{"mock-fail", "mock"}),
 		WithFailFast(true),
 	)
 	_, err := bundler.Make(ctx, rec, tmpDir)
@@ -300,7 +300,7 @@ func TestDefaultBundler_MakeWithoutFailFast(t *testing.T) {
 
 	bundler := New(
 		WithRegistry(testReg),
-		WithBundlerTypes([]bundle.Type{"mock-fail", "mock"}),
+		WithBundlerTypes([]common.Type{"mock-fail", "mock"}),
 		WithFailFast(false),
 	)
 	output, err := bundler.Make(ctx, rec, tmpDir)
@@ -342,7 +342,7 @@ func TestDefaultBundler_MakeWithConfiguration(t *testing.T) {
 	config := config.NewConfig()
 	config.Namespace = "custom-namespace"
 
-	bundler := New(WithRegistry(testReg), WithBundlerTypes([]bundle.Type{"mock-configurable"}),
+	bundler := New(WithRegistry(testReg), WithBundlerTypes([]common.Type{"mock-configurable"}),
 		WithConfig(config),
 	)
 	output, err := bundler.Make(ctx, rec, tmpDir)
@@ -415,7 +415,7 @@ func TestDefaultBundler_MakeWithEmptyDirectory(t *testing.T) {
 	// Empty dir should default to current directory
 	bundler := New(
 		WithRegistry(testReg),
-		WithBundlerTypes([]bundle.Type{"mock"}),
+		WithBundlerTypes([]common.Type{"mock"}),
 	)
 	output, err := bundler.Make(ctx, rec, "")
 	if err != nil {
@@ -448,7 +448,7 @@ func TestDefaultBundler_MakeWithNoBundlers(t *testing.T) {
 	}
 
 	// Specify non-existent bundler type
-	bundler := New(WithBundlerTypes([]bundle.Type{"non-existent"}))
+	bundler := New(WithBundlerTypes([]common.Type{"non-existent"}))
 	_, err := bundler.Make(ctx, rec, tmpDir)
 	if err == nil {
 		t.Error("Expected error when no bundlers are selected")
@@ -456,10 +456,10 @@ func TestDefaultBundler_MakeWithNoBundlers(t *testing.T) {
 }
 
 func TestBundleOutput_Summary(t *testing.T) {
-	output := &bundle.Output{
+	output := &common.Output{
 		TotalFiles: 5,
 		TotalSize:  1024,
-		Results: []*bundle.Result{
+		Results: []*common.Result{
 			{Success: true},
 			{Success: true},
 			{Success: false},
@@ -475,20 +475,20 @@ func TestBundleOutput_Summary(t *testing.T) {
 func TestBundleOutput_HasErrors(t *testing.T) {
 	tests := []struct {
 		name   string
-		output *bundle.Output
+		output *common.Output
 		want   bool
 	}{
 		{
 			name: "no errors",
-			output: &bundle.Output{
-				Errors: []bundle.BundleError{},
+			output: &common.Output{
+				Errors: []common.BundleError{},
 			},
 			want: false,
 		},
 		{
 			name: "with errors",
-			output: &bundle.Output{
-				Errors: []bundle.BundleError{
+			output: &common.Output{
+				Errors: []common.BundleError{
 					{BundlerType: "test", Error: "test error"},
 				},
 			},
@@ -506,7 +506,7 @@ func TestBundleOutput_HasErrors(t *testing.T) {
 }
 
 func TestBundleResult_AddFile(t *testing.T) {
-	result := bundle.NewResult("test")
+	result := common.NewResult("test")
 	result.AddFile("/path/to/file", 100)
 
 	if len(result.Files) != 1 {

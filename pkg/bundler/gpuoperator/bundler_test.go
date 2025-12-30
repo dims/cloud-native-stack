@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/common"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
@@ -263,8 +264,8 @@ func TestHelmValues_Validate(t *testing.T) {
 			name: "valid values",
 			values: &HelmValues{
 				Namespace:      "test",
-				DriverRegistry: ConfigValue{Value: "nvcr.io/nvidia"},
-				MIGStrategy:    ConfigValue{Value: "single"},
+				DriverRegistry: common.ConfigValue{Value: "nvcr.io/nvidia"},
+				MIGStrategy:    common.ConfigValue{Value: "single"},
 			},
 			wantErr: false,
 		},
@@ -272,8 +273,8 @@ func TestHelmValues_Validate(t *testing.T) {
 			name: "empty namespace",
 			values: &HelmValues{
 				Namespace:      "",
-				DriverRegistry: ConfigValue{Value: "nvcr.io/nvidia"},
-				MIGStrategy:    ConfigValue{Value: "single"},
+				DriverRegistry: common.ConfigValue{Value: "nvcr.io/nvidia"},
+				MIGStrategy:    common.ConfigValue{Value: "single"},
 			},
 			wantErr: true,
 		},
@@ -281,8 +282,8 @@ func TestHelmValues_Validate(t *testing.T) {
 			name: "invalid MIG strategy",
 			values: &HelmValues{
 				Namespace:      "test",
-				DriverRegistry: ConfigValue{Value: "nvcr.io/nvidia"},
-				MIGStrategy:    ConfigValue{Value: "invalid"},
+				DriverRegistry: common.ConfigValue{Value: "nvcr.io/nvidia"},
+				MIGStrategy:    common.ConfigValue{Value: "invalid"},
 			},
 			wantErr: true,
 		},

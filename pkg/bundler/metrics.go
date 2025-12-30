@@ -1,7 +1,7 @@
 package bundler
 
 import (
-	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/bundle"
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/common"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -35,7 +35,7 @@ var (
 		[]string{"bundler_type"},
 	)
 
-	// bundleFilesTotal counts files generated per bundle.
+	// bundleFilesTotal counts files generated per common.
 	bundleFilesTotal = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "eidos_bundle_files_total",
@@ -64,7 +64,7 @@ var (
 )
 
 // recordBundleGenerated records a bundle generation event.
-func recordBundleGenerated(bundlerType bundle.Type, success bool) {
+func recordBundleGenerated(bundlerType common.Type, success bool) {
 	status := "success"
 	if !success {
 		status = "failure"
@@ -73,26 +73,26 @@ func recordBundleGenerated(bundlerType bundle.Type, success bool) {
 }
 
 // recordBundleDuration records the duration of bundle generation.
-func recordBundleDuration(bundlerType bundle.Type, seconds float64) {
+func recordBundleDuration(bundlerType common.Type, seconds float64) {
 	bundleDurationSeconds.WithLabelValues(string(bundlerType)).Observe(seconds)
 }
 
-// recordBundleSize records the size of the generated bundle.
-func recordBundleSize(bundlerType bundle.Type, bytes int64) {
+// recordBundleSize records the size of the generated common.
+func recordBundleSize(bundlerType common.Type, bytes int64) {
 	bundleSizeBytes.WithLabelValues(string(bundlerType)).Set(float64(bytes))
 }
 
-// recordBundleFiles records the number of files in the bundle.
-func recordBundleFiles(bundlerType bundle.Type, count int) {
+// recordBundleFiles records the number of files in the common.
+func recordBundleFiles(bundlerType common.Type, count int) {
 	bundleFilesTotal.WithLabelValues(string(bundlerType)).Set(float64(count))
 }
 
 // recordBundleError records an error during bundle generation.
-func recordBundleError(bundlerType bundle.Type, errorType string) {
+func recordBundleError(bundlerType common.Type, errorType string) {
 	bundleErrorsTotal.WithLabelValues(string(bundlerType), errorType).Inc()
 }
 
 // recordValidationFailure records a validation failure.
-func recordValidationFailure(bundlerType bundle.Type) {
+func recordValidationFailure(bundlerType common.Type) {
 	bundleValidationFailuresTotal.WithLabelValues(string(bundlerType)).Inc()
 }
