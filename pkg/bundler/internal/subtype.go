@@ -1,4 +1,4 @@
-package common
+package internal
 
 // ValueWithContext holds a configuration value with its context/explanation.
 // This is used to track both the value and the reason/source for that value

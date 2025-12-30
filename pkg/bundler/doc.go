@@ -13,15 +13,18 @@ The package uses these design patterns:
   - Factory Pattern: DefaultBundler orchestrates bundle generation
   - Functional Options: Configuration via WithBundlerTypes, WithConfig, etc.
   - Builder Pattern: result.Result for constructing bundler outputs
+  - Helper Pattern: BaseBundler reduces boilerplate in bundler implementations
 
 # Core Components
 
   - DefaultBundler: Main orchestrator for bundle generation
+  - BaseBundler: Helper for bundler implementations (reduces boilerplate)
   - Registry: Thread-safe storage for bundler implementations
   - bundle.Bundler: Interface that all bundlers must implement
   - result.Result: Individual bundler execution result
   - result.Output: Aggregated results from all bundlers
   - config.Config: Configuration options for bundlers
+  - internal: Internal utilities (template rendering, file writing, etc.)
 
 # Quick Start
 
@@ -39,16 +42,63 @@ Customize with functional options:
 	b := bundler.New(
 		bundler.WithBundlerTypes([]types.BundleType{types.BundleTypeGpuOperator}),
 		bundler.WithFailFast(true),
-		bundler.WithDryRun(true),
 	)
 
 Use custom configuration:
 
-	cfg := config.NewConfig()
-	cfg.Namespace = "gpu-operator"
-	cfg.IncludeScripts = true
+	cfg := config.NewConfig(
+		config.WithNamespace("gpu-operator"),
+		config.WithIncludeScripts(true),
+	)
 
 	b := bundler.New(bundler.WithConfig(cfg))
+
+# Creating a New Bundler
+
+Use BaseBundler to reduce boilerplate:
+
+	type MyBundler struct {
+		base *bundler.BaseBundler
+	}
+
+	func NewMyBundler(cfg *config.Config) *MyBundler {
+		return &MyBundler{
+			base: bundler.NewBaseBundler(cfg, types.BundleTypeMyOperator),
+		}
+	}
+
+	func (b *MyBundler) Make(ctx context.Context, r *recipe.Recipe, outputDir string) (*result.Result, error) {
+		start := time.Now()
+
+		// Create bundle directory structure
+		dirs, err := b.base.CreateBundleDir(outputDir, "my-operator")
+		if err != nil {
+			return nil, err
+		}
+
+		// Generate files using BaseBundler helpers
+		content, _ := b.base.RenderTemplate(template, "values.yaml", data)
+		if err := b.base.WriteFileString(filepath.Join(dirs.Root, "values.yaml"), content, 0644); err != nil {
+			return nil, err
+		}
+
+		// Generate checksums
+		if b.base.Config.IncludeChecksums() {
+			b.base.GenerateChecksums(ctx, dirs.Root)
+		}
+
+		// Finalize (records metrics, marks success)
+		b.base.Finalize(start)
+		return b.base.Result, nil
+	}
+
+Register in init():
+
+	func init() {
+		registry.MustRegister(types.BundleTypeMyOperator, func(cfg *config.Config) registry.Bundler {
+			return NewMyBundler(cfg)
+		})
+	}
 
 # Bundle Types
 
@@ -60,12 +110,12 @@ Currently supported bundlers:
   - Installation/uninstallation scripts
   - README documentation
   - SHA256 checksums
-
-To add custom bundlers, implement bundle.Bundler interface and register:
-
-	reg := bundler.NewRegistry()
-	reg.Register("my-bundler", myBundlerImpl)
-	b := bundler.New(bundler.WithRegistry(reg))
+  - network-operator: Generates Network Operator deployment bundles
+  - Helm values.yaml
+  - NicClusterPolicy manifest
+  - Installation/uninstallation scripts
+  - README documentation
+  - SHA256 checksums
 
 # Execution Modes
 
@@ -79,17 +129,6 @@ Benefits:
   - Faster execution with multiple bundlers
   - Efficient resource utilization
   - Context cancellation propagated to all goroutines
-
-## Sequential Execution
-
-Bundlers run one at a time:
-
-	b := bundler.New(bundler.WithSequential(true))
-
-Use when:
-  - Debugging bundler behavior
-  - Resource constraints
-  - Deterministic execution order required
 
 # Error Handling
 

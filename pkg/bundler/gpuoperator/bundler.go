@@ -2,16 +2,14 @@ package gpuoperator
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"path/filepath"
 	"time"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/types"
-
-	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/common"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/internal"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/result"
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/types"
 	"github.com/NVIDIA/cloud-native-stack/pkg/errors"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
@@ -19,17 +17,13 @@ import (
 
 // Bundler creates GPU Operator application bundles based on recipes.
 type Bundler struct {
-	config *config.Config
+	*internal.BaseBundler
 }
 
 // NewBundler creates a new GPU Operator bundler instance.
 func NewBundler(conf *config.Config) *Bundler {
-	if conf == nil {
-		conf = config.NewConfig()
-	}
-
 	return &Bundler{
-		config: conf,
+		BaseBundler: internal.NewBaseBundler(conf, types.BundleTypeGpuOperator),
 	}
 }
 
@@ -37,7 +31,8 @@ func NewBundler(conf *config.Config) *Bundler {
 func (b *Bundler) Make(ctx context.Context, recipe *recipe.Recipe, dir string) (*result.Result, error) {
 	// Check for required measurements
 	if err := recipe.ValidateMeasurementExists(measurement.TypeK8s); err != nil {
-		return nil, fmt.Errorf("measurements are required for GPU Operator bundling: %w", err)
+		return nil, errors.Wrap(errors.ErrCodeInvalidRequest,
+			"measurements are required for GPU Operator bundling", err)
 	}
 
 	// Check for GPU measurements (optional but recommended)
@@ -46,103 +41,74 @@ func (b *Bundler) Make(ctx context.Context, recipe *recipe.Recipe, dir string) (
 	}
 
 	start := time.Now()
-	result := result.New(types.BundleTypeGpuOperator)
 
 	slog.Debug("generating GPU Operator bundle",
 		"output_dir", dir,
-		"namespace", b.config.Namespace(),
+		"namespace", b.Config.Namespace(),
 	)
 
 	// Create bundle directory structure
-	dirManager := common.NewDirectoryManager()
-	bundleDir, subdirs, err := dirManager.CreateBundleStructure(dir, "gpu-operator")
+	dirs, err := b.CreateBundleDir(dir, "gpu-operator")
 	if err != nil {
-		return result, errors.Wrap(errors.ErrCodeInternal,
+		return b.Result, errors.Wrap(errors.ErrCodeInternal,
 			"failed to create bundle directory", err)
 	}
-
-	scriptsDir := subdirs["scripts"]
-	manifestsDir := subdirs["manifests"]
 
 	// Prepare configuration map
 	configMap := b.buildConfigMap()
 
-	// Initialize utilities
-	fileWriter := common.NewFileWriter(result)
-	contextChecker := common.NewContextChecker()
-	templateRenderer := common.NewTemplateRenderer(GetTemplate)
-
 	// Generate Helm values
-	if err := b.generateHelmValues(ctx, recipe, bundleDir, configMap, contextChecker, templateRenderer, fileWriter); err != nil {
-		return result, err
+	if err := b.generateHelmValues(ctx, recipe, dirs.Root, configMap); err != nil {
+		return b.Result, err
 	}
 
 	// Generate ClusterPolicy manifest
-	if err := b.generateClusterPolicy(ctx, recipe, manifestsDir, configMap, contextChecker, templateRenderer, fileWriter); err != nil {
-		return result, err
+	if err := b.generateClusterPolicy(ctx, recipe, dirs.Manifests, configMap); err != nil {
+		return b.Result, err
 	}
 
 	// Generate installation scripts
-	if b.config.IncludeScripts() {
-		if err := b.generateScripts(ctx, recipe, scriptsDir, configMap, contextChecker, templateRenderer, fileWriter); err != nil {
-			return result, err
+	if b.Config.IncludeScripts() {
+		if err := b.generateScripts(ctx, recipe, dirs.Scripts, configMap); err != nil {
+			return b.Result, err
 		}
 	}
 
 	// Generate README
-	if b.config.IncludeReadme() {
-		if err := b.generateReadme(ctx, recipe, bundleDir, configMap, contextChecker, templateRenderer, fileWriter); err != nil {
-			return result, err
+	if b.Config.IncludeReadme() {
+		if err := b.generateReadme(ctx, recipe, dirs.Root, configMap); err != nil {
+			return b.Result, err
 		}
 	}
 
 	// Generate checksums file
-	if b.config.IncludeChecksums() {
-		if err := b.generateChecksums(ctx, bundleDir, result); err != nil {
-			return result, err
+	if b.Config.IncludeChecksums() {
+		if err := b.GenerateChecksums(ctx, dirs.Root); err != nil {
+			return b.Result, errors.Wrap(errors.ErrCodeInternal,
+				"failed to generate checksums", err)
 		}
 	}
 
-	result.Duration = time.Since(start)
-
-	// Mark the result as successful
-	result.MarkSuccess()
+	// Finalize bundle generation
+	b.Finalize(start)
 
 	slog.Info("GPU Operator bundle generated",
-		"files", len(result.Files),
-		"size_bytes", result.Size,
-		"duration", result.Duration.Round(time.Millisecond),
+		"files", len(b.Result.Files),
+		"size_bytes", b.Result.Size,
+		"duration", b.Result.Duration.Round(time.Millisecond),
 	)
 
-	return result, nil
+	return b.Result, nil
 }
 
 // buildConfigMap creates a configuration map from bundler config.
 func (b *Bundler) buildConfigMap() map[string]string {
-	config := make(map[string]string)
-	config["namespace"] = b.config.Namespace()
-	config["helm_repository"] = b.config.HelmRepository()
-	config["helm_chart_version"] = b.config.HelmChartVersion()
-
-	// Add custom labels and annotations
-	for k, v := range b.config.CustomLabels() {
-		config["label_"+k] = v
-	}
-	for k, v := range b.config.CustomAnnotations() {
-		config["annotation_"+k] = v
-	}
-
-	return config
+	return b.BuildBaseConfigMap()
 }
 
 // generateHelmValues generates Helm values file.
 func (b *Bundler) generateHelmValues(ctx context.Context, recipe *recipe.Recipe,
-	bundleDir string, config map[string]string, contextChecker *common.ContextChecker,
-	templateRenderer *common.TemplateRenderer, fileWriter *common.FileWriter) error {
-
-	if err := contextChecker.Check(ctx); err != nil {
-		return err
-	}
+	bundleDir string, config map[string]string) error {
 
 	helmValues := GenerateHelmValues(recipe, config)
 
@@ -150,117 +116,49 @@ func (b *Bundler) generateHelmValues(ctx context.Context, recipe *recipe.Recipe,
 		return errors.Wrap(errors.ErrCodeInvalidRequest, "invalid helm values", errValidate)
 	}
 
-	content, err := templateRenderer.Render("values.yaml", helmValues.ToMap())
-	if err != nil {
-		return errors.Wrap(errors.ErrCodeInternal, "failed to render values template", err)
-	}
-
 	filePath := filepath.Join(bundleDir, "values.yaml")
-	if err := fileWriter.WriteFileString(filePath, content, 0644); err != nil {
-		return errors.Wrap(errors.ErrCodeInternal, "failed to write values file", err)
-	}
-
-	return nil
+	return b.GenerateFileFromTemplate(ctx, GetTemplate, "values.yaml",
+		filePath, helmValues.ToMap(), 0644)
 }
 
 // generateClusterPolicy generates ClusterPolicy manifest.
 func (b *Bundler) generateClusterPolicy(ctx context.Context, recipe *recipe.Recipe,
-	dir string, config map[string]string, contextChecker *common.ContextChecker,
-	templateRenderer *common.TemplateRenderer, fileWriter *common.FileWriter) error {
-
-	if err := contextChecker.Check(ctx); err != nil {
-		return err
-	}
+	dir string, config map[string]string) error {
 
 	manifestData := GenerateManifestData(recipe, config)
-
-	content, err := templateRenderer.Render("clusterpolicy", manifestData.ToMap())
-	if err != nil {
-		return errors.Wrap(errors.ErrCodeInternal, "failed to render clusterpolicy template", err)
-	}
-
 	filePath := filepath.Join(dir, "clusterpolicy.yaml")
-	if err := fileWriter.WriteFileString(filePath, content, 0644); err != nil {
-		return errors.Wrap(errors.ErrCodeInternal, "failed to write clusterpolicy file", err)
-	}
 
-	return nil
+	return b.GenerateFileFromTemplate(ctx, GetTemplate, "clusterpolicy",
+		filePath, manifestData.ToMap(), 0644)
 }
 
 // generateScripts generates installation and uninstallation scripts.
 func (b *Bundler) generateScripts(ctx context.Context, recipe *recipe.Recipe,
-	dir string, config map[string]string, contextChecker *common.ContextChecker,
-	templateRenderer *common.TemplateRenderer, fileWriter *common.FileWriter) error {
+	dir string, config map[string]string) error {
 
-	if err := contextChecker.Check(ctx); err != nil {
+	scriptData := GenerateScriptData(recipe, config)
+	data := scriptData.ToMap()
+
+	// Generate install script
+	installPath := filepath.Join(dir, "install.sh")
+	if err := b.GenerateFileFromTemplate(ctx, GetTemplate, "install.sh",
+		installPath, data, 0755); err != nil {
 		return err
 	}
 
-	scriptData := GenerateScriptData(recipe, config)
-
-	// Generate install script
-	installContent, err := templateRenderer.Render("install.sh", scriptData.ToMap())
-	if err != nil {
-		return errors.Wrap(errors.ErrCodeInternal, "failed to render install script", err)
-	}
-
-	installPath := filepath.Join(dir, "install.sh")
-	if err := fileWriter.WriteFileString(installPath, installContent, 0755); err != nil {
-		return errors.Wrap(errors.ErrCodeInternal, "failed to write install script", err)
-	}
-
 	// Generate uninstall script
-	uninstallContent, err := templateRenderer.Render("uninstall.sh", scriptData.ToMap())
-	if err != nil {
-		return errors.Wrap(errors.ErrCodeInternal, "failed to render uninstall script", err)
-	}
-
 	uninstallPath := filepath.Join(dir, "uninstall.sh")
-	if err := fileWriter.WriteFileString(uninstallPath, uninstallContent, 0755); err != nil {
-		return errors.Wrap(errors.ErrCodeInternal, "failed to write uninstall script", err)
-	}
-
-	return nil
+	return b.GenerateFileFromTemplate(ctx, GetTemplate, "uninstall.sh",
+		uninstallPath, data, 0755)
 }
 
 // generateReadme generates README documentation.
 func (b *Bundler) generateReadme(ctx context.Context, recipe *recipe.Recipe,
-	dir string, config map[string]string, contextChecker *common.ContextChecker,
-	templateRenderer *common.TemplateRenderer, fileWriter *common.FileWriter) error {
-
-	if err := contextChecker.Check(ctx); err != nil {
-		return err
-	}
+	dir string, config map[string]string) error {
 
 	scriptData := GenerateScriptData(recipe, config)
-
-	content, err := templateRenderer.Render("README.md", scriptData.ToMap())
-	if err != nil {
-		return errors.Wrap(errors.ErrCodeInternal, "failed to render README template", err)
-	}
-
 	filePath := filepath.Join(dir, "README.md")
-	if err := fileWriter.WriteFileString(filePath, content, 0644); err != nil {
-		return errors.Wrap(errors.ErrCodeInternal, "failed to write README file", err)
-	}
 
-	return nil
-}
-
-// generateChecksums generates a checksums file for bundle verification.
-func (b *Bundler) generateChecksums(ctx context.Context, dir string, result *result.Result) error {
-	generator := common.NewChecksumGenerator(result)
-	fileWriter := common.NewFileWriter(result)
-
-	content, err := generator.Generate(dir, "GPU Operator")
-	if err != nil {
-		return errors.Wrap(errors.ErrCodeInternal, "failed to generate checksums", err)
-	}
-
-	filePath := filepath.Join(dir, "checksums.txt")
-	if err := fileWriter.WriteFileString(filePath, content, 0644); err != nil {
-		return errors.Wrap(errors.ErrCodeInternal, "failed to write checksums file", err)
-	}
-
-	return nil
+	return b.GenerateFileFromTemplate(ctx, GetTemplate, "README.md",
+		filePath, scriptData.ToMap(), 0644)
 }

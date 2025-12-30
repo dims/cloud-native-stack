@@ -3,7 +3,7 @@ package networkoperator
 import (
 	"time"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/common"
+	common "github.com/NVIDIA/cloud-native-stack/pkg/bundler/internal"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 )

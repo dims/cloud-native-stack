@@ -33,7 +33,7 @@ func TestNewBundler(t *testing.T) {
 			if b == nil {
 				t.Fatal("NewBundler() returned nil")
 			}
-			if b.cfg == nil {
+			if b.Config == nil {
 				t.Error("Bundler config should not be nil")
 			}
 		})
