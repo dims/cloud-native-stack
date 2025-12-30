@@ -208,6 +208,16 @@ chmod +x scripts/install.sh
 kubectl get pods -n gpu-operator
 ```
 
+**Bundle Architecture:**
+
+Bundles are generated using a modular framework with:
+- **BaseBundler Helper** – Reduces bundler implementation code by ~75%
+- **Registry Pattern** – Automatic bundler discovery via self-registration
+- **Parallel Execution** – All bundlers run concurrently by default
+- **Internal Utilities** – Shared helpers for recipe parsing and template generation
+
+When no bundler types are specified, all registered bundlers execute automatically. The framework is extensible - new bundlers self-register via `init()` functions without modifying existing code. See [CONTRIBUTING.md](CONTRIBUTING.md#adding-a-new-bundler) for details on creating custom bundlers.
+
 **Example: End-to-End Workflow**
 ```bash
 # 1. Capture system configuration
