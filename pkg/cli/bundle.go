@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/types"
@@ -38,7 +39,8 @@ func bundleCmd() *cli.Command {
 				Name:    "bundlers",
 				Aliases: []string{"b"},
 				Usage: fmt.Sprintf(`Types of bundlers to execute (supported types: %s). 
-	If not specified, all supported bundlers are executed.`, types.SupportedBundleTypesAsStrings()),
+	If not specified, all supported bundlers are executed.`,
+					strings.Join(types.SupportedBundleTypesAsStrings(), "")),
 			},
 			&cli.StringFlag{
 				Name:    "output",
