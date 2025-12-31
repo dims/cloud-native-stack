@@ -103,6 +103,8 @@ func TestErrorCodes(t *testing.T) {
 		ErrCodeTimeout,
 		ErrCodeInternal,
 		ErrCodeInvalidRequest,
+		ErrCodeRateLimitExceeded,
+		ErrCodeMethodNotAllowed,
 		ErrCodeUnavailable,
 	}
 

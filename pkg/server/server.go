@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	cnserrors "github.com/NVIDIA/cloud-native-stack/pkg/errors"
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -195,7 +196,11 @@ func (s *Server) configureRootHandler() {
 	if _, exists := s.config.Handlers["/"]; !exists {
 		s.config.Handlers["/"] = func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodGet {
-				http.Error(w, ErrCodeMethodNotAllowed, http.StatusMethodNotAllowed)
+				w.Header().Set("Allow", http.MethodGet)
+				WriteError(w, r, http.StatusMethodNotAllowed, cnserrors.ErrCodeMethodNotAllowed,
+					"Method not allowed", false, map[string]interface{}{
+						"method": r.Method,
+					})
 				return
 			}
 

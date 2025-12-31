@@ -3,10 +3,10 @@ package recipe
 import (
 	"context"
 	_ "embed"
-	"fmt"
 	"sync"
 	"time"
 
+	cnserrors "github.com/NVIDIA/cloud-native-stack/pkg/errors"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"gopkg.in/yaml.v3"
 )
@@ -56,13 +56,13 @@ type Builder struct {
 // Context is included in the response only if Query.IncludeContext is true.
 func (b *Builder) BuildFromQuery(ctx context.Context, q *Query) (*Recipe, error) {
 	if q == nil {
-		return nil, fmt.Errorf("query cannot be nil")
+		return nil, cnserrors.New(cnserrors.ErrCodeInvalidRequest, "query cannot be nil")
 	}
 
 	// Check context before expensive operations
 	select {
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return nil, cnserrors.Wrap(cnserrors.ErrCodeTimeout, "request context cancelled", ctx.Err())
 	default:
 	}
 
@@ -74,7 +74,7 @@ func (b *Builder) BuildFromQuery(ctx context.Context, q *Query) (*Recipe, error)
 
 	store, err := loadStore(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load recipe store: %w", err)
+		return nil, cnserrors.Wrap(cnserrors.ErrCodeInternal, "failed to load recipe store", err)
 	}
 
 	r := &Recipe{
@@ -89,7 +89,7 @@ func (b *Builder) BuildFromQuery(ctx context.Context, q *Query) (*Recipe, error)
 		// Check context in loops
 		select {
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			return nil, cnserrors.Wrap(cnserrors.ErrCodeTimeout, "request context cancelled", ctx.Err())
 		default:
 		}
 
@@ -145,7 +145,7 @@ func loadStore(_ context.Context) (*Store, error) {
 	// Load store
 	var store Store
 	if err := yaml.Unmarshal(recipeData, &store); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal recipe data: %w", err)
+		return nil, cnserrors.Wrap(cnserrors.ErrCodeInternal, "failed to unmarshal recipe data", err)
 	}
 
 	cachedStore = &store

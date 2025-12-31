@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	cnserrors "github.com/NVIDIA/cloud-native-stack/pkg/errors"
 	"github.com/google/uuid"
 )
 
@@ -68,7 +69,7 @@ func (s *Server) rateLimitMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			rateLimitRejects.Inc()
 			retryAfterSeconds := "1"
 			w.Header().Set("Retry-After", retryAfterSeconds)
-			WriteError(w, r, http.StatusTooManyRequests, ErrCodeRateLimitExceeded,
+			WriteError(w, r, http.StatusTooManyRequests, cnserrors.ErrCodeRateLimitExceeded,
 				"Rate limit exceeded", true, map[string]interface{}{
 					"limit": s.config.RateLimit,
 					"burst": s.config.RateLimitBurst,
@@ -104,7 +105,7 @@ func (s *Server) panicRecoveryMiddleware(next http.HandlerFunc) http.HandlerFunc
 					"path", r.URL.Path,
 					"method", r.Method,
 				)
-				WriteError(w, r, http.StatusInternalServerError, ErrCodeInternalError,
+				WriteError(w, r, http.StatusInternalServerError, cnserrors.ErrCodeInternal,
 					"Internal server error", true, nil)
 			}
 		}()

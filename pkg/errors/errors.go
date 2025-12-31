@@ -16,8 +16,14 @@ const (
 	ErrCodeInternal ErrorCode = "INTERNAL"
 	// ErrCodeInvalidRequest indicates malformed or invalid input.
 	ErrCodeInvalidRequest ErrorCode = "INVALID_REQUEST"
+	// ErrCodeRateLimitExceeded indicates the client exceeded an enforced request limit.
+	ErrCodeRateLimitExceeded ErrorCode = "RATE_LIMIT_EXCEEDED"
+	// ErrCodeMethodNotAllowed indicates the HTTP method is not allowed for the resource.
+	ErrCodeMethodNotAllowed ErrorCode = "METHOD_NOT_ALLOWED"
 	// ErrCodeUnavailable indicates a service or resource is temporarily unavailable.
-	ErrCodeUnavailable ErrorCode = "UNAVAILABLE"
+	//
+	// Note: this value is aligned with the public API error contract.
+	ErrCodeUnavailable ErrorCode = "SERVICE_UNAVAILABLE"
 )
 
 // StructuredError provides structured error information for better observability.

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	cnserrors "github.com/NVIDIA/cloud-native-stack/pkg/errors"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe/header"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe/version"
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
@@ -24,7 +25,7 @@ var (
 func (b *Builder) HandleRecipes(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", http.MethodGet)
-		server.WriteError(w, r, http.StatusMethodNotAllowed, server.ErrCodeMethodNotAllowed,
+		server.WriteError(w, r, http.StatusMethodNotAllowed, cnserrors.ErrCodeMethodNotAllowed,
 			"Method not allowed", false, map[string]interface{}{
 				"method": r.Method,
 			})
@@ -37,7 +38,7 @@ func (b *Builder) HandleRecipes(w http.ResponseWriter, r *http.Request) {
 
 	q, err := ParseQuery(r)
 	if err != nil {
-		server.WriteError(w, r, http.StatusBadRequest, server.ErrCodeInvalidRequest,
+		server.WriteError(w, r, http.StatusBadRequest, cnserrors.ErrCodeInvalidRequest,
 			"Invalid recipe query", false, map[string]interface{}{
 				"error": err.Error(),
 			})
@@ -45,7 +46,7 @@ func (b *Builder) HandleRecipes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if q == nil {
-		server.WriteError(w, r, http.StatusBadRequest, server.ErrCodeInvalidRequest,
+		server.WriteError(w, r, http.StatusBadRequest, cnserrors.ErrCodeInvalidRequest,
 			"Recipe query cannot be empty", false, nil)
 		return
 	}
@@ -62,10 +63,7 @@ func (b *Builder) HandleRecipes(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := b.BuildFromQuery(ctx, q)
 	if err != nil {
-		server.WriteError(w, r, http.StatusInternalServerError, server.ErrCodeInternalError,
-			"Failed to build recipe", true, map[string]interface{}{
-				"error": err.Error(),
-			})
+		server.WriteErrorFromErr(w, r, err, "Failed to build recipe", nil)
 		return
 	}
 
