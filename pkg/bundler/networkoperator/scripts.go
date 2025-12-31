@@ -41,10 +41,10 @@ func GenerateScriptData(recipe *recipe.Recipe, config map[string]string) *Script
 
 	// Extract feature flags
 	if val, ok := config["enable_rdma"]; ok {
-		data.EnableRDMA = val == "true"
+		data.EnableRDMA = val == strTrue
 	}
 	if val, ok := config["enable_sriov"]; ok {
-		data.EnableSRIOV = val == "true"
+		data.EnableSRIOV = val == strTrue
 	}
 
 	// Extract Kubernetes version from request

@@ -54,12 +54,12 @@ func GenerateScriptData(recipe *recipe.Recipe, config map[string]string) *Script
 
 	// Extract GDS enabled flag
 	if val, ok := config["enable_gds"]; ok {
-		data.EnableGDS = val == "true" || val == "1"
+		data.EnableGDS = val == strTrue || val == "1"
 	}
 
 	// Extract CDI enabled flag
 	if val, ok := config["enable_cdi"]; ok {
-		data.EnableCDI = val == "true" || val == "1"
+		data.EnableCDI = val == strTrue || val == "1"
 	}
 
 	// Extract GPU type from request

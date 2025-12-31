@@ -77,13 +77,13 @@ func GenerateManifestData(recipe *recipe.Recipe, config map[string]string) *Mani
 
 	// Apply config-specific manifest settings (overrides)
 	if val, ok := config["enable_vgpu"]; ok {
-		data.EnableVGPU = val == "true"
+		data.EnableVGPU = val == strTrue
 	}
 	if val, ok := config["vgpu_license_server"]; ok && val != "" {
 		data.VGPULicenseServer = val
 	}
 	if val, ok := config["enable_cdi"]; ok {
-		data.EnableCDI = val == "true"
+		data.EnableCDI = val == strTrue
 	}
 
 	return data
