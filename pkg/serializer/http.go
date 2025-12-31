@@ -136,20 +136,25 @@ func WithClient(client *http.Client) HttpReaderOption {
 // NewHttpReader creates a new HttpReader with the specified options.
 func NewHttpReader(options ...HttpReaderOption) *HttpReader {
 	t := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
+		// Connection pooling
+		MaxIdleConns:        HttpReaderDefaultMaxIdleConns,
+		MaxIdleConnsPerHost: HttpReaderDefaultMaxIdleConnsPerHost,
+		MaxConnsPerHost:     HttpReaderDefaultMaxConnsPerHost,
+
+		// Timeouts
 		DialContext: (&net.Dialer{
 			Timeout:   HttpReaderDefaultConnectTimeout,
 			KeepAlive: HttpReaderDefaultKeepAlive,
 		}).DialContext,
-
-		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          HttpReaderDefaultMaxIdleConns,
-		MaxIdleConnsPerHost:   HttpReaderDefaultMaxIdleConnsPerHost,
-		MaxConnsPerHost:       HttpReaderDefaultMaxConnsPerHost,
-		IdleConnTimeout:       HttpReaderDefaultIdleConnTimeout,
 		TLSHandshakeTimeout:   HttpReaderDefaultTLSHandshakeTimeout,
 		ResponseHeaderTimeout: HttpReaderDefaultResponseHeaderTimeout,
 		ExpectContinueTimeout: 1 * time.Second,
+
+		// Connection reuse
+		IdleConnTimeout:    HttpReaderDefaultIdleConnTimeout,
+		DisableKeepAlives:  false,
+		DisableCompression: false,
+		ForceAttemptHTTP2:  true,
 
 		TLSClientConfig: &tls.Config{
 			MinVersion:         tls.VersionTLS12,
@@ -164,6 +169,8 @@ func NewHttpReader(options ...HttpReaderOption) *HttpReader {
 			Transport: t,
 		},
 	}
+
+	// Apply options
 	for _, opt := range options {
 		opt(r)
 	}

@@ -2,7 +2,6 @@ package recipe
 
 import (
 	"context"
-	"sync"
 	"testing"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
@@ -198,14 +197,10 @@ func setRecommendationData(t *testing.T, payload string) func() {
 	t.Helper()
 	original := recipeData
 	recipeData = []byte(payload)
-	storeOnce = sync.Once{}
 	cachedStore = nil
-	storeErr = nil
 	return func() {
 		recipeData = original
-		storeOnce = sync.Once{}
 		cachedStore = nil
-		storeErr = nil
 	}
 }
 

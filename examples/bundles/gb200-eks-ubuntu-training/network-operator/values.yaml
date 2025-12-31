@@ -4,8 +4,6 @@
 # Bundler Version: v0.8.4-next
 # Recipe Bundler Version: v0.8.2-next
 
-operator:
-
 deployCR: true
 ofedDriver:
   deploy: false

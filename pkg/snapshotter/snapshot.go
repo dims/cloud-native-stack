@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"runtime"
 	"sync"
 	"time"
 
@@ -29,11 +30,23 @@ type NodeSnapshotter struct {
 	Serializer serializer.Serializer
 }
 
+const (
+	maxMemoryUsageBytes = 500 * 1024 * 1024 // 500MB
+)
+
 // Measure collects configuration measurements from the current node and serializes the snapshot.
 // It runs collectors in parallel using errgroup for efficient data gathering.
 // If any collector fails, the entire operation returns an error.
 // The resulting snapshot is serialized using the configured Serializer.
 func (n *NodeSnapshotter) Measure(ctx context.Context) error {
+	// Add runtime memory limit check
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+
+	if m.Alloc > maxMemoryUsageBytes {
+		runtime.GC() // Force GC if memory usage high
+	}
+
 	if n.Factory == nil {
 		n.Factory = collector.NewDefaultFactory()
 	}

@@ -15,9 +15,10 @@ var (
 	//go:embed data/data-v1.yaml
 	recipeData []byte
 
-	storeOnce   sync.Once
 	cachedStore *Store
-	storeErr    error
+	storeTTL    = 5 * time.Minute
+	cacheTime   time.Time
+	cacheMu     sync.RWMutex
 )
 
 // Option is a functional option for configuring Builder instances.
@@ -58,6 +59,13 @@ func (b *Builder) BuildFromQuery(ctx context.Context, q *Query) (*Recipe, error)
 		return nil, fmt.Errorf("query cannot be nil")
 	}
 
+	// Check context before expensive operations
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
 	// Track overall build duration
 	start := time.Now()
 	defer func() {
@@ -78,6 +86,13 @@ func (b *Builder) BuildFromQuery(ctx context.Context, q *Query) (*Recipe, error)
 	index := indexMeasurementsByType(merged)
 
 	for _, overlay := range store.Overlays {
+		// Check context in loops
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+
 		// overlays use Query as key, so matching queries inherit overlay-specific measurements
 		if overlay.Key.IsMatch(q) {
 			merged, index = mergeOverlayMeasurements(merged, index, overlay.Types)
@@ -108,16 +123,34 @@ func stripContext(measurements []*measurement.Measurement) {
 	}
 }
 
+// loadStore loads and caches the recipe store from embedded data.
+// It uses a read-write lock to allow concurrent reads while ensuring
+// exclusive access during store refreshes based on TTL.
 func loadStore(_ context.Context) (*Store, error) {
-	storeOnce.Do(func() {
-		var store Store
-		if err := yaml.Unmarshal(recipeData, &store); err != nil {
-			storeErr = fmt.Errorf("failed to unmarshal recommendation data: %w", err)
-			return
-		}
-		cachedStore = &store
-	})
-	return cachedStore, storeErr
+	cacheMu.RLock()
+	if cachedStore != nil && time.Since(cacheTime) < storeTTL {
+		cacheMu.RUnlock()
+		return cachedStore, nil
+	}
+	cacheMu.RUnlock()
+
+	cacheMu.Lock()
+	defer cacheMu.Unlock()
+
+	// Double-check after acquiring write lock
+	if cachedStore != nil && time.Since(cacheTime) < storeTTL {
+		return cachedStore, nil
+	}
+
+	// Load store
+	var store Store
+	if err := yaml.Unmarshal(recipeData, &store); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal recipe data: %w", err)
+	}
+
+	cachedStore = &store
+	cacheTime = time.Now()
+	return cachedStore, nil
 }
 
 // cloneMeasurements creates deep copies of all measurements so we never mutate
