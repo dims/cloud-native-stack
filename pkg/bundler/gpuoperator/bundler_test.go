@@ -97,6 +97,7 @@ func TestBundler_buildConfigMap(t *testing.T) {
 		"device_plugin_version":     "v0.17.4",
 		"dcgm_version":              "4.3.1-1",
 		"dcgm_exporter_version":     "4.3.1",
+		"driver_registry":           "nvcr.io/nvidia",
 	}
 
 	for key, expected := range expectedImageVersions {
@@ -342,6 +343,11 @@ func TestHelmValues_Validate(t *testing.T) {
 func createTestRecipe() *internal.RecipeBuilder {
 	return internal.NewRecipeBuilder().
 		WithK8sMeasurement(
+			internal.RegistrySubtype(map[string]string{
+				"name": "nvcr.io",
+				"repo": "nvidia",
+				"uri":  "nvcr.io/nvidia",
+			}),
 			internal.ImageSubtype(map[string]string{
 				"gpu-operator":      "v25.3.3",
 				"driver":            "580.82.07",

@@ -235,6 +235,18 @@ func ImageSubtype(images map[string]string) measurement.Subtype {
 	}
 }
 
+// RegistrySubtype creates a registry subtype with registry information.
+func RegistrySubtype(registry map[string]string) measurement.Subtype {
+	data := make(map[string]measurement.Reading)
+	for k, v := range registry {
+		data[k] = measurement.Str(v)
+	}
+	return measurement.Subtype{
+		Name: "registry",
+		Data: data,
+	}
+}
+
 // ConfigSubtype creates a config subtype with common config data.
 func ConfigSubtype(configs map[string]interface{}) measurement.Subtype {
 	data := make(map[string]measurement.Reading)

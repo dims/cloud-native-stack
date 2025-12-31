@@ -183,6 +183,13 @@ base:
           mpi-operator: "0.6"
           node-feature-discovery: v0.17.3
           training-operator: v1
+          network-operator: v25.4.0
+          mofed-driver: 25.04-0.6.1.0-2
+          rdma-shared-device-plugin: v1.5.3
+          sriov-device-plugin: v3.9.0
+          multus-cni: v4.1.0
+          whereabouts-ipam: v0.7.0
+          container-networking-plugins: v1.6.2
         context:
           container-toolkit: NVIDIA container runtime for GPU access in containers
           dcgm: Data Center GPU Manager for GPU health monitoring and diagnostics
@@ -198,16 +205,47 @@ base:
           mpi-operator: MPI job orchestration for distributed multi-GPU training
           node-feature-discovery: Discovers GPU hardware features for optimal workload placement
           training-operator: Kubernetes operator for distributed ML training on GPUs
+          network-operator: NVIDIA Network Operator orchestrates Mellanox OFED and network device plugins
+          mofed-driver: Mellanox OpenFabrics Enterprise Distribution for InfiniBand/RDMA
+          rdma-shared-device-plugin: Kubernetes device plugin for RDMA device allocation
+          sriov-device-plugin: SR-IOV device plugin for high-performance network virtualization
+          multus-cni: Meta CNI plugin enabling multiple network interfaces per pod
+          whereabouts-ipam: IP Address Management for secondary network interfaces
+          container-networking-plugins: Standard CNI plugins for container networking
 
       - subtype: config
         data:
           mig: false
           cdi: true
           rdma: true
+          gds: false
+          secure_boot: false
+          vgpu: false
+          use_open_kernel_module: false
+          confidential_computing: false
+          mig_profile: all-disabled
+          mig_strategy: single
         context:
           mig: Multi-Instance GPU disabled for dedicated GPU access
           cdi: Container Device Interface enabled for GPU device injection
           rdma: RDMA support enabled for high-speed GPU networking
+          gds: GPU Direct Storage enables direct GPU-to-storage transfers bypassing CPU
+          secure_boot: UEFI Secure Boot requires signed GPU drivers for security compliance
+          vgpu: Virtual GPU technology for GPU sharing across virtual machines
+          use_open_kernel_module: Open-source NVIDIA kernel module for GPL compatibility
+          confidential_computing: GPU Confidential Computing for encrypted GPU memory and secure enclaves
+          mig_profile: MIG partitioning profile - all-disabled uses full GPU, numbered profiles (1g/2g/3g/4g/7g) split GPU into instances
+          mig_strategy: single=uniform MIG across all GPUs, mixed=per-GPU MIG configuration for diverse workloads
+
+      - subtype: network-config
+        data:
+          deploy_ofed: false
+          enable_sriov: false
+          use_host_mofed: false
+        context:
+          deploy_ofed: When true, Network Operator deploys Mellanox OFED drivers for InfiniBand/RoCE
+          enable_sriov: Enables SR-IOV device plugin for high-performance network slicing
+          use_host_mofed: Use existing host MOFED installation instead of containerized driver
 
   - type: GPU
     subtypes:
@@ -262,9 +300,9 @@ overlays:
               aws-efa-k8s-device-plugin: EFA device plugin for high-speed GPU-to-GPU networking
           - subtype: config
             data:
-              useOpenKernelModule: true
+              use_open_kernel_module: true
             context:
-              useOpenKernelModule: Use open-source EFA kernel module for compatibility with GB200 GPUs
+              use_open_kernel_module: Use open-source EFA kernel module for compatibility with GB200 GPUs
       - type: OS
         subtypes:
           - subtype: kmod
@@ -272,3 +310,27 @@ overlays:
               efa: true
             context:
               efa: AWS EFA support for GPU clusters
+  - key:
+      #  ?gpu=gb200
+      gpu: gb200
+    types:
+      - type: OS
+        subtypes:
+          - subtype: grub
+            data:
+              iommu.passthrough: "1"
+              init_on_alloc: "0"
+              numa_balancing: disable
+              default_hugepagesz: 64K
+            context:
+              iommu.passthrough: Bypass IOMMU translation for direct GPU memory access (GB200 requirement)
+              init_on_alloc: Disabled for faster GPU memory allocation
+              numa_balancing: Disabled for predictable GPU memory locality
+              default_hugepagesz: 64KB hugepages optimized for GB200 memory access patterns
+      - type: K8s
+        subtypes:
+          - subtype: config
+            data:
+              use_open_kernel_module: true
+            context:
+              use_open_kernel_module: GB200 requires open-source kernel module for compatibility

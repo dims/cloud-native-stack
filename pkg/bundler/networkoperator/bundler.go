@@ -155,6 +155,16 @@ func (b *Bundler) buildConfigMap(r *recipe.Recipe) map[string]string {
 					}
 				}
 
+				// Extract registry information from 'registry' subtype
+				if st.Name == "registry" {
+					// Driver registry URI
+					if val, ok := st.Data["uri"]; ok {
+						if s, ok := val.Any().(string); ok {
+							configMap["driver_registry"] = s
+						}
+					}
+				}
+
 				if st.Name == configSubtype {
 					// Extract RDMA setting
 					if val, ok := st.Data["rdma"]; ok {

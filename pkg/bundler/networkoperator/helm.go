@@ -16,6 +16,7 @@ const (
 // HelmValues represents the data structure for Network Operator Helm values.
 type HelmValues struct {
 	Timestamp              string
+	DriverRegistry         common.ValueWithContext
 	NetworkOperatorVersion common.ValueWithContext
 	OFEDVersion            common.ValueWithContext
 	EnableRDMA             common.ValueWithContext
@@ -37,6 +38,7 @@ type HelmValues struct {
 func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string) *HelmValues {
 	values := &HelmValues{
 		Timestamp:              time.Now().UTC().Format(time.RFC3339),
+		DriverRegistry:         common.ValueWithContext{Value: common.GetConfigValue(config, "driver_registry", "nvcr.io/nvidia")},
 		EnableRDMA:             common.ValueWithContext{Value: false},
 		EnableSRIOV:            common.ValueWithContext{Value: false},
 		EnableHostDevice:       common.ValueWithContext{Value: true},

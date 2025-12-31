@@ -11,6 +11,7 @@ import (
 // ManifestData represents data for generating Kubernetes manifests.
 type ManifestData struct {
 	Timestamp              string
+	DriverRegistry         string
 	Namespace              string
 	EnableRDMA             bool
 	EnableSRIOV            bool
@@ -30,6 +31,7 @@ type ManifestData struct {
 func GenerateManifestData(recipe *recipe.Recipe, config map[string]string) *ManifestData {
 	data := &ManifestData{
 		Timestamp:              time.Now().UTC().Format(time.RFC3339),
+		DriverRegistry:         common.GetConfigValue(config, "driver_registry", "nvcr.io/nvidia"),
 		Namespace:              common.GetConfigValue(config, "namespace", "nvidia-network-operator"),
 		EnableRDMA:             false,
 		EnableSRIOV:            false,

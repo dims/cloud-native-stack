@@ -103,10 +103,32 @@ func TestBundler_validateRecipe(t *testing.T) {
 	internal.TestValidateRecipe(t, b.validateRecipe)
 }
 
+func TestBundler_buildConfigMap(t *testing.T) {
+	b := NewBundler(nil)
+	rec := createTestRecipe().Build()
+
+	configMap := b.buildConfigMap(rec)
+
+	// Verify namespace is set
+	if configMap["namespace"] != Name {
+		t.Errorf("namespace = %s, want %s", configMap["namespace"], Name)
+	}
+
+	// Verify driver registry is extracted from registry subtype
+	if got := configMap["driver_registry"]; got != "nvcr.io/nvidia" {
+		t.Errorf("driver_registry = %s, want nvcr.io/nvidia", got)
+	}
+}
+
 // Helper function to create a test recipe
 func createTestRecipe() *internal.RecipeBuilder {
 	return internal.NewRecipeBuilder().
 		WithK8sMeasurement(
+			internal.RegistrySubtype(map[string]string{
+				"name": "nvcr.io",
+				"repo": "nvidia",
+				"uri":  "nvcr.io/nvidia",
+			}),
 			internal.ConfigSubtype(map[string]interface{}{
 				"rdma-enabled":             true,
 				"sr-iov-enabled":           true,
