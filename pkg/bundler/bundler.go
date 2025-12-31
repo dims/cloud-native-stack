@@ -69,10 +69,11 @@ func WithFailFast(failFast bool) Option {
 
 // WithConfig sets the bundler configuration.
 // If nil, default configuration is used.
+// Note: This only updates the Config, it does NOT recreate the registry.
+// If you need to update both config and registry, call WithConfig before WithRegistry.
 func WithConfig(config *config.Config) Option {
 	return func(db *DefaultBundler) {
 		db.Config = config
-		db.Registry = registry.NewFromGlobal(config)
 	}
 }
 
