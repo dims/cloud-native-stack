@@ -3,22 +3,10 @@ package recipe
 import (
 	"context"
 	_ "embed"
-	"sync"
 	"time"
 
 	cnserrors "github.com/NVIDIA/cloud-native-stack/pkg/errors"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
-	"gopkg.in/yaml.v3"
-)
-
-var (
-	//go:embed data/data-v1.yaml
-	recipeData []byte
-
-	cachedStore *Store
-	storeTTL    = 5 * time.Minute
-	cacheTime   time.Time
-	cacheMu     sync.RWMutex
 )
 
 // Option is a functional option for configuring Builder instances.
@@ -121,36 +109,6 @@ func stripContext(measurements []*measurement.Measurement) {
 			m.Subtypes[i].Context = nil
 		}
 	}
-}
-
-// loadStore loads and caches the recipe store from embedded data.
-// It uses a read-write lock to allow concurrent reads while ensuring
-// exclusive access during store refreshes based on TTL.
-func loadStore(_ context.Context) (*Store, error) {
-	cacheMu.RLock()
-	if cachedStore != nil && time.Since(cacheTime) < storeTTL {
-		cacheMu.RUnlock()
-		return cachedStore, nil
-	}
-	cacheMu.RUnlock()
-
-	cacheMu.Lock()
-	defer cacheMu.Unlock()
-
-	// Double-check after acquiring write lock
-	if cachedStore != nil && time.Since(cacheTime) < storeTTL {
-		return cachedStore, nil
-	}
-
-	// Load store
-	var store Store
-	if err := yaml.Unmarshal(recipeData, &store); err != nil {
-		return nil, cnserrors.Wrap(cnserrors.ErrCodeInternal, "failed to unmarshal recipe data", err)
-	}
-
-	cachedStore = &store
-	cacheTime = time.Now()
-	return cachedStore, nil
 }
 
 // cloneMeasurements creates deep copies of all measurements so we never mutate
