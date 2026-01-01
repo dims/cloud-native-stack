@@ -1472,7 +1472,7 @@ cosign verify-attestation \
   ghcr.io/nvidia/eidos:v0.8.10
 ```
 
-For complete verification instructions, see [docs/SECURITY.md](docs/SECURITY.md).
+For complete verification instructions, see [SECURITY.md](SECURITY.md).
 
 ### Best Practices
 

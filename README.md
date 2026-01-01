@@ -73,7 +73,7 @@ The manual installation guides for platform-specific deployment and optimization
 
 ## Support
 
-- **Security**: [Project and Artifact Security](docs/SECURITY.md)
+- **Security**: [Project and Artifact Security](SECURITY.md)
 - **Releases**: [GitHub Releases](https://github.com/NVIDIA/cloud-native-stack/releases)
 - **Issues**: [GitHub Issues](https://github.com/NVIDIA/cloud-native-stack/issues)
 - **Questions**: Open a discussion or issue on GitHub
