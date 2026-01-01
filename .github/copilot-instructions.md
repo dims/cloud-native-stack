@@ -193,6 +193,217 @@ make docs                    # Serve Go docs on http://localhost:6060
 4. GitHub Actions publishes to ghcr.io
 5. Attestations generated with SLSA provenance
 
+## GitHub Actions & CI/CD
+
+### Architecture Overview
+The project uses a **three-layer composite actions architecture** for maximum reusability and separation of concerns:
+
+1. **Primitives** – Single-purpose, reusable building blocks
+   - `ghcr-login` – GHCR authentication
+   - `setup-build-tools` – Modular tool installer
+   - `security-scan` – Trivy vulnerability scanning
+
+2. **Composed Actions** – Combine primitives for specific workflows
+   - `go-ci` – Complete Go CI pipeline (setup → test → lint)
+   - `attest-image-from-tag` – Resolve digest + generate attestations
+   - `go-build-release` – Full build/release pipeline
+   - `cloud-run-deploy` – GCP deployment with Workload Identity
+
+3. **Workflows** – Orchestrate actions for complete CI/CD pipelines
+   - `on-push.yaml` – CI validation for PRs and main branch
+   - `on-tag.yaml` – Release, attestation, and deployment
+
+### Composite Actions Best Practices
+
+**Creating New Actions:**
+```yaml
+name: 'Action Name'
+description: 'Clear, concise description of what it does'
+
+inputs:
+  required_input:
+    description: 'What this input controls'
+    required: true
+  optional_input:
+    description: 'Optional parameter with sensible default'
+    required: false
+    default: 'default-value'
+
+outputs:
+  result:
+    description: 'What this output contains'
+    value: ${{ steps.step-id.outputs.value }}
+
+runs:
+  using: 'composite'
+  steps:
+    # Use primitives where possible
+    - uses: ./.github/actions/primitive-action
+      with:
+        param: ${{ inputs.required_input }}
+```
+
+**Key Principles:**
+- **Single Responsibility** – Each action does one thing well
+- **Input Validation** – Validate all inputs, fail fast with clear errors
+- **Idempotent** – Safe to run multiple times
+- **Composable** – Can be used standalone or as part of larger workflows
+- **No Checkout** – Composite actions assume repo is already checked out (workflows handle checkout)
+- **Explicit Outputs** – Document all outputs clearly
+
+### Workflow Patterns
+
+**Push/PR Validation (on-push.yaml):**
+```yaml
+jobs:
+  validate:
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: ./.github/actions/go-ci
+        with:
+          go_version: '1.25'
+          golangci_lint_version: 'v2.6'
+          upload_codecov: 'true'
+      
+      - uses: ./.github/actions/security-scan
+        with:
+          severity: 'MEDIUM,HIGH,CRITICAL'
+```
+
+**Release Pipeline (on-tag.yaml):**
+```yaml
+jobs:
+  release:
+    steps:
+      - uses: actions/checkout@v4
+      
+      # Validate before release
+      - uses: ./.github/actions/go-ci
+        with:
+          go_version: '1.25'
+          golangci_lint_version: 'v2.6'
+      
+      # Build and publish
+      - id: release
+        uses: ./.github/actions/go-build-release
+      
+      # Generate attestations
+      - uses: ./.github/actions/attest-image-from-tag
+        with:
+          image_name: 'ghcr.io/nvidia/cloud-native-stack/eidos'
+          image_tag: ${{ github.ref_name }}
+      
+      # Deploy (only if build succeeded)
+      - if: steps.release.outputs.release_outcome == 'success'
+        uses: ./.github/actions/cloud-run-deploy
+        with:
+          service_name: 'eidos-api-server'
+```
+
+### Authentication Patterns
+
+**Container Registries:**
+- Use `ghcr-login` action (centralizes GHCR auth logic)
+- Pass `github.token` for authentication (not PATs)
+- Actions inherit authentication from workflows
+
+**Cloud Providers:**
+- Use Workload Identity Federation (keyless)
+- No stored credentials
+- `cloud-run-deploy` handles GCP WIF authentication
+
+**Attestation/SBOM:**
+- Cosign uses keyless signing (Sigstore)
+- GitHub's attestation API for provenance
+- SBOM generated with Syft (CycloneDX format)
+
+### Security Best Practices
+
+**Workflow Permissions:**
+```yaml
+permissions:
+  contents: read          # Minimal permissions by default
+  id-token: write        # For attestations and OIDC
+  security-events: write # For SARIF uploads
+```
+
+**Action Pinning:**
+```yaml
+# Pin external actions by SHA (not tag)
+- uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+# Local actions use relative path (always current version)
+- uses: ./.github/actions/go-ci
+```
+
+**Secrets Management:**
+- Use `github.token` (automatically provided)
+- Use OIDC for cloud authentication (no stored credentials)
+- Never log or expose secrets in outputs
+
+### Metrics & Observability
+
+**CI/CD Metrics:**
+- Workflow duration (tracked automatically by GitHub)
+- Test coverage (uploaded to Codecov)
+- Vulnerability scan results (SARIF to Security tab)
+- Rate limit usage (monitor in workflow logs)
+
+**Cost Optimization:**
+- Use dependency caching (`actions/setup-go` built-in cache)
+- Parallel job execution where possible
+- Fail fast on validation errors
+- Use `if` conditions to skip unnecessary steps
+
+### Common Pitfalls
+
+❌ **Don't do this:**
+```yaml
+# Redundant authentication (already logged in via ghcr-login)
+- uses: docker/login-action@v3
+  with:
+    registry: ghcr.io
+
+# Inline tool installation (use setup-build-tools)
+- run: |
+    curl -sSfL https://raw.githubusercontent.com/ko-build/ko/main/install.sh | sh
+```
+
+✅ **Do this:**
+```yaml
+# Use centralized authentication
+- uses: ./.github/actions/ghcr-login
+
+# Use modular tool installer
+- uses: ./.github/actions/setup-build-tools
+  with:
+    install_ko: 'true'
+    install_crane: 'true'
+```
+
+### Debugging Workflows
+
+**Enable Debug Logging:**
+1. Go to repository Settings → Secrets → Actions
+2. Add `ACTIONS_STEP_DEBUG` = `true`
+3. Re-run workflow to see detailed logs
+
+**Local Testing:**
+```bash
+# Test composite actions locally with act
+act -j validate --secret GITHUB_TOKEN="$GITHUB_TOKEN"
+
+# Test individual make targets
+make qualify  # Runs test + lint + scan (same as CI)
+```
+
+**Common Issues:**
+- **"Can't find 'action.yml'"** – Add `actions/checkout@v4` before local actions
+- **Rate limit exceeded** – Authenticate with `github.token` (higher limits)
+- **SARIF upload fails** – Ensure `security-events: write` permission
+- **Action output not available** – Check step ID matches and action has `outputs` defined
+
 ## Patterns & Conventions
 
 ### Go Architecture Patterns
@@ -456,6 +667,136 @@ Response includes `X-API-Version` header.
 4. Test with `eidos recipe` CLI
 5. Validate YAML structure
 
+### Adding a New Bundler
+
+Bundlers generate deployment artifacts (Helm values, manifests, scripts) from recipes. The framework uses **BaseBundler** to reduce boilerplate by ~75%.
+
+**Quick Start:**
+
+1. **Create bundler package** in `pkg/bundler/<bundler-name>/`:
+```go
+package mybundler
+
+import (
+    "context"
+    "embed"
+    "github.com/NVIDIA/cloud-native-stack/pkg/bundler"
+    "github.com/NVIDIA/cloud-native-stack/pkg/bundler/internal"
+)
+
+//go:embed templates/*.tmpl
+var templatesFS embed.FS
+
+const bundlerType = bundler.BundleType("my-bundler")
+
+func init() {
+    // Self-register (panics on duplicates for fail-fast)
+    bundler.MustRegister(bundlerType, NewBundler())
+}
+
+type Bundler struct {
+    *bundler.BaseBundler  // Embed helper
+}
+
+func NewBundler() *Bundler {
+    return &Bundler{
+        BaseBundler: bundler.NewBaseBundler(bundlerType, templatesFS),
+    }
+}
+
+func (b *Bundler) Make(ctx context.Context, r *recipe.Recipe, 
+    outputDir string) (*bundler.BundleResult, error) {
+    
+    // 1. Create directory structure
+    dirs := []string{"manifests", "scripts"}
+    if err := b.CreateBundleDir(outputDir, dirs...); err != nil {
+        return nil, err
+    }
+    
+    // 2. Build config map from recipe
+    configMap := b.buildConfigMap(r)
+    
+    // 3. Generate typed data structures
+    helmValues := GenerateHelmValues(r, configMap)
+    
+    // 4. Generate files from templates
+    filePath := filepath.Join(outputDir, "values.yaml")
+    if err := b.GenerateFileFromTemplate(ctx, GetTemplate, 
+        "values.yaml", filePath, helmValues, 0644); err != nil {
+        return nil, err
+    }
+    
+    var generatedFiles []string
+    // ... collect file paths
+    
+    // 5. Generate checksums and return result
+    return b.GenerateResult(outputDir, generatedFiles)
+}
+```
+
+2. **Create templates** in `templates/` directory:
+```yaml
+# values.yaml.tmpl
+operator:
+  version: {{ .OperatorVersion.Value }}
+  enabled: {{ .Enabled.Value }}
+```
+
+3. **Test with TestHarness** (reduces test code by 34%):
+```go
+func TestBundler_Make(t *testing.T) {
+    harness := internal.NewTestHarness(t, NewBundler())
+    
+    tests := []struct {
+        name    string
+        recipe  *recipe.Recipe
+        wantErr bool
+        verify  func(t *testing.T, outputDir string)
+    }{
+        {
+            name:    "valid recipe",
+            recipe:  createTestRecipe(),
+            wantErr: false,
+            verify: func(t *testing.T, outputDir string) {
+                harness.AssertFileContains(outputDir, "values.yaml",
+                    "operator:", "version: v1.0.0")
+            },
+        },
+    }
+    
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            result := harness.RunTest(tt.recipe, tt.wantErr)
+            if !tt.wantErr && tt.verify != nil {
+                tt.verify(t, result.OutputDir)
+            }
+        })
+    }
+}
+```
+
+**BaseBundler provides:**
+- `CreateBundleDir(path, subdirs...)` – Directory structure
+- `WriteFile(path, content)` – File writing with error handling
+- `GenerateFileFromTemplate(ctx, getter, name, path, data, perm)` – Template rendering
+- `GenerateResult(dir, files)` – BundleResult with checksums
+- `Validate(ctx, recipe)` – Default validation (override if needed)
+
+**Internal helpers** in `pkg/bundler/internal`:
+- `BuildBaseConfigMap(recipe, additional)` – Extract config strings
+- `ExtractK8sImageSubtype(recipe)` – Get K8s image measurements
+- `ExtractGPUDeviceSubtype(recipe)` – Get GPU measurements
+- Plus 12 more measurement extraction helpers
+
+**Best Practices:**
+- ✅ Embed `BaseBundler` instead of implementing from scratch
+- ✅ Use `internal` package helpers for recipe data extraction
+- ✅ Pass Go structs directly to templates (no map conversion)
+- ✅ Self-register in `init()` with `MustRegister()` (fail-fast)
+- ✅ Keep bundlers stateless (thread-safe by default)
+- ✅ Use `TestHarness` for consistent test structure
+- ✅ Document template variables and expected data types
+
 ## Troubleshooting & Support
 
 ### Common Issues
@@ -589,6 +930,28 @@ func newCommand() *cli.Command {
 ## Quick Reference Links
 - **Main README**: [../README.md](../README.md)
 - **Contributing Guide**: [../CONTRIBUTING.md](../CONTRIBUTING.md)
+- **GitHub Actions README**: [.github/actions/README.md](actions/README.md)
 - **Playbooks**: [../docs/v1/playbooks/readme.md](../docs/v1/playbooks/readme.md)
 - **API Specification**: [../api/eidos/v1/api-server-v1.yaml](../api/eidos/v1/api-server-v1.yaml)
 - **GoDoc**: Run `make docs` and visit http://localhost:6060
+
+## Version Information
+
+**Current Stack:**
+- Go: 1.25
+- Kubernetes: 1.33+
+- golangci-lint: v2.6
+- Trivy: v0.33.1
+- Ko: latest
+- Syft: latest
+- Crane: v0.20.6
+- GoReleaser: v6.4.0
+- Cosign: v4.0.0
+
+**Container Registries:**
+- GHCR: `ghcr.io/nvidia/cloud-native-stack`
+- Google Artifact Registry: `us-docker.pkg.dev/PROJECT/REPO`
+
+**Deployment Targets:**
+- Google Cloud Run: `eidos-api-server` service
+- Kubernetes: `eidos-agent` Job in `gpu-operator` namespace
