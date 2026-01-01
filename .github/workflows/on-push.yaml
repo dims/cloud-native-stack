@@ -25,52 +25,13 @@ jobs:
       SCAN_SEVERITY: 'MEDIUM'
     steps:
 
-      # Setup Environment
-      - name: Checkout Code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
-      - name: Setup Go
-        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00  # v6.0.0
+      # Setup, Test, and Lint
+      - name: Run Go CI (setup, test, lint)
+        uses: ./.github/actions/go-ci
         with:
-          go-version: '${{ env.GO_VERSION }}'
-          cache: true
-          cache-dependency-path: 'go.sum'
-          check-latest: true
-
-      # Unit Tests
-      - name: Tidy Modules
-        run: make tidy
-      - name: Run Tests with Coverage
-        run: make test
-      - name: Upload Coverage to Codecov
-        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de  # v5.5.2
-        with:
-          files: ./coverage.out
-          verbose: true
-          use_oidc: true
-        continue-on-error: true
-
-      # Lint Code
-      - name: Config Go Lint
-        id: golangci_config
-        uses: andstor/file-existence-action@076e0072799f4942c8bc574a82233e1e4d13e9d6  # v3.0.0
-        with:
-          files: .golangci.yaml
-      - name: Lint Go
-        if: steps.golangci_config.outputs.files_exists == 'true'
-        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20  # v9.2.0
-        with:
-          version: ${{ env.GOLANGCI_LINT_VERSION }}
-          args: --timeout=5m
-      - name: Config YAML Lint
-        id: yamllint_config
-        uses: andstor/file-existence-action@076e0072799f4942c8bc574a82233e1e4d13e9d6  # v3.0.0
-        with:
-          files: .yamllint.yaml
-      - name: Lint YAML
-        if: steps.yamllint_config.outputs.files_exists == 'true'
-        run: |
-          sudo apt-get update && sudo apt-get install -y yamllint
-          make lint-yaml
+          go_version: '${{ env.GO_VERSION }}'
+          golangci_lint_version: '${{ env.GOLANGCI_LINT_VERSION }}'
+          upload_codecov: 'true'
 
       # Scan for Vulnerabilities
       - name: Run Trivy Security Scan

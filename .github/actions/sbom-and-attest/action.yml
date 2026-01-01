@@ -8,9 +8,6 @@ inputs:
   image_digest:
     description: 'Image digest (sha256:...)'
     required: true
-  registry_password:
-    description: 'Registry password for authentication'
-    required: true
 
 runs:
   using: 'composite'
@@ -20,12 +17,26 @@ runs:
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
-        password: ${{ inputs.registry_password }}
+        password: ${{ github.token }}
+
+    - name: Validate inputs
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [[ -z "${{ inputs.image_name }}" ]]; then
+          echo "::error::image_name is required"
+          exit 1
+        fi
+        if [[ ! "${{ inputs.image_digest }}" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+          echo "::error::image_digest must be in the form sha256:<64 hex>"
+          exit 1
+        fi
 
     - name: Derive safe filename
       id: name
       shell: bash
       run: |
+        set -euo pipefail
         IMAGE="${{ inputs.image_name }}"
         SAFE="$(basename "${IMAGE%%:*}")"  # strip tag if present, then basename
         echo "safe=$SAFE" >> "$GITHUB_OUTPUT"
@@ -43,6 +54,7 @@ runs:
       id: find-sbom
       shell: bash
       run: |
+        set -euo pipefail
         SBOM_FILE="sbom-${{ steps.name.outputs.safe }}.cdx.json"
         if [ ! -f "$SBOM_FILE" ]; then
           echo "::error::SBOM file not found: $SBOM_FILE"
@@ -55,9 +67,8 @@ runs:
 
     - name: Cosign SBOM attestation
       shell: bash
-      env:
-        COSIGN_EXPERIMENTAL: "1"
       run: |
+        set -euo pipefail
         cosign attest \
           --yes \
           --predicate "${{ steps.find-sbom.outputs.sbom_file }}" \

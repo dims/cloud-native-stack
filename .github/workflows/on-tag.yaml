@@ -5,11 +5,9 @@ on:
     - 'v[0-9]+.[0-9]+.[0-9]+'  # Only build tag with semantic versioning format
 
 permissions:
-  actions: read
   attestations: write
   contents: write
   id-token: write
-  issues: write
   packages: write
 
 jobs:
@@ -19,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GO_VERSION: '1.25'
+      GOLANGCI_LINT_VERSION: v2.6
+      CRANE_VERSION: 'v0.20.6'
       IDENTITY_PROVIDER: 'projects/116689922666/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
       PROJECT_ID: 'eidosx'
       SERVICE_ACCOUNT: 'github-actions-user'
@@ -27,16 +27,13 @@ jobs:
       RUN_IMAGE_REG: 'us-docker.pkg.dev/eidosx/eidos/mchmarny'
     steps:
 
-      # Setup Environment
-      - name: Checkout Code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
-      - name: Setup Go
-        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00  # v6.0.0
+      # Setup, Test, and Lint
+      - name: Run Go CI (setup, test, lint)
+        uses: ./.github/actions/go-ci
         with:
-          go-version: '${{ env.GO_VERSION }}'
-          cache: true
-          cache-dependency-path: 'go.sum'
-          check-latest: true
+          go_version: '${{ env.GO_VERSION }}'
+          golangci_lint_version: '${{ env.GOLANGCI_LINT_VERSION }}'
+          upload_codecov: 'false'
 
       - name: Install ko
         uses: ko-build/setup-ko@d006021bd0c28d1ce33a07e7943d48b079944c8d  # v0.9
@@ -48,7 +45,6 @@ jobs:
         shell: bash
         run: |
           echo ${{ secrets.GITHUB_TOKEN }} | ko login ghcr.io -u ${{ github.actor }} --password-stdin
-          # echo ${{ secrets.GITHUB_TOKEN }} | cosign login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Install GoReleaser
         uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a  # v6.4.0
@@ -63,58 +59,28 @@ jobs:
           KO_DOCKER_REPO: ''
         run: make release
 
-      # Attestations
-      - name: Install crane
-        run: |
-          go install github.com/google/go-containerregistry/cmd/crane@latest
-
-      - name: Resolve image digest
-        id: img
-        run: |
-          REG_URI="ghcr.io/${{ github.repository_owner }}"
-          TAG="${{ github.ref_name }}"
-          IMG_API_DIGEST="$(crane digest "${REG_URI}/eidos-api-server:${TAG}")"
-          IMG_CLI_DIGEST="$(crane digest "${REG_URI}/eidos:${TAG}")"
-          echo "image-api-digest=${IMG_API_DIGEST}" >> "$GITHUB_OUTPUT"
-          echo "image-cli-digest=${IMG_CLI_DIGEST}" >> "$GITHUB_OUTPUT"
-
-      - name: Generate artifact attestation for eidos-api-server
-        uses: ./.github/actions/sbom-and-attest
+      - name: Attest eidos-api-server image
+        uses: ./.github/actions/attest-image-from-tag
         with:
           image_name: ghcr.io/${{ github.repository_owner }}/eidos-api-server
-          image_digest: '${{ steps.img.outputs.image-api-digest }}'
-          registry_password: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
+          crane_version: ${{ env.CRANE_VERSION }}
 
-      - name: Generate artifact attestation for eidos
-        uses: ./.github/actions/sbom-and-attest
+      - name: Attest eidos image
+        uses: ./.github/actions/attest-image-from-tag
         with:
           image_name: ghcr.io/${{ github.repository_owner }}/eidos
-          image_digest: '${{ steps.img.outputs.image-cli-digest }}'
-          registry_password: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
+          crane_version: ${{ env.CRANE_VERSION }}
 
-      # Auth to GCP
-      - name: Get Auth Token
-        id: auth
-        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093  # v3
+      # Deploy to Cloud Run
+      - name: Deploy API to Cloud Run
+        if: steps.release.outcome == 'success'
+        uses: ./.github/actions/cloud-run-deploy
         with:
-          token_format: access_token
           project_id: ${{ env.PROJECT_ID }}
           workload_identity_provider: ${{ env.IDENTITY_PROVIDER }}
           service_account: "${{ env.SERVICE_ACCOUNT }}@${{ env.PROJECT_ID }}.iam.gserviceaccount.com"
-
-      # Setup gcloud
-      - name: Setup gcloud CLI
-        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db  # v3.0.1
-
-      # Update API Service
-      - name: Update API image in Cloud Run
-        if: steps.auth.outcome == 'success' && steps.release.outcome == 'success'
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "Updating image..."
-          gcloud run services update ${{ env.RUN_SERVICE }} \
-            --image "${{ env.RUN_IMAGE_REG }}/eidos-api-server:${{ github.ref_name }}" \
-            --region ${{ env.RUN_REGION }} \
-            --project ${{ env.PROJECT_ID }}
-          echo "Deploy complete."
+          region: ${{ env.RUN_REGION }}
+          service: ${{ env.RUN_SERVICE }}
+          image: "${{ env.RUN_IMAGE_REG }}/eidos-api-server:${{ github.ref_name }}"
