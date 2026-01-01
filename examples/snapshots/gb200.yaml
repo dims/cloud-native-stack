@@ -1,8 +1,8 @@
 kind: Snapshot
 apiVersion: snapshot.dgxc.io/v1
 metadata:
-  snapshot-timestamp: "2025-12-27T15:47:49Z"
-  snapshot-version: 0.7.13
+  snapshot-timestamp: "2026-01-01T22:43:39Z"
+  snapshot-version: 0.8.10
   source-node: ip-10-0-160-248.ec2.internal
 measurements:
   - type: SystemD
@@ -40,7 +40,7 @@ measurements:
           CPUSchedulingPriority: "0"
           CPUSchedulingResetOnFork: false
           CPUShares: 18446744073709551615
-          CPUUsageNSec: 651864083486000
+          CPUUsageNSec: 810447430834000
           CPUWeight: 18446744073709551615
           CacheDirectory: '[]'
           CacheDirectoryMode: "493"
@@ -205,7 +205,7 @@ measurements:
           Markers: '[]'
           MemoryAccounting: true
           MemoryAvailable: 18446744073709551615
-          MemoryCurrent: 97407279104
+          MemoryCurrent: 97489207296
           MemoryDenyWriteExecute: false
           MemoryHigh: 18446744073709551615
           MemoryLimit: 18446744073709551615
@@ -1160,16 +1160,16 @@ measurements:
           /proc/sys/dev/tty/legacy_tiocsti: "0"
           /proc/sys/fs/aio-max-nr: "65536"
           /proc/sys/fs/aio-nr: "0"
-          /proc/sys/fs/dentry-state: "1892172\t1791500\t45\t0\t804595\t0"
+          /proc/sys/fs/dentry-state: "2031945\t1931290\t45\t0\t944447\t0"
           /proc/sys/fs/dir-notify-enable: "1"
           /proc/sys/fs/epoll/max_user_watches: "216410223"
           /proc/sys/fs/fanotify/max_queued_events: "16384"
           /proc/sys/fs/fanotify/max_user_groups: "128"
           /proc/sys/fs/fanotify/max_user_marks: "1048576"
           /proc/sys/fs/file-max: "9223372036854775807"
-          /proc/sys/fs/file-nr: "5472\t0\t9223372036854775807"
-          /proc/sys/fs/inode-nr: "1082537\t435"
-          /proc/sys/fs/inode-state: "1082537\t435\t0\t0\t0\t0\t0"
+          /proc/sys/fs/file-nr: "5184\t0\t9223372036854775807"
+          /proc/sys/fs/inode-nr: "1082460\t435"
+          /proc/sys/fs/inode-state: "1082460\t435\t0\t0\t0\t0\t0"
           /proc/sys/fs/inotify/max_queued_events: "16384"
           /proc/sys/fs/inotify/max_user_instances: "65535"
           /proc/sys/fs/inotify/max_user_watches: "524288"
@@ -1271,7 +1271,7 @@ measurements:
           /proc/sys/kernel/msgmni: "32000"
           /proc/sys/kernel/ngroups_max: "65536"
           /proc/sys/kernel/nmi_watchdog: "0"
-          /proc/sys/kernel/ns_last_pid: "68573"
+          /proc/sys/kernel/ns_last_pid: "3128903"
           /proc/sys/kernel/numa_balancing: "0"
           /proc/sys/kernel/numa_balancing_promote_rate_limit_MBps: "65536"
           /proc/sys/kernel/oops_all_cpu_backtrace: "0"
@@ -1307,7 +1307,7 @@ measurements:
           /proc/sys/kernel/random/entropy_avail: "256"
           /proc/sys/kernel/random/poolsize: "256"
           /proc/sys/kernel/random/urandom_min_reseed_secs: "60"
-          /proc/sys/kernel/random/uuid: b3fb5e9a-71de-47f8-b4f0-2f87e83c19f3
+          /proc/sys/kernel/random/uuid: 4a3fe9af-7ebc-45b2-b789-6148bd88ac67
           /proc/sys/kernel/random/write_wakeup_threshold: "256"
           /proc/sys/kernel/randomize_va_space: "2"
           /proc/sys/kernel/real-root-dev: "0"
