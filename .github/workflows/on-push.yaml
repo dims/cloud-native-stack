@@ -25,6 +25,9 @@ jobs:
       SCAN_SEVERITY: 'MEDIUM'
     steps:
 
+      - name: Checkout Code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
+
       # Setup, Test, and Lint
       - name: Run Go CI (setup, test, lint)
         uses: ./.github/actions/go-ci
