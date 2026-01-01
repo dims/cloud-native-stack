@@ -37,15 +37,66 @@ body:
     validations:
       required: true
 
+  - type: textarea
+    id: success
+    attributes:
+      label: Success Criteria
+      description: What does “done” look like? How should we measure success?
+      placeholder: |
+        - Must support ...
+        - Must not break ...
+        - CLI/API output should ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: What other options/workarounds have you tried or considered?
+    validations:
+      required: false
+
   - type: dropdown
     id: component
     attributes:
       label: Component
       options:
-        - API
         - CLI
+        - API server
+        - Recipe engine / data
+        - Bundlers
+        - Collectors / snapshotter
         - Deployment/Config
+        - Docs/examples
         - New Component
         - Multiple Components
+    validations:
+      required: true
+
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility / Breaking Changes
+      description: Any expected breaking changes, migrations, or versioning concerns?
+    validations:
+      required: false
+
+  - type: textarea
+    id: ops
+    attributes:
+      label: Operational Considerations
+      description: Observability, upgrades, config drift, multi-tenancy, blast radius.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: contribute
+    attributes:
+      label: Are you willing to contribute?
+      options:
+        - Yes, I can open a PR
+        - Maybe, with guidance
+        - No
     validations:
       required: true
