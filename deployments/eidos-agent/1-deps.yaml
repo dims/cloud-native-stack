@@ -25,7 +25,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: eidos
-    namespace: eidos
+    namespace: gpu-operator
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role

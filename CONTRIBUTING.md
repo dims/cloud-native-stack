@@ -582,6 +582,7 @@ ls -lh dist/
 # STEP 1: Snapshot - Capture system configuration
 eidos snapshot --format yaml
 eidos snapshot --output system.yaml --format json
+eidos snapshot --output cm://gpu-operator/eidos-snapshot --format yaml  # ConfigMap output
 
 # STEP 2: Recipe - Generate optimized configuration
 # Query mode: Direct generation from parameters
@@ -600,10 +601,12 @@ eidos recipe \
 # Snapshot mode: Generate recipe from captured snapshot
 eidos recipe --snapshot system.yaml --intent training
 eidos recipe -f system.yaml -i inference -o recipe.yaml
+eidos recipe -f cm://gpu-operator/eidos-snapshot -i training -o cm://gpu-operator/eidos-recipe  # ConfigMap I/O
 
 # STEP 3: Bundle - Create deployment artifacts
 eidos bundle --recipe recipe.yaml --output ./bundles
 eidos bundle -f recipe.yaml -b gpu-operator -o ./deployment
+eidos bundle -f cm://gpu-operator/eidos-recipe -o ./bundles  # ConfigMap input
 ```
 
 ### Complete End-to-End Workflow
@@ -646,6 +649,25 @@ chmod +x scripts/install.sh
 # 5. Monitor deployment
 kubectl get pods -n gpu-operator
 kubectl logs -n gpu-operator -l app=nvidia-operator-validator
+```
+
+**Alternative: ConfigMap-based Workflow (for Kubernetes Jobs)**
+
+When running in Kubernetes, you can use ConfigMap URIs to avoid file dependencies:
+
+```bash
+# 1. Capture snapshot directly to ConfigMap
+eidos snapshot -o cm://gpu-operator/eidos-snapshot
+
+# 2. Generate recipe from ConfigMap snapshot to ConfigMap output
+eidos recipe -f cm://gpu-operator/eidos-snapshot --intent training -o cm://gpu-operator/eidos-recipe
+
+# 3. Create bundle from ConfigMap recipe
+eidos bundle -f cm://gpu-operator/eidos-recipe -b gpu-operator -o ./bundles
+
+# 4. Verify ConfigMap data
+kubectl get configmap eidos-snapshot -n gpu-operator -o yaml
+kubectl get configmap eidos-recipe -n gpu-operator -o yaml
 ```
 
 **Expected Bundle Structure:**

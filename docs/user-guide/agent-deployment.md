@@ -6,7 +6,7 @@ Deploy Eidos as a Kubernetes Job to automatically capture cluster configuration 
 
 The Eidos agent runs as a Kubernetes Job that:
 - Captures system configuration from GPU nodes
-- Outputs snapshot to stdout (retrieved via `kubectl logs`)
+- Stores snapshot in Kubernetes ConfigMap (`eidos-snapshot` in `gpu-operator` namespace)
 - Useful for auditing, troubleshooting, and multi-cluster management
 
 **Agent capabilities:**
@@ -33,7 +33,7 @@ kubectl apply -f https://raw.githubusercontent.com/mchmarny/cloud-native-stack/m
 
 **What this creates:**
 - **Namespace**: `gpu-operator` (if not exists)
-- **ServiceAccount**: `eidos` in gpu-operator namespace
+- **ServiceAccount**: `eidos` in `gpu-operator` namespace
 - **ClusterRole**: Permissions to read nodes, pods, ClusterPolicy
 - **ClusterRoleBinding**: Binds role to service account
 
@@ -43,6 +43,9 @@ kubectl apply -f https://raw.githubusercontent.com/mchmarny/cloud-native-stack/m
 kubectl apply -f https://raw.githubusercontent.com/mchmarny/cloud-native-stack/main/deployments/eidos-agent/2-job.yaml
 ```
 
+**What this creates:**
+- **Job**: `eidos` in the `gpu-operator` namespace
+
 ### 3. View Snapshot Output
 
 Check job status:
@@ -50,14 +53,19 @@ Check job status:
 kubectl get jobs -n gpu-operator
 ```
 
-Retrieve snapshot:
+Check job logs (for errors/debugging):
 ```shell
 kubectl logs -n gpu-operator job/eidos
 ```
 
+Retrieve snapshot from ConfigMap:
+```shell
+kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}'
+```
+
 Save snapshot to file:
 ```shell
-kubectl logs -n gpu-operator job/eidos > snapshot.yaml
+kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > snapshot.yaml
 ```
 
 ## Customization
@@ -277,23 +285,27 @@ kubectl get pods -n gpu-operator -l job-name=eidos
 ### Retrieve Snapshot
 
 ```shell
-# View logs
-kubectl logs -n gpu-operator job/eidos
+# View snapshot from ConfigMap
+kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}'
 
 # Save to file
-kubectl logs -n gpu-operator job/eidos > snapshot-$(date +%Y%m%d).yaml
+kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > snapshot-$(date +%Y%m%d).yaml
 
-# Follow logs (if job is running)
-kubectl logs -n gpu-operator job/eidos -f
+# View job logs (for debugging)
+kubectl logs -n gpu-operator job/eidos
+
+# Check ConfigMap metadata
+kubectl get configmap eidos-snapshot -n gpu-operator -o yaml
 ```
 
 ### Generate Recipe from Snapshot
 
 ```shell
-# Save snapshot
-kubectl logs -n gpu-operator job/eidos > snapshot.yaml
+# Option 1: Use ConfigMap directly (no file needed)
+eidos recipe --snapshot cm://gpu-operator/eidos-snapshot --intent training --output recipe.yaml
 
-# Generate recipe locally
+# Option 2: Save snapshot to file first
+kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > snapshot.yaml
 eidos recipe --snapshot snapshot.yaml --intent training --output recipe.yaml
 
 # Generate bundle
@@ -320,11 +332,14 @@ kubectl delete -f https://raw.githubusercontent.com/mchmarny/cloud-native-stack/
   run: |
     kubectl apply -f deployments/eidos-agent/2-job.yaml
     kubectl wait --for=condition=complete --timeout=300s job/eidos -n gpu-operator
-    kubectl logs -n gpu-operator job/eidos > snapshot.yaml
     
-- name: Generate recipe
+- name: Generate recipe from ConfigMap
   run: |
-    eidos recipe -f snapshot.yaml -i training -o recipe.yaml
+    # Option 1: Use ConfigMap directly
+    eidos recipe -f cm://gpu-operator/eidos-snapshot -i training -o recipe.yaml
+    
+    # Option 2: Export snapshot to file for archival
+    kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > snapshot.yaml
     
 - name: Upload artifacts
   uses: actions/upload-artifact@v3
@@ -355,8 +370,8 @@ for cluster in "${clusters[@]}"; do
   # Wait for completion
   kubectl wait --for=condition=complete --timeout=300s job/eidos -n gpu-operator
   
-  # Save snapshot
-  kubectl logs -n gpu-operator job/eidos > snapshot-${cluster}.yaml
+  # Save snapshot from ConfigMap
+  kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > snapshot-${cluster}.yaml
   
   # Clean up
   kubectl delete job eidos -n gpu-operator
@@ -372,12 +387,12 @@ done
 # Baseline (first snapshot)
 kubectl apply -f deployments/eidos-agent/2-job.yaml
 kubectl wait --for=condition=complete job/eidos -n gpu-operator
-kubectl logs -n gpu-operator job/eidos > baseline.yaml
+kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > baseline.yaml
 
 # Current (later snapshot)
 kubectl apply -f deployments/eidos-agent/2-job.yaml
 kubectl wait --for=condition=complete job/eidos -n gpu-operator
-kubectl logs -n gpu-operator job/eidos > current.yaml
+kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > current.yaml
 
 # Compare
 diff baseline.yaml current.yaml || echo "Configuration drift detected!"
@@ -409,12 +424,18 @@ kubectl get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints
 
 ### Job Completes but No Output
 
-Check container logs:
+Check ConfigMap and container logs:
 ```shell
-# View pod logs
+# Check if ConfigMap was created
+kubectl get configmap eidos-snapshot -n gpu-operator
+
+# View ConfigMap contents
+kubectl get configmap eidos-snapshot -n gpu-operator -o yaml
+
+# View pod logs for errors
 kubectl logs -n gpu-operator -l job-name=eidos
 
-# Check for errors
+# Check for previous pod errors
 kubectl logs -n gpu-operator -l job-name=eidos --previous
 ```
 
