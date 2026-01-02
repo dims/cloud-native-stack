@@ -841,7 +841,7 @@ func TestRecipeHandler(t *testing.T) {
 
 ### Automated CI/CD Pipeline
 
-**Production builds** are automated through GitHub Actions workflows. When a semantic version tag is pushed (e.g., `v0.8.10`), the `on-tag.yaml` workflow:
+**Production builds** are automated through GitHub Actions workflows. When a semantic version tag is pushed (e.g., `v0.8.11`), the `on-tag.yaml` workflow:
 
 1. **Validates** code with Go CI (tests + linting)
 2. **Builds** multi-platform binaries and container images with GoReleaser and ko
@@ -854,6 +854,15 @@ func TestRecipeHandler(t *testing.T) {
 - Cosign keyless signing with Fulcio + Rekor
 - GitHub Attestation API for provenance
 - Multi-platform builds: darwin/linux × amd64/arm64
+
+**Verify Release Artifacts**:
+```bash
+# Get latest release tag
+export TAG=$(curl -s https://api.github.com/repos/NVIDIA/cloud-native-stack/releases/latest | jq -r '.tag_name')
+
+# Verify attestations
+gh attestation verify oci://ghcr.io/nvidia/eidos-api-server:${TAG} --owner nvidia
+```
 
 For detailed CI/CD architecture, see [../CONTRIBUTING.md#github-actions--cicd](../../CONTRIBUTING.md#github-actions--cicd) and [README.md](README.md#cicd-architecture).
 
@@ -1182,7 +1191,7 @@ spec:
         fsGroup: 1000
       containers:
       - name: api-server
-        image: ghcr.io/nvidia/eidos-api-server:v0.6.4
+        image: ghcr.io/nvidia/eidos-api-server:latest  # Or use specific tag like v0.8.11
         ports:
         - name: http
           containerPort: 8080

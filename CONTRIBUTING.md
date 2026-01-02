@@ -1349,7 +1349,7 @@ Cloud Native Stack uses a comprehensive CI/CD pipeline powered by GitHub Actions
 
 #### on-tag.yaml (Release Pipeline)
 
-**Trigger**: Semantic version tags matching `v[0-9]+.[0-9]+.[0-9]+` (e.g., v0.8.10)
+**Trigger**: Semantic version tags matching `v[0-9]+.[0-9]+.[0-9]+` (e.g., v0.8.11)
 
 **Purpose**: Build, release, attest, and deploy production artifacts
 
@@ -1461,15 +1461,18 @@ All releases include comprehensive supply chain security artifacts:
 #### Verification
 
 ```bash
+# Get latest release tag
+export TAG=$(curl -s https://api.github.com/repos/NVIDIA/cloud-native-stack/releases/latest | jq -r '.tag_name')
+
 # Verify image attestations (GitHub CLI - Recommended)
-gh attestation verify oci://ghcr.io/nvidia/eidos:v0.8.10 --owner nvidia
+gh attestation verify oci://ghcr.io/nvidia/eidos:${TAG} --owner nvidia
 
 # Verify with Cosign
 cosign verify-attestation \
   --type spdxjson \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   --certificate-identity-regexp 'https://github.com/NVIDIA/cloud-native-stack/.github/workflows/.*' \
-  ghcr.io/nvidia/eidos:v0.8.10
+  ghcr.io/nvidia/eidos:${TAG}
 ```
 
 For complete verification instructions, see [SECURITY.md](SECURITY.md).
