@@ -72,7 +72,7 @@ make server   # Start API server locally
    eidos recipe --snapshot snapshot.yaml --intent training
    ```
 
-→ See [Extended Reference: Adding a New Collector](#adding-a-new-collector) for full example
+→ See Extended Reference: Adding a New Collector for full example
 
 ### I Need To: Generate Bundles for New Operator
 
@@ -93,7 +93,7 @@ make server   # Start API server locally
    harness.AssertFileContains(dir, "values.yaml", "version:")
    ```
 
-→ See [Extended Reference: Adding a New Bundler](#adding-a-new-bundler) for full guide
+→ See Extended Reference: Adding a New Bundler for full guide
 
 ### I Need To: Add New API Endpoint
 
@@ -111,7 +111,7 @@ make server   # Start API server locally
 4. Update API spec in `api/eidos/v1/api-server-v1.yaml`
 5. Write integration tests
 
-→ See [Extended Reference: Adding a New API Endpoint](#adding-a-new-api-endpoint)
+→ See Extended Reference: Adding a New API Endpoint for detailed steps
 
 ### I Need To: Fix Failing Tests
 
@@ -126,7 +126,7 @@ make server   # Start API server locally
 3. **Linting issues** → `make lint` then fix reported problems
 4. **Context** → Ensure collectors/handlers respect `ctx.Done()`
 
-→ See [Troubleshooting & Support](#troubleshooting--support)
+→ See Troubleshooting & Support for common issues and debugging tips
 
 ---
 
