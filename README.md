@@ -1,27 +1,28 @@
 # Cloud Native Stack
 
-**Production-grade, validated configurations for GPU-accelerated Kubernetes at scale.**
+Cloud Native Stack (CNS) provides validated configurations for deploying GPU-accelerated Kubernetes infrastructure. The project generates deployment artifacts from system configuration snapshots, ensuring consistent deployments for managed Kubernetes offerings like Amazon EKS, Google GKE, Azure AKS, Oracle OKE, as well as self-managed Kubernetes clusters.
 
-Cloud Native Stack (CNS) delivers **opinionated, battle-tested blueprints** for deploying AI workloads on GPU infrastructure. Rather than generic recommendations, CNS provides **validated configurations** proven in production environments, ensuring **reproducible outcomes** across diverse platforms (EKS, GKE, AKS, OKE, and self-managed).
+## What Cloud Native Stack Does
 
-## Why Cloud Native Stack?
+CNS captures system state, generates configuration recipes based on hardware and software parameters, and produces deployment bundles. Configurations are derived from field deployments and tested against H100, GB200, A100, and other NVIDIA GPU hardware.
 
-**🎯 Opinionated Best Practices** – Eliminates guesswork with prescriptive configurations based on NVIDIA's extensive field experience and customer deployments.
+**Key characteristics:**
 
-**✅ Validated & Production-Ready** – Every configuration is tested against real hardware (H100, GB200, A100, L40) and production workloads (training, inference).
+- **Prescriptive configurations**: Specific component versions and settings validated for GPU workloads
+- **Deterministic generation**: Same inputs produce identical outputs across environments  
+- **Hardware-aware**: Recipes adapt to GPU type, OS version, Kubernetes distribution, and workload intent (training or inference)
 
-**🔁 Reproducible Deployments** – Deterministic recipe generation ensures consistent results across environments, reducing "works on my cluster" issues.
+**Three-stage workflow:**
 
-**⚡ Three-Step Workflow** – Systematic approach from discovery to deployment:
-1. **Snapshot** – Capture current system configuration (OS, kernel, K8s, GPU)
-2. **Recipe** – Generate optimized configuration recommendations based on your environment
-3. **Bundle** – Create ready-to-deploy artifacts (Helm values, manifests, scripts)
+1. **Snapshot**: Capture system configuration (operating system, kernel version, Kubernetes cluster state, GPU hardware)
+2. **Recipe**: Generate configuration recommendations based on captured state or query parameters
+3. **Bundle**: Create deployment artifacts including Helm values, Kubernetes manifests, and installation scripts
 
 ## Components
 
-- **CLI (`eidos`)** – Command-line tool for snapshot capture, recipe generation, and bundle creation
-- **API Server** – REST API (https://cns.dgxc.io) for integration with CI/CD pipelines and automation workflows  
-- **Agent** – Kubernetes Job for automated, in-cluster snapshot collection and validation
+- **CLI (`eidos`)**: Command-line tool supporting all three workflow stages (snapshot, recipe, bundle)
+- **API Server**: HTTP REST API for recipe generation (query mode only). Production deployment: https://cns.dgxc.io
+- **Agent**: Kubernetes Job that captures cluster snapshots and writes output to ConfigMaps
 
 ## Documentation
 

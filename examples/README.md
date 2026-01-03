@@ -1,6 +1,6 @@
 # Examples
 
-This directory contains example snapshots, recipes, and bundles demonstrating the Cloud Native Stack workflow.
+This directory contains example snapshots, recipes, and bundles for testing and documentation purposes.
 
 ## Directory Structure
 
@@ -18,16 +18,17 @@ examples/
 
 Example system configuration snapshots captured from GPU clusters:
 
-### GB200 System ([gb200.yaml](gb200.yaml))
+### GB200 System ([gb200.yaml](snapshots/gb200.yaml))
 
-Complete snapshot from a GB200 NVL72 system showing:
-- OS configuration (Ubuntu 24.04)
-- GPU hardware details (GB200 with NVLink)
-- Kubernetes cluster configuration (EKS 1.33)
-- SystemD service states
-- Deployed container images
+Snapshot captured from a GB200 NVL72 system. Contents:
 
-**Use case:** Generate recipes optimized for GB200 training workloads
+- Operating system: Ubuntu 24.04
+- GPU hardware: GB200 with NVLink interconnect
+- Kubernetes distribution: Amazon EKS 1.33
+- SystemD services: containerd, kubelet states
+- Container images: Installed versions in cluster
+
+**Usage**: Generate recipe for GB200 training workloads
 
 ```bash
 eidos recipe --snapshot examples/snapshots/gb200.yaml --intent training

@@ -4,19 +4,30 @@ Deploy Eidos as a Kubernetes Job to automatically capture cluster configuration 
 
 ## Overview
 
-The Eidos agent runs as a Kubernetes Job that:
-- Captures system configuration from GPU nodes
-- Stores snapshot directly in Kubernetes ConfigMap (`eidos-snapshot` in `gpu-operator` namespace)
-- No volumes required - writes via Kubernetes API
-- Useful for auditing, troubleshooting, and multi-cluster management
+The agent is a Kubernetes Job that captures system configuration and writes output to a ConfigMap.
 
-**Agent capabilities:**
-- ✅ Step 1: Snapshot capture with ConfigMap output
-- ❌ Step 2: Recipe generation (use CLI or API)
-- ❌ Step 3: Bundle generation (use CLI)
+**What it does:**
 
-**ConfigMap Output:**
-The agent uses `cm://namespace/name` URI scheme to write snapshots directly to Kubernetes ConfigMaps:
+- Runs `eidos snapshot --output cm://gpu-operator/eidos-snapshot` on a GPU node
+- Writes snapshot to ConfigMap via Kubernetes API (no PersistentVolume required)
+- Exits after snapshot capture
+
+**What it does not do:**
+
+- Recipe generation (use `eidos recipe` CLI or API server)
+- Bundle generation (use `eidos bundle` CLI)
+- Continuous monitoring (use CronJob for periodic snapshots)
+
+**Use cases:**
+
+- Cluster auditing and compliance
+- Multi-cluster configuration management
+- Drift detection (compare snapshots over time)
+- CI/CD integration (automated configuration validation)
+
+**ConfigMap storage:**
+
+Agent uses ConfigMap URI scheme (`cm://namespace/name`) to write snapshots:
 ```bash
 eidos snapshot --output cm://gpu-operator/eidos-snapshot
 ```

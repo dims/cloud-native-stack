@@ -1,17 +1,21 @@
 # Data Flow Architecture
 
-Understanding how data flows through the Cloud Native Stack system.
+This document describes data transformations in the three-stage workflow.
 
 ## Overview
 
-Cloud Native Stack follows a three-stage data transformation pipeline:
+Data flows through three stages:
 
 ```
 System Config → Snapshot → Recipe → Bundle → Deployment
      (Raw)      (Capture)  (Optimize) (Package)  (Deploy)
 ```
 
-Each stage transforms data into increasingly deployment-ready formats.
+Each stage transforms input data into a different format:
+
+- **Snapshot**: Captures raw system state (OS, GPU, Kubernetes, SystemD)
+- **Recipe**: Generates configuration recommendations by matching query parameters against overlay rules
+- **Bundle**: Produces deployment artifacts (Helm values, manifests, scripts)
 
 ## Stage 1: Snapshot (Data Capture)
 

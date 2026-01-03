@@ -1,8 +1,8 @@
 # Cloud Native Stack Roadmap
 
-> **Project Mission**: Deliver production-grade, validated GPU-accelerated Kubernetes configurations through opinionated, battle-tested blueprints that ensure reproducible deployments across diverse platforms.
+> **Status**: This roadmap is under development and does not represent committed deliverables. Items may change based on community feedback and project priorities.
 
-> This is only a draft document, does not represent the official roadmap of this project until fully reviewed. 
+> **Project Scope**: Generate validated configurations for GPU-accelerated Kubernetes deployments. Configurations are tested against NVIDIA hardware (H100, GB200, A100, ...) and support managed Kubernetes offerings (e.g. Amazon EKS, Google GKE, Azure AKS, Oracle OKE, ...) as well as self-managed clusters. 
 
 ## Table of Contents
 
@@ -16,11 +16,11 @@
 
 ### PVC-Based Agent Output
 
-**User Story**: As a cluster operator, I want agent snapshots persisted to a PVC that survives Job lifecycle, so I can access historical snapshots and compare configuration drift over time.
+**Current behavior**: Agent Job writes snapshot to a ConfigMap (`eidos-snapshot` in `gpu-operator` namespace). ConfigMap is overwritten on each Job run. Historical snapshots are not retained.
 
-**Problem**: Current Job uses stdout/emptyDir, files lost when Job completes or is deleted. User must parse the Snapshot and Recipe from the Job logs.
+**Proposed change**: Add optional PersistentVolumeClaim (PVC) output mode. When enabled, agent writes timestamped files to a persistent volume instead of ConfigMap.
 
-**Solution**: Optional PVC mode for agent Job with timestamped file storage.
+**Motivation**: Persistent storage enables historical snapshot retention and drift detection across multiple Job runs.
 
 **Acceptance Criteria**:
 - [ ] Create optional PVC manifest (in deployments/eidos-agent/1-deps.yaml) with RWO/RWX support
@@ -35,16 +35,16 @@
 
 ### Remote Snapshot from CLI
 
-**User Story**: As a platform engineer, I want to capture cluster snapshots from my workstation without deploying a Job, so I can quickly audit remote GPU clusters without manual Job management.
+**Current behavior**: Capturing snapshots from a remote cluster requires deploying the agent Job manually:
+1. Apply RBAC manifests (`1-deps.yaml`)
+2. Apply Job manifest (`2-job.yaml`)  
+3. Wait for Job completion
+4. Retrieve ConfigMap or Job logs
+5. Delete Job resources
 
-**Problem**: Current workflow requires:
-1. Deploy RBAC (1-deps.yaml)
-2. Deploy Job (2-job.yaml)
-3. Wait for completion
-4. Retrieve logs
-5. Clean up Job
+**Proposed change**: Add `--remote` flag to `eidos snapshot` command. This flag automates the Job lifecycle: checks RBAC, deploys Job from embedded manifest, waits for completion, retrieves output, and optionally cleans up resources.
 
-**Solution**: Add `--remote` flag to `eidos snapshot` that orchestrates Job lifecycle programmatically.
+**Scope**: CLI change only. No changes to agent Job implementation or RBAC requirements.
 
 **Acceptance Criteria**:
 - [ ] `eidos snapshot --remote` deploys Job from embedded manifest
@@ -76,18 +76,22 @@
 
 ### Additional Bundlers
 
+**Current bundlers**: GPU Operator, Network Operator
+
+**Proposed bundlers** (not yet implemented):
+
 #### NIM Operator Bundler
 
-**User Story**: As an ML engineer, I want to deploy NVIDIA Inference Microservices using CNS bundles, so I can quickly set up optimized inference infrastructure.
+**Scope**: Generate Helm values and manifests for NVIDIA Inference Microservices (NIM) Operator deployment.
 
 **Acceptance Criteria**:
-- [ ] Bundler generates NIM Operator Helm values
-- [ ] Supports model configuration (Llama, Mistral, etc.)
-- [ ] Includes resource requests/limits based on GPU type
-- [ ] Installation scripts with prerequisites check
-- [ ] README with deployment examples
+- [ ] Bundler generates NIM Operator Helm values from recipe measurements
+- [ ] Supports model configuration for common inference workloads
+- [ ] Includes resource requests/limits derived from GPU type in recipe
+- [ ] Installation script validates prerequisites (kubectl, helm, NIM license)
+- [ ] README documents deployment steps and configuration options
 
-**References**: [NIM Operator Docs](https://docs.nvidia.com/nim-operator/)
+**Reference**: [NIM Operator Documentation](https://docs.nvidia.com/nim-operator/)
 
 #### Nsight Operator Bundler
 

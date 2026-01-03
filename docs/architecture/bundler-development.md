@@ -4,19 +4,22 @@ Learn how to create new bundlers for Cloud Native Stack.
 
 ## Overview
 
-Bundlers transform recipes into deployment-ready artifacts (Helm values, Kubernetes manifests, installation scripts). The bundler framework provides:
+Bundlers convert recipes into deployment artifacts. Artifacts include Helm values files, Kubernetes manifests, and installation scripts.
 
-- **BaseBundler helper** - Reduces boilerplate by ~75%
-- **Self-registration** - Automatic discovery via init() functions  
-- **Parallel execution** - All bundlers run concurrently by default
-- **Type-safe data extraction** - Helper functions for recipe parsing
-- **Template generation** - go:embed for portable templates
-- **Testing infrastructure** - TestHarness for consistent testing
-- **E2E validation** - Tested with `tools/e2e` script for complete workflow
+**Framework features:**
 
-**Current Bundlers:**
-- **GPU Operator** - Helm values, ClusterPolicy, scripts (production-ready)
-- **Network Operator** - Network configuration and RDMA support (production-ready)
+- **BaseBundler**: Helper struct providing common operations (directory creation, file writing, template rendering, checksum generation)
+- **Self-registration**: Bundlers register themselves via `init()` function using `bundler.MustRegister()`
+- **Parallel execution**: Multiple bundlers run concurrently via goroutines with errgroup context cancellation
+- **Recipe parsing**: `pkg/bundler/internal` package provides helper functions for extracting recipe measurements
+- **Template system**: Bundlers embed templates using `go:embed` directive
+- **Test infrastructure**: `TestHarness` struct standardizes bundler testing
+- **E2E validation**: `tools/e2e` script tests complete workflow including bundle generation
+
+**Implemented bundlers:**
+
+- GPU Operator: Generates Helm values, ClusterPolicy manifest, installation scripts
+- Network Operator: Generates Helm values, NICClusterPolicy manifest, network configuration
 
 ## Quick Start
 

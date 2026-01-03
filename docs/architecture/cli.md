@@ -15,19 +15,23 @@ The CLI provides a three-step workflow for optimizing GPU infrastructure:
 ```
 
 ### Step 1: Snapshot Command
-Captures comprehensive system configuration including:
-- Operating system (grub, kmod, sysctl, release)
-- SystemD services (containerd, docker, kubelet)
-- Kubernetes (server version, images, ClusterPolicy)
-- GPU hardware (driver, CUDA, MIG, device info)
 
-**Output Options:**
-- **File**: `--output system.yaml` (write to file)
-- **Stdout**: Default behavior (pipe to other commands)
-- **ConfigMap**: `--output cm://namespace/name` (Kubernetes-native storage)
+Captures system configuration:
 
-**Agent Deployment:**  
-Kubernetes Job running on GPU nodes that writes snapshots directly to ConfigMap without volume dependencies. Uses RBAC-secured access for ConfigMap read/write operations.
+- Operating system: grub, kmod, sysctl, /etc/os-release
+- SystemD services: containerd, docker, kubelet (service state and configuration)
+- Kubernetes: API server version, container images, ClusterPolicy custom resource
+- GPU hardware: driver version, CUDA libraries, MIG configuration, device properties
+
+**Output destinations:**
+
+- **File**: `--output system.yaml` (local filesystem)
+- **Stdout**: Default (can be piped to other commands)
+- **ConfigMap**: `--output cm://namespace/name` (Kubernetes ConfigMap using Kubernetes API)
+
+**Agent deployment:**  
+
+Kubernetes Job runs on GPU nodes. Writes snapshot to ConfigMap via Kubernetes API. Requires ServiceAccount with ConfigMap create/update permissions (Role in target namespace). Does not require PersistentVolume.
 
 ### Step 2: Recipe Command  
 Generates optimized configuration recipes with two modes:
@@ -45,22 +49,35 @@ Generates optimized configuration recipes with two modes:
 - **ConfigMap**: `--output cm://namespace/name` (store in Kubernetes)
 
 ### Step 3: Bundle Command
-Generates deployment-ready bundles from recipes including:
-- Helm chart values.yaml
-- Kubernetes manifests (ClusterPolicy, etc.)
-- Installation/uninstallation scripts
-- README with deployment instructions
-- SHA256 checksums for verification
 
-**Input Options:**
-- **Recipe file**: `--recipe recipe.yaml` (read from file)
-- **ConfigMap**: `--recipe cm://namespace/name` (read from Kubernetes)
+Generates deployment artifacts from recipes:
 
-**Output**: Always writes to local directory (no ConfigMap output for bundles)
+- Helm values files (values.yaml)
+- Kubernetes manifests (ClusterPolicy, NICClusterPolicy, etc.)
+- Installation scripts (bash, with prerequisite checks)
+- Uninstallation scripts (cleanup)
+- README documentation
+- SHA256 checksum file
 
-**Available bundlers**: GPU Operator, Network Operator
-**Execution**: Parallel by default for multiple bundlers
-**Testing**: Validated with E2E testing framework (`tools/e2e`)
+**Input sources:**
+
+- **Recipe file**: `--recipe recipe.yaml` (local filesystem)
+- **ConfigMap**: `--recipe cm://namespace/name` (Kubernetes ConfigMap)
+
+**Output**: Local directory only. ConfigMap output is not supported for bundles.
+
+**Current bundlers**:
+
+- GPU Operator: Generates GPU Operator Helm values and ClusterPolicy manifest
+- Network Operator: Generates Network Operator Helm values and NICClusterPolicy manifest
+
+**Execution model**:
+
+- Bundlers run concurrently (parallel execution)
+- If `--bundlers` flag is omitted, all registered bundlers execute
+- Errors from any bundler cause immediate cancellation via context propagation
+
+**Testing**: End-to-end workflow validated by `tools/e2e` script
 
 ## Architecture Diagram
 

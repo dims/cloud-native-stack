@@ -1,14 +1,18 @@
 # Automation and CI/CD Integration
 
-Integrate Cloud Native Stack into your automation pipelines for continuous GPU infrastructure optimization.
+This guide describes integration patterns for using Cloud Native Stack in automated pipelines.
 
 ## Overview
 
-Cloud Native Stack integrates with CI/CD pipelines to:
-- **Capture** cluster configurations automatically
-- **Generate** optimized recipes based on environment changes
-- **Deploy** GPU operators with validated configurations
-- **Monitor** configuration drift across clusters
+Typical integration workflows:
+
+1. **Snapshot capture**: Deploy agent Job to capture cluster configuration
+2. **Recipe generation**: Generate configuration recommendations from snapshot or query parameters
+3. **Bundle creation**: Create deployment artifacts (Helm values, manifests, scripts)
+4. **Deployment**: Apply generated configuration to cluster
+5. **Validation**: Verify deployment using test workloads
+
+**Supported CI/CD platforms**: GitHub Actions, GitLab CI, Jenkins, Argo Workflows, Tekton
 
 ## Integration Patterns
 
@@ -36,8 +40,8 @@ jobs:
       
       - name: Deploy Eidos Agent
         run: |
-          kubectl apply -f https://raw.githubusercontent.com/mchmarny/cloud-native-stack/main/deployments/eidos-agent/1-deps.yaml
-          kubectl apply -f https://raw.githubusercontent.com/mchmarny/cloud-native-stack/main/deployments/eidos-agent/2-job.yaml
+          kubectl apply -f https://raw.githubusercontent.com/nvidia/cloud-native-stack/main/deployments/eidos-agent/1-deps.yaml
+          kubectl apply -f https://raw.githubusercontent.com/nvidia/cloud-native-stack/main/deployments/eidos-agent/2-job.yaml
       
       - name: Wait for completion
         run: |
@@ -93,7 +97,7 @@ capture_snapshot:
 
 generate_recipe:
   stage: recipe
-  image: ghcr.io/mchmarny/eidos:latest
+  image: ghcr.io/nvidia/eidos:latest
   script:
     # Option 1: Use ConfigMap directly (no artifact needed)
     - eidos recipe -f cm://gpu-operator/eidos-snapshot --intent training -o recipe.yaml

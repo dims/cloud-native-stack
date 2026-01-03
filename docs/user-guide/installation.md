@@ -1,6 +1,8 @@
 # Installation Guide
 
-This guide covers installing and setting up Cloud Native Stack (Eidos) for your environment.
+This guide describes how to install Cloud Native Stack (CNS) CLI tool (`eidos`) on Linux, macOS, or Windows.
+
+**What is Cloud Native Stack**: CNS generates validated configurations for GPU-accelerated Kubernetes deployments. See [README](../../README.md) for project overview.
 
 ## Prerequisites
 
@@ -16,7 +18,7 @@ This guide covers installing and setting up Cloud Native Stack (Eidos) for your 
 Install the latest version using the installation script:
 
 ```shell
-curl -sfL https://raw.githubusercontent.com/mchmarny/cloud-native-stack/refs/heads/main/install | bash -s --
+curl -sfL https://raw.githubusercontent.com/nvidia/cloud-native-stack/refs/heads/main/install | bash -s --
 ```
 
 This script:
@@ -25,13 +27,13 @@ This script:
 - Installs to `/usr/local/bin/eidos` (requires sudo)
 - Verifies the installation
 
-> **Supply Chain Security** – CNS includes SLSA Build Level 3 compliance with signed SBOMs and verifiable attestations (see [SECURITY](../SECURITY.md#supply-chain-security))
+> **Supply Chain Security**: CNS includes SLSA Build Level 3 compliance with signed SBOMs and verifiable attestations. See [SECURITY](../SECURITY.md#supply-chain-security) for verification instructions.
 
 ### Option 2: Manual Installation
 
 1. **Download the latest release**
 
-Visit the [releases page](https://github.com/mchmarny/cloud-native-stack/releases/latest) and download the appropriate binary for your platform:
+Visit the [releases page](https://github.com/nvidia/cloud-native-stack/releases/latest) and download the appropriate binary for your platform:
 
 - **macOS ARM64** (M1/M2/M3): `eidos_darwin_arm64.tar.gz`
 - **macOS Intel**: `eidos_darwin_amd64.tar.gz`
@@ -92,7 +94,7 @@ Expected output shows version information and available commands.
 
 ### Shell Completion (Optional)
 
-Enable shell auto-completion for better CLI experience:
+Enable shell auto-completion for command and flag names:
 
 **Bash:**
 ```shell

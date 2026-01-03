@@ -4,20 +4,19 @@ This directory contains architecture documentation for the Cloud Native Stack (C
 
 ## Components
 
-- **[CLI Architecture](cli.md)** - Architecture of the `eidos` command-line tool
-  - **Complete workflow**: Snapshot → Recipe → Bundle
-  - **Commands**: `snapshot`, `recipe`, `bundle`
-  - **Modes**: Query mode and snapshot mode for recipe generation
-  - **ConfigMap Integration**: Read/write support for Kubernetes-native storage (`cm://namespace/name`)
-  - **E2E Testing**: Validated with `tools/e2e` script for complete workflow
-- **[API Server Architecture](api-server.md)** - Architecture of the HTTP API server
-  - **Recipe generation only** (Step 2 of workflow)
-  - **Endpoint**: `GET /v1/recipe`
-  - **Note**: Does not support snapshot capture or bundle generation
-- **Bundler Framework** - Extensible system for generating deployment bundles
-  - **Parallel execution by default** for multiple bundlers
-  - **Self-registration pattern** for adding new bundlers
-  - **Available bundlers**: GPU Operator, Network Operator (coming soon)
+- **[CLI Architecture](cli.md)**: Command-line tool (`eidos`) implementing all three workflow stages
+  - Commands: `snapshot`, `recipe`, `bundle`
+  - Recipe generation modes: Query mode (direct parameters) and snapshot mode (analyze captured state)
+  - ConfigMap integration: Read and write operations using `cm://namespace/name` URI format
+  - Testing: `tools/e2e` script validates complete workflow
+- **[API Server Architecture](api-server.md)**: HTTP REST API for recipe generation
+  - Endpoint: `GET /v1/recipe` (query mode only)
+  - Does not support snapshot capture or bundle generation
+  - Production deployment: https://cns.dgxc.io
+- **Bundler Framework**: Extensible system for generating deployment artifacts
+  - Execution model: Multiple bundlers run concurrently by default
+  - Registration: Bundlers self-register via `init()` function
+  - Current bundlers: GPU Operator, Network Operator
 
 ## Overview
 

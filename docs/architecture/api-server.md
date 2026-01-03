@@ -12,21 +12,21 @@ The API server provides HTTP REST access to **Step 2 of the Cloud Native Stack w
 ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
 │   Snapshot   │─────▶│    Recipe    │─────▶│    Bundle    │
 └──────────────┘      └──────────────┘      └──────────────┘
-   CLI/Agent only      ✅ API Server       CLI only
+   CLI/Agent only       API Server       CLI only
 ```
 
 **API Server Capabilities:**
-- ✅ **Recipe generation** (Step 2) via `GET /v1/recipe` endpoint
-- ✅ **Query mode only** – generates recipes from environment parameters
-- ✅ Health and metrics endpoints for Kubernetes deployment
-- ✅ Production-ready HTTP server with middleware stack
-- ✅ Supply chain security with SLSA Build Level 3 attestations
+- **Recipe generation** (Step 2) via `GET /v1/recipe` endpoint
+- **Query mode only** – generates recipes from environment parameters
+- Health and metrics endpoints for Kubernetes deployment
+- Production-ready HTTP server with middleware stack
+- Supply chain security with SLSA Build Level 3 attestations
 
 **API Server Limitations:**
-- ❌ **No snapshot capture** – Use CLI `eidos snapshot` or Kubernetes Agent
-- ❌ **No bundle generation** – Use CLI `eidos bundle` command
-- ❌ **No snapshot mode** – Cannot analyze captured snapshots (query mode only)
-- ❌ **No ConfigMap integration** – API server doesn't read/write ConfigMaps
+- **No snapshot capture** – Use CLI `eidos snapshot` or Kubernetes Agent
+- **No bundle generation** – Use CLI `eidos bundle` command
+- **No snapshot mode** – Cannot analyze captured snapshots (query mode only)
+- **No ConfigMap integration** – API server doesn't read/write ConfigMaps
 
 **For complete workflow**, use the CLI which supports:
 - All three steps: snapshot → recipe → bundle

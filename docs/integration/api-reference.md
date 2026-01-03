@@ -4,35 +4,46 @@ Complete reference for the Eidos API Server REST API.
 
 ## Overview
 
-The Eidos API provides HTTP REST access to **recipe generation** (Step 2 of the Cloud Native Stack workflow). It enables programmatic integration with automation tools, CI/CD pipelines, and custom applications.
+The API server provides HTTP REST access to recipe generation (Step 2 of the three-stage workflow). The API accepts query parameters describing system characteristics and returns configuration recommendations.
 
 **Base URL:** `https://cns.dgxc.io`
 
-**API Capabilities:**
-- ✅ Recipe generation from query parameters
-- ✅ Version negotiation via Accept header
-- ✅ Rate limiting and request tracking
-- ✅ Health and metrics endpoints
-- ✅ SLSA Build Level 3 attestations
-- ✅ Production deployment at https://cns.dgxc.io
+**Capabilities:**
 
-**API Limitations:**
-- ❌ No snapshot capture (use CLI or Agent)
-- ❌ No bundle generation (use CLI)
-- ❌ No snapshot analysis (query mode only)
-- ❌ No ConfigMap integration (use CLI for Kubernetes-native storage)
+- Recipe generation from query parameters (OS, GPU, Kubernetes version, workload intent)
+- Version negotiation via Accept header
+- Rate limiting (100 requests/second)
+- Health and readiness probes
+- Prometheus metrics endpoint
+- SLSA Build Level 3 attestations (signed artifacts, SBOM)
 
-**For complete workflow**, use the CLI:
-- Snapshot: `eidos snapshot -o cm://namespace/name`
-- Recipe: `eidos recipe -f cm://namespace/name -o recipe.yaml`
-- Bundle: `eidos bundle -f recipe.yaml -o ./bundles`
-- Agent: Kubernetes Job for automated snapshot capture
-- E2E Testing: Validated with `tools/e2e` script
+**Limitations:**
+
+- Does not capture snapshots (use CLI `eidos snapshot` or Kubernetes agent Job)
+- Does not generate bundles (use CLI `eidos bundle`)
+- Does not analyze snapshots (query mode only; snapshot mode requires CLI)
+- Does not interact with Kubernetes ConfigMaps (use CLI for `cm://` URIs)
+
+**For complete workflow** (snapshot → recipe → bundle), use the CLI:
+
+```bash
+# Capture snapshot to ConfigMap
+eidos snapshot -o cm://namespace/name
+
+# Generate recipe from ConfigMap
+eidos recipe -f cm://namespace/name -o recipe.yaml
+
+# Create deployment bundle
+eidos bundle -f recipe.yaml -o ./bundles
+```
+
+See [CLI Reference](../user-guide/cli-reference.md) and [Agent Deployment](../user-guide/agent-deployment.md).
 
 ## Authentication
 
-**Current:** No authentication required (public API)  
-**Future:** API keys for production use
+**Current implementation:** No authentication required. API is publicly accessible.
+
+**Note:** Authentication may be added in future releases. Check release notes before upgrading production integrations.
 
 ## Base URL
 

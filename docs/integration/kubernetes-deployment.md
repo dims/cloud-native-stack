@@ -4,24 +4,34 @@ Deploy the Eidos API Server in your Kubernetes cluster for self-hosted recipe ge
 
 ## Overview
 
-**API Server Deployment** provides:
-- **Private deployment** - Keep recipe data within your infrastructure
-- **Custom configuration** - Modify recipe data for your environment
-- **High availability** - Multiple replicas with load balancing
-- **Monitoring integration** - Prometheus metrics and health checks
-- **Production URL**: https://cns.dgxc.io (public instance)
+**API Server deployment** enables self-hosted recipe generation:
 
-**Agent Deployment** (separate from API server):
-- **Automated snapshots** - Kubernetes Job captures cluster configuration
-- **ConfigMap storage** - Snapshots written directly to ConfigMap (no volumes)
-- **RBAC-secured** - ServiceAccount with ConfigMap read/write permissions
-- **Pipeline-friendly** - Integrates with CI/CD for automated auditing
-- See [agent-deployment.md](../user-guide/agent-deployment.md) for details
+- Isolated deployment: Recipe data stays within your infrastructure
+- Custom recipes: Modify embedded recipe data (`data-v1.yaml`)
+- High availability: Deploy multiple replicas with load balancing
+- Observability: Prometheus `/metrics` endpoint and structured logging
+- Public instance: https://cns.dgxc.io (managed deployment)
 
-**Complete Workflow**:
-1. Deploy Agent Job → Captures snapshot → Writes to ConfigMap
-2. CLI reads from ConfigMap → Generates recipe → Creates bundle
-3. Deploy bundle → Optimized GPU infrastructure
+**API Server scope:**
+
+- Recipe generation from query parameters (query mode)
+- Does not capture snapshots (use agent Job or CLI)
+- Does not generate bundles (use CLI)
+- Does not analyze snapshots (query mode only)
+
+**Agent deployment** (separate component):
+
+- Kubernetes Job captures cluster configuration
+- Writes snapshot to ConfigMap via Kubernetes API
+- Requires RBAC: ServiceAccount with ConfigMap create/update permissions
+- See [Agent Deployment](../user-guide/agent-deployment.md)
+
+**Typical workflow:**
+
+1. Deploy agent Job → Captures snapshot → Writes to ConfigMap
+2. CLI reads ConfigMap → Generates recipe → Writes to file or ConfigMap
+3. CLI reads recipe → Generates bundle → Writes to filesystem
+4. Apply bundle to cluster (Helm install, kubectl apply)
 
 ## Quick Start
 
@@ -39,12 +49,16 @@ kubectl get pods -n eidos
 kubectl get svc -n eidos
 ```
 
-### Deploy with Helm (Coming Soon)
+### Deploy with Helm
 
+**Status**: Helm chart not yet available. Use Kustomize or manual deployment.
+
+<!-- Uncomment when Helm chart is published
 ```shell
 helm repo add eidos https://nvidia.github.io/cloud-native-stack
 helm install eidos-api-server eidos/eidos-api-server -n eidos --create-namespace
 ```
+-->
 
 ## Manual Deployment
 
@@ -96,7 +110,7 @@ spec:
       
       containers:
         - name: api-server
-          image: ghcr.io/mchmarny/eidos-api-server:latest
+          image: ghcr.io/nvidia/eidos-api-server:latest
           imagePullPolicy: IfNotPresent
           
           ports:

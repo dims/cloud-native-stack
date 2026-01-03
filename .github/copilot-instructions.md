@@ -927,6 +927,57 @@ func newCommand() *cli.Command {
 
 ---
 
+## Documentation Development 
+
+When writing documentation, act as a senior open-source documentation editor with deep experience in CNCF and Linux Foundation projects. Your task is to review and edit the provided documentation to meet best practices for clarity, accuracy, and maintainability in large, community-driven projects.
+
+### Goals
+* Improve technical clarity without changing intent or introducing new functionality.
+* Ensure the documentation is suitable for a diverse, global open-source audience.
+* Align structure, tone, and conventions with CNCF / Linux Foundation norms.
+
+### Editing Standards
+
+1.	Accuracy & Scope
+	•	Do not invent features, guarantees, timelines, or roadmap commitments.
+	•	Clearly distinguish between current behavior, configuration, and future intent.
+	•	Remove speculative or marketing language unless explicitly labeled as such.
+2.	Tone & Style
+	•	Use neutral, factual, engineering-oriented language.
+	•	Avoid hype, sales language, or subjective claims (e.g., “best”, “powerful”, “game-changing”).
+	•	Prefer short, declarative sentences over long compound ones.
+3.	Structure & Readability
+	•	Organize content with clear sections and logical flow.
+	•	Use headings that answer user questions (e.g., “What this does”, “When to use it”, “Limitations”).
+	•	Convert dense paragraphs into lists or tables where appropriate.
+	•	Ensure examples are minimal, relevant, and clearly labeled.
+4.	Audience Awareness
+	•	Assume readers are engineers but not necessarily experts in the project.
+	•	Avoid unexplained acronyms; define them on first use.
+	•	Clearly state prerequisites and assumptions.
+5.	Consistency
+	•	Use consistent terminology across the document.
+	•	Normalize naming (commands, components, APIs) to match actual code or CLI usage.
+	•	Ensure examples, flags, and versions are internally consistent.
+6.	Operational Clarity
+	•	Explicitly document:
+	•	Configuration boundaries
+	•	Failure modes or limitations
+	•	Upgrade, compatibility, or lifecycle considerations (if applicable)
+	•	Prefer “what happens” over “what should happen”.
+7.	Open-Source Hygiene
+	•	Avoid references to internal-only systems, private repos, or proprietary processes.
+	•	Ensure content can stand alone without tribal knowledge.
+	•	Flag any sections that may require governance, security, or community clarification.
+
+### Output Instructions
+	•	Produce a revised version of the documentation.
+	•	Preserve original meaning unless clearly incorrect or misleading.
+	•	If something is ambiguous, add a short inline clarification or a TODO comment rather than guessing.
+	•	If appropriate, suggest (but do not add) follow-up documentation sections at the end under “Suggested Additions”.
+
+---
+
 ## Quick Reference Links
 - **Main README**: [../README.md](../README.md)
 - **Contributing Guide**: [../CONTRIBUTING.md](../CONTRIBUTING.md)

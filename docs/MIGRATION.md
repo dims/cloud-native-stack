@@ -1,16 +1,22 @@
-# Cloud Native Stack: Migration from Documentation-Driven to CLI Bundle Generation Approach
+# Cloud Native Stack: Migration from Documentation-Driven to CLI Bundle Generation
 
 ## Overview
 
-This document provides a comprehensive comparison between the traditional documentation-driven installation approach and the new CLI-based bundle generation approach for deploying NVIDIA Cloud Native Stack components.
+This document compares two approaches for deploying NVIDIA Cloud Native Stack components:
 
-**Current Status**: The CLI-based approach is fully implemented with GPU Operator and Network Operator bundlers, ConfigMap-native Kubernetes integration, and comprehensive E2E testing. Legacy documentation is preserved in [docs/v1](v1/) for reference, while new user/developer/integrator documentation is organized in dedicated directories.
+1. **Documentation-driven** (legacy): Manual installation following markdown guides and Ansible playbooks
+2. **CLI-driven** (current): Automated bundle generation from system snapshots or query parameters
 
-**Latest Features:**
-- ✅ ConfigMap URI support (`cm://namespace/name`) for Kubernetes-native storage
-- ✅ End-to-end testing validated with `tools/e2e` script
-- ✅ Supply chain security (SLSA Build Level 3, SBOM attestations)
-- ✅ Agent deployment with ConfigMap output (no volumes needed)
+**Current implementation status**:
+
+- CLI workflow: Snapshot → Recipe → Bundle (implemented)
+- Available bundlers: GPU Operator, Network Operator  
+- ConfigMap URI support: Read and write operations using `cm://namespace/name` syntax
+- Testing: End-to-end validation via `tools/e2e` script
+- Supply chain: SLSA Build Level 3 attestations, SBOM generation
+- Agent deployment: Kubernetes Job writes to ConfigMap (no PersistentVolume required)
+
+Legacy documentation is archived in `docs/v1/` directory.
 
 ---
 
@@ -136,7 +142,7 @@ eidos snapshot → eidos recipe → eidos bundle
   - Outputs to file, stdout, or **ConfigMap** (`cm://namespace/name`)
   - Kubernetes agent writes directly to ConfigMap (no volumes needed)
 - **Recipe**: Generates optimized recipes based on workload intent (training/inference)
-  - Can read from ConfigMap URIs for seamless Kubernetes integration
+  - Reads from ConfigMap URIs (`cm://namespace/name`) for Kubernetes integration
   - Outputs to file, stdout, or ConfigMap
 - **Bundle**: Creates deployment-ready bundles tailored to environment
   - Can read recipes from ConfigMap URIs
