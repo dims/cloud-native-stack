@@ -31,7 +31,7 @@ var (
 	outputFlag = &cli.StringFlag{
 		Name:    "output",
 		Aliases: []string{"o"},
-		Usage:   "output destination: file path, ConfigMap URI (cm://namespace/name), or stdout (default)",
+		Usage:   fmt.Sprintf("output destination: file path, ConfigMap URI (%snamespace/name), or stdout (default)", serializer.ConfigMapURIScheme),
 	}
 
 	formatFlag = &cli.StringFlag{
@@ -39,6 +39,12 @@ var (
 		Aliases: []string{"t"},
 		Value:   string(serializer.FormatYAML),
 		Usage:   fmt.Sprintf("output format (%s)", strings.Join(serializer.SupportedFormats(), ", ")),
+	}
+
+	kubeconfigFlag = &cli.StringFlag{
+		Name:    "kubeconfig",
+		Aliases: []string{"k"},
+		Usage:   "Path to kubeconfig file (overrides KUBECONFIG env and default ~/.kube/config)",
 	}
 )
 

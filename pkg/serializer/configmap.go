@@ -133,17 +133,17 @@ func (w *ConfigMapWriter) Close() error {
 // and returns the namespace and name components.
 // Returns an error if the URI is malformed.
 func parseConfigMapURI(uri string) (namespace, name string, err error) {
-	if !strings.HasPrefix(uri, "cm://") {
-		return "", "", fmt.Errorf("invalid ConfigMap URI: must start with cm://")
+	if !strings.HasPrefix(uri, ConfigMapURIScheme) {
+		return "", "", fmt.Errorf("invalid ConfigMap URI: must start with %s", ConfigMapURIScheme)
 	}
 
 	// Remove cm:// prefix
-	path := strings.TrimPrefix(uri, "cm://")
+	path := strings.TrimPrefix(uri, ConfigMapURIScheme)
 
 	// Split into namespace/name
 	parts := strings.SplitN(path, "/", 2)
 	if len(parts) != 2 {
-		return "", "", fmt.Errorf("invalid ConfigMap URI format: expected cm://namespace/name, got %s", uri)
+		return "", "", fmt.Errorf("invalid ConfigMap URI format: expected %snamespace/name, got %s", ConfigMapURIScheme, uri)
 	}
 
 	namespace = strings.TrimSpace(parts[0])

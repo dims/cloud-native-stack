@@ -18,6 +18,7 @@ import (
 // NodeSnapshotter collects system configuration measurements from the current node.
 // It coordinates multiple collectors in parallel to gather data about Kubernetes,
 // GPU hardware, OS configuration, and systemd services, then serializes the results.
+// If AgentConfig is provided with Enabled=true, it deploys a Kubernetes Job instead.
 type NodeSnapshotter struct {
 	// Version is the snapshotter version.
 	Version string
@@ -27,13 +28,28 @@ type NodeSnapshotter struct {
 
 	// Serializer is the serializer to use for output. If nil, a default stdout JSON serializer is used.
 	Serializer serializer.Serializer
+
+	// AgentConfig contains configuration for agent deployment mode. If nil or Enabled=false, runs locally.
+	AgentConfig *AgentConfig
 }
 
-// Measure collects configuration measurements from the current node and serializes the snapshot.
-// It runs collectors in parallel using errgroup for efficient data gathering.
+// Measure collects configuration measurements and serializes the snapshot.
+// If AgentConfig is enabled, it deploys a Kubernetes Job to capture the snapshot.
+// Otherwise, it runs collectors locally in parallel using errgroup.
 // If any collector fails, the entire operation returns an error.
 // The resulting snapshot is serialized using the configured Serializer.
 func (n *NodeSnapshotter) Measure(ctx context.Context) error {
+	// Check if agent deployment is requested
+	if n.AgentConfig != nil && n.AgentConfig.Enabled {
+		return n.measureWithAgent(ctx)
+	}
+
+	// Local measurement mode
+	return n.measure(ctx)
+}
+
+// measure collects configuration measurements from the current node.
+func (n *NodeSnapshotter) measure(ctx context.Context) error {
 	if n.Factory == nil {
 		n.Factory = collector.NewDefaultFactory()
 	}

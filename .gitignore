@@ -21,6 +21,7 @@ bin
 dist
 /eidos-api-server
 /eidos
+/eidos-test
 
 # Keys 
 cosign.*

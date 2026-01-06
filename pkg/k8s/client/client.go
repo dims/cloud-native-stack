@@ -12,6 +12,10 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
+// Interface is an alias for kubernetes.Interface to allow easier mocking in tests.
+// This enables using fake.NewSimpleClientset() which returns kubernetes.Interface.
+type Interface = kubernetes.Interface
+
 var (
 	clientOnce   sync.Once
 	cachedClient *kubernetes.Clientset
@@ -28,8 +32,8 @@ var (
 //   - ~/.kube/config (default location)
 //   - In-cluster service account (when running as Kubernetes Pod)
 //
-// For custom kubeconfig paths, use BuildKubeClient directly.
-func GetKubeClient() (*kubernetes.Clientset, *rest.Config, error) {
+// For custom kubeconfig paths, use GetKubeClientWithConfig.
+func GetKubeClient() (Interface, *rest.Config, error) {
 	clientOnce.Do(func() {
 		cachedClient, cachedConfig, clientErr = BuildKubeClient("")
 	})
@@ -83,4 +87,19 @@ func BuildKubeClient(kubeconfig string) (*kubernetes.Clientset, *rest.Config, er
 	}
 
 	return client, config, nil
+}
+
+// GetKubeClientWithConfig is a convenience wrapper around BuildKubeClient
+// that returns the Interface type for compatibility with agent.Deployer.
+// This is the recommended function for CLI commands that need custom kubeconfig paths.
+//
+// Parameters:
+//   - kubeconfig: Path to kubeconfig file
+//
+// Returns:
+//   - Interface: The Kubernetes client interface
+//   - *rest.Config: The rest configuration
+//   - error: Any error encountered
+func GetKubeClientWithConfig(kubeconfig string) (Interface, *rest.Config, error) {
+	return BuildKubeClient(kubeconfig)
 }

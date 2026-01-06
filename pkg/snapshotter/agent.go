@@ -1,0 +1,207 @@
+package snapshotter
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"strings"
+	"time"
+
+	"github.com/NVIDIA/cloud-native-stack/pkg/k8s/agent"
+	k8sclient "github.com/NVIDIA/cloud-native-stack/pkg/k8s/client"
+	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
+	corev1 "k8s.io/api/core/v1"
+)
+
+// AgentConfig contains configuration for Kubernetes agent deployment.
+type AgentConfig struct {
+	// Enabled determines whether to deploy agent or run locally
+	Enabled bool
+
+	// Kubeconfig path (optional override)
+	Kubeconfig string
+
+	// Namespace for agent deployment
+	Namespace string
+
+	// Image for agent container
+	Image string
+
+	// JobName for the agent Job
+	JobName string
+
+	// ServiceAccountName for the agent
+	ServiceAccountName string
+
+	// NodeSelector for targeting specific nodes
+	NodeSelector map[string]string
+
+	// Tolerations for scheduling on tainted nodes
+	Tolerations []corev1.Toleration
+
+	// Timeout for waiting for Job completion
+	Timeout time.Duration
+
+	// CleanupRBAC determines whether to remove RBAC on cleanup
+	CleanupRBAC bool
+
+	// Output destination for snapshot
+	Output string
+
+	// Debug enables debug logging
+	Debug bool
+}
+
+// ParseNodeSelectors parses node selector strings in format "key=value".
+func ParseNodeSelectors(selectors []string) (map[string]string, error) {
+	result := make(map[string]string)
+	for _, s := range selectors {
+		parts := strings.SplitN(s, "=", 2)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid format %q, expected key=value", s)
+		}
+		result[parts[0]] = parts[1]
+	}
+	return result, nil
+}
+
+// ParseTolerations parses toleration strings in format "key=value:effect" or "key:effect".
+func ParseTolerations(tolerations []string) ([]corev1.Toleration, error) {
+	result := make([]corev1.Toleration, 0, len(tolerations))
+	for _, t := range tolerations {
+		// Format: key=value:effect or key:effect (for exists operator)
+		var key, value, effect string
+
+		// Split by colon to get effect
+		parts := strings.Split(t, ":")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid format %q, expected key=value:effect or key:effect", t)
+		}
+		effect = parts[1]
+
+		// Parse key and value
+		if strings.Contains(parts[0], "=") {
+			kvParts := strings.SplitN(parts[0], "=", 2)
+			key = kvParts[0]
+			value = kvParts[1]
+		} else {
+			key = parts[0]
+			// No value means Exists operator
+		}
+
+		toleration := corev1.Toleration{
+			Key:    key,
+			Effect: corev1.TaintEffect(effect),
+		}
+
+		if value != "" {
+			toleration.Operator = corev1.TolerationOpEqual
+			toleration.Value = value
+		} else {
+			toleration.Operator = corev1.TolerationOpExists
+		}
+
+		result = append(result, toleration)
+	}
+	return result, nil
+}
+
+// measureWithAgent deploys a Kubernetes Job to capture snapshot on cluster nodes.
+func (n *NodeSnapshotter) measureWithAgent(ctx context.Context) error {
+	slog.Debug("starting agent deployment")
+
+	// Get Kubernetes client
+	var clientset k8sclient.Interface
+	var err error
+
+	if n.AgentConfig.Kubeconfig != "" {
+		clientset, _, err = k8sclient.GetKubeClientWithConfig(n.AgentConfig.Kubeconfig)
+	} else {
+		clientset, _, err = k8sclient.GetKubeClient()
+	}
+	if err != nil {
+		return fmt.Errorf("failed to create Kubernetes client: %w", err)
+	}
+
+	// Default output to ConfigMap if not specified
+	output := n.AgentConfig.Output
+	if output == "" {
+		output = fmt.Sprintf("%s%s/eidos-snapshot", serializer.ConfigMapURIScheme, n.AgentConfig.Namespace)
+	}
+
+	// Build agent configuration
+	agentConfig := agent.Config{
+		Namespace:          n.AgentConfig.Namespace,
+		ServiceAccountName: n.AgentConfig.ServiceAccountName,
+		JobName:            n.AgentConfig.JobName,
+		Image:              n.AgentConfig.Image,
+		NodeSelector:       n.AgentConfig.NodeSelector,
+		Tolerations:        n.AgentConfig.Tolerations,
+		Output:             output,
+		Debug:              n.AgentConfig.Debug,
+	}
+
+	// Create deployer
+	deployer := agent.NewDeployer(clientset, agentConfig)
+
+	// Ensure cleanup on error or success
+	defer func() {
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		cleanupOpts := agent.CleanupOptions{RemoveRBAC: n.AgentConfig.CleanupRBAC}
+		if cleanupErr := deployer.Cleanup(cleanupCtx, cleanupOpts); cleanupErr != nil {
+			slog.Error("cleanup failed", "error", cleanupErr)
+		}
+	}()
+
+	slog.Info("deploying agent", slog.String("namespace", agentConfig.Namespace))
+
+	// Deploy RBAC and Job
+	if deployErr := deployer.Deploy(ctx); deployErr != nil {
+		return fmt.Errorf("failed to deploy agent: %w", deployErr)
+	}
+
+	slog.Info("agent deployed successfully")
+
+	// Wait for Job completion
+	timeout := n.AgentConfig.Timeout
+	if timeout == 0 {
+		timeout = 5 * time.Minute
+	}
+
+	slog.Info("waiting for Job completion",
+		slog.String("job", agentConfig.JobName),
+		slog.Duration("timeout", timeout))
+
+	if waitErr := deployer.WaitForCompletion(ctx, timeout); waitErr != nil {
+		return fmt.Errorf("job failed: %w", waitErr)
+	}
+
+	slog.Info("job completed successfully")
+
+	// Retrieve snapshot from ConfigMap
+	slog.Debug("retrieving snapshot from ConfigMap")
+	snapshotData, err := deployer.GetSnapshot(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve snapshot: %w", err)
+	}
+
+	// Write snapshot to additional destinations if needed
+	switch {
+	case output == serializer.StdoutURI:
+		// Write to stdout
+		fmt.Println(string(snapshotData))
+	case strings.HasPrefix(output, serializer.ConfigMapURIScheme):
+		// Already in ConfigMap (written by Job)
+		slog.Info("snapshot saved to ConfigMap", slog.String("uri", output))
+	default:
+		// Write to file (in addition to ConfigMap)
+		if err := serializer.WriteToFile(output, snapshotData); err != nil {
+			return fmt.Errorf("failed to write snapshot to file: %w", err)
+		}
+		slog.Info("snapshot saved to file", slog.String("path", output))
+	}
+
+	return nil
+}

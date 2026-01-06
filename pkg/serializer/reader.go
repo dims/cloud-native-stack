@@ -308,7 +308,7 @@ func (r *Reader) Close() error {
 //	snap, err := FromFile[Snapshot]("cm://gpu-operator/eidos-snapshot")
 func FromFile[T any](path string) (*T, error) {
 	// Check for ConfigMap URI
-	if strings.HasPrefix(path, "cm://") {
+	if strings.HasPrefix(path, ConfigMapURIScheme) {
 		namespace, name, err := parseConfigMapURI(path)
 		if err != nil {
 			return nil, fmt.Errorf("invalid ConfigMap URI: %w", err)

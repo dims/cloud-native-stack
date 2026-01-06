@@ -84,7 +84,7 @@ func NewFileWriterOrStdout(format Format, path string) Serializer {
 	}
 
 	// Check for ConfigMap URI (cm://namespace/name)
-	if strings.HasPrefix(trimmed, "cm://") {
+	if strings.HasPrefix(trimmed, ConfigMapURIScheme) {
 		namespace, name, err := parseConfigMapURI(trimmed)
 		if err != nil {
 			slog.Error("invalid ConfigMap URI, falling back to stdout", "error", err, "uri", trimmed)
@@ -289,4 +289,21 @@ func serializeTable(data any) ([]byte, error) {
 		return nil, fmt.Errorf("failed to flush table: %w", err)
 	}
 	return []byte(builder.String()), nil
+}
+
+// WriteToFile writes data to a file at the specified path.
+// This is a convenience function for writing raw byte data to a file.
+// The file is created with 0644 permissions.
+func WriteToFile(path string, data []byte) error {
+	file, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %w", err)
+	}
+	defer file.Close()
+
+	if _, err := file.Write(data); err != nil {
+		return fmt.Errorf("failed to write data: %w", err)
+	}
+
+	return nil
 }
