@@ -151,6 +151,7 @@ func TestGetKubeClient_Singleton(t *testing.T) {
 	}
 
 	// Both calls should return the same error value
+	// nolint:errorlint // intentionally checking pointer equality (singleton pattern)
 	if err1 != err2 {
 		t.Errorf("GetKubeClient() should return same error instance: first=%v, second=%v", err1, err2)
 	}

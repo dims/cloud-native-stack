@@ -96,7 +96,7 @@ if err := g.Wait(); err != nil {
 **Patterns Implemented**:
 - **Rate Limiting**: Token bucket (`golang.org/x/time/rate`)  
 - **Graceful Shutdown**: Signal handling with deadline-based cleanup  
-- **Observability**: Prometheus metrics, structured logging, request tracing  
+- **Observability**: Prometheus metrics, structured logging (three modes: CLI/Text/JSON), request tracing  
 - **Resilience**: Panic recovery, timeout enforcement, circuit breaker patterns  
 
 **References**:  
@@ -556,7 +556,10 @@ securityContext:
 - **USE Method**: Utilization, Saturation, Errors for resources  
 - **Custom**: Recipe cache hit rate, collector success rate
 
-**2. Logs** (Structured JSON via slog)  
+**2. Logs** (Three modes via slog)  
+- **CLI Mode** (default): Minimal user-friendly output, red ANSI color for errors
+- **Text Mode** (--debug): Key=value format with full metadata
+- **JSON Mode** (--log-json): Structured JSON for machine parsing
 - **Levels**: DEBUG, INFO, WARN, ERROR  
 - **Context**: Request ID, user ID, trace ID  
 - **Sampling**: 1/100 for DEBUG in production

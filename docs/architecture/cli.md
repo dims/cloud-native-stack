@@ -154,12 +154,26 @@ func main() {
 **Responsibilities:**
 - Command registration and routing
 - Version information injection (via ldflags)
-- Global flag handling (debug mode)
-- Structured logging initialization
+- Global flag handling (debug mode, log formatting)
+- Logging mode selection and initialization
 
 **Key Features:**
 - Version info: `version`, `commit`, `date` (overridden at build time)
-- Debug flag: `--debug` → Sets log level to debug
+- Three logging modes:
+  - **CLI Mode (default)**: Minimal output for users (`SetDefaultCLILogger`)
+  - **Text Mode (`--debug`)**: Full metadata for debugging (`SetDefaultLoggerWithLevel`)
+  - **JSON Mode (`--log-json`)**: Structured logs for automation (`SetDefaultStructuredLoggerWithLevel`)
+- Logger selection logic:
+  ```go
+  switch {
+  case c.Bool("log-json"):
+      logging.SetDefaultStructuredLoggerWithLevel(name, version, logLevel)
+  case isDebug:
+      logging.SetDefaultLoggerWithLevel(name, version, logLevel)
+  default:
+      logging.SetDefaultCLILogger(logLevel)
+  }
+  ```
 - Shell completion support
 - Command listing for auto-completion
 

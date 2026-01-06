@@ -3,13 +3,16 @@
 // # Overview
 //
 // This package wraps the standard library slog package with CNS-specific defaults
-// and conventions for consistent logging across all components. It supports
-// environment-based log level configuration, module/version context injection,
-// and automatic source location tracking for debug logs.
+// and conventions for consistent logging across all components. It supports three
+// logging modes: structured JSON (machine-readable), text with metadata (debugging),
+// and CLI (user-friendly minimal output).
 //
 // # Features
 //
+//   - Three logging modes: JSON, Text, CLI
+//   - CLI mode: Minimal output with ANSI color support (red for errors)
 //   - Structured JSON logging to stderr
+//   - Text logging with full metadata for debugging
 //   - Environment-based log level configuration (LOG_LEVEL)
 //   - Automatic module and version context
 //   - Source location tracking for debug logs
@@ -26,19 +29,39 @@
 //
 // # Usage
 //
-// Setting the default logger (recommended):
+// # Logging Modes
+//
+// The package provides three logging modes:
+//
+// 1. **CLI Mode (default for CLI applications)**: Minimal user-friendly output
+//
+//	logging.SetDefaultCLILogger(slog.LevelInfo)
+//	slog.Info("Snapshot captured successfully")  // Output: Snapshot captured successfully
+//	slog.Error("Failed to connect")              // Output: Failed to connect (in red)
+//
+// 2. **Text Mode (--debug flag)**: Human-readable with metadata
+//
+//	logging.SetDefaultLoggerWithLevel("eidos", "v1.0.0", "debug")
+//	// Output: time=2025-01-06T10:30:00.123Z level=INFO module=eidos version=v1.0.0 msg="server started"
+//
+// 3. **JSON Mode (--log-json flag)**: Machine-readable structured logs
+//
+//	logging.SetDefaultStructuredLogger("eidos", "v1.0.0")
+//	// Output: {"time":"2025-01-06T10:30:00.123Z","level":"INFO","module":"eidos","version":"v1.0.0","msg":"server started"}
+//
+// Setting the default logger (CLI mode for user-facing tools):
 //
 //	func main() {
-//	    logging.SetDefaultStructuredLogger("eidos", "v1.0.0")
-//	    defer slog.Debug("application started")
+//	    logging.SetDefaultCLILogger(slog.LevelInfo)
+//	    slog.Info("application started")
 //
-//	    // Use slog as normal
-//	    slog.Debug("processing request", "id", "req-123")
-//	    slog.Debug("detailed state", "data", complexObject)
-//	    slog.Error("operation failed", "error", err)
+//	    // Errors display in red
+//	    if err != nil {
+//	        slog.Error("operation failed")
+//	    }
 //	}
 //
-// Creating a custom logger:
+// Creating a custom structured logger for API servers:
 //
 //	logger := logging.NewStructuredLogger("api-server", "v2.0.0", "debug")
 //	logger.Debug("server starting", "port", 8080)
@@ -63,10 +86,21 @@
 //
 // # Output Format
 //
-// All logs are written to stderr in JSON format:
+// Output format depends on the logging mode:
+//
+// **CLI Mode (default)**: Minimal output, just message text
+//
+//	Snapshot captured successfully
+//	Failed to connect  (in red ANSI color)
+//
+// **Text Mode (--debug)**: Key=value format with metadata
+//
+//	time=2025-01-06T10:30:00.123Z level=INFO module=eidos version=v1.0.0 msg="server started" port=8080
+//
+// **JSON Mode (--log-json)**: Structured JSON to stderr
 //
 //	{
-//	    "time": "2025-01-15T10:30:00.123Z",
+//	    "time": "2025-01-06T10:30:00.123Z",
 //	    "level": "INFO",
 //	    "msg": "server started",
 //	    "module": "api-server",
@@ -74,10 +108,10 @@
 //	    "port": 8080
 //	}
 //
-// Debug logs include source location:
+// Debug logs in JSON mode include source location:
 //
 //	{
-//	    "time": "2025-01-15T10:30:00.123Z",
+//	    "time": "2025-01-06T10:30:00.123Z",
 //	    "level": "DEBUG",
 //	    "source": {
 //	        "function": "main.processRequest",
@@ -91,8 +125,16 @@
 //
 // # Best Practices
 //
-// 1. Set default logger early in main():
+// 1. Set default logger early in main() based on application type:
 //
+//	// CLI applications: Use CLI logger for user-friendly output
+//	func main() {
+//	    logging.SetDefaultCLILogger(slog.LevelInfo)
+//	    slog.Info("application started")
+//	    // ...
+//	}
+//
+//	// API servers: Use structured JSON logger
 //	func main() {
 //	    logging.SetDefaultStructuredLogger("myapp", version)
 //	    defer slog.Debug("application started")

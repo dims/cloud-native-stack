@@ -399,12 +399,13 @@ The e2e script:
 |----------|---------|-------------|
 | `PORT` | 8080 | HTTP server port |
 | `LOG_LEVEL` | info | Logging level: debug, info, warn, error |
-| `LOG_FORMAT` | json | Log format: json, text |
 | `RATE_LIMIT` | 100 | Requests per second |
 | `RATE_BURST` | 200 | Burst capacity |
 | `READ_TIMEOUT` | 30s | HTTP read timeout |
 | `WRITE_TIMEOUT` | 30s | HTTP write timeout |
 | `IDLE_TIMEOUT` | 60s | HTTP idle timeout |
+
+**Note:** The API server uses structured JSON logging to stderr. The CLI supports three logging modes (CLI/Text/JSON), but the API server always uses JSON for consistent log aggregation.
 
 ### ConfigMap for Custom Recipe Data (Advanced)
 

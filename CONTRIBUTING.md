@@ -1253,6 +1253,10 @@ func Process(config Config) error {
 ### Logging
 
 - **Use structured logging**: Use `pkg/logging` package with slog
+- **Three logging modes**:
+  - **CLI Mode** (default): Minimal user-friendly output, just message text with red ANSI color for errors
+  - **Text Mode** (--debug): Key=value format with full metadata (time, level, source, module, version)
+  - **JSON Mode** (--log-json): Structured JSON format for machine parsing
 - **Appropriate levels**:
   - `Debug`: Detailed diagnostic information
   - `Info`: General informational messages
@@ -1275,6 +1279,19 @@ func ProcessRequest(ctx context.Context, id string) error {
     
     slog.Debug("request processed successfully", "id", id)
     return nil
+}
+```
+
+**Logger Selection in CLI**:
+```go
+// In pkg/cli/root.go
+switch {
+case c.Bool("log-json"):
+    logging.SetDefaultStructuredLoggerWithLevel(name, version, logLevel)
+case isDebug:
+    logging.SetDefaultLoggerWithLevel(name, version, logLevel)
+default:
+    logging.SetDefaultCLILogger(logLevel)  // Clean output for users
 }
 ```
 

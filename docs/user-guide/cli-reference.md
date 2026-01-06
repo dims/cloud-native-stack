@@ -22,9 +22,42 @@ Available for all commands:
 
 | Flag | Short | Type | Default | Description |
 |------|-------|------|---------|-------------|
-| `--debug` | `-d` | bool | false | Enable debug logging |
+| `--debug` | `-d` | bool | false | Enable debug logging (text mode with full metadata) |
+| `--log-json` | | bool | false | Enable JSON logging (structured output for machine parsing) |
 | `--help` | `-h` | bool | false | Show help |
 | `--version` | `-v` | bool | false | Show version |
+
+### Logging Modes
+
+Eidos supports three logging modes:
+
+1. **CLI Mode (default)**: Minimal user-friendly output
+   - Just message text without timestamps or metadata
+   - Error messages display in red (ANSI color)
+   - Example: `Snapshot captured successfully`
+
+2. **Text Mode (`--debug`)**: Debug output with full metadata
+   - Key=value format with time, level, source location
+   - Example: `time=2025-01-06T10:30:00.123Z level=INFO module=eidos version=v1.0.0 msg="snapshot started"`
+
+3. **JSON Mode (`--log-json`)**: Structured JSON for automation
+   - Machine-readable format for log aggregation
+   - Example: `{"time":"2025-01-06T10:30:00.123Z","level":"INFO","msg":"snapshot started"}`
+
+**Examples:**
+```shell
+# Default: Clean CLI output
+eidos snapshot
+
+# Debug mode: Full metadata
+eidos --debug snapshot
+
+# JSON mode: Structured logs
+eidos --log-json snapshot
+
+# Combine with other flags
+eidos --debug --output system.yaml snapshot
+```
 
 ## Commands
 
