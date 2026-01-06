@@ -53,7 +53,7 @@ func (d *Deployer) buildJob() *batchv1.Job {
 	// Build command arguments
 	args := fmt.Sprintf("/ko-app/eidos snapshot -o %s", d.config.Output)
 	if d.config.Debug {
-		args = fmt.Sprintf("/ko-app/eidos --debug snapshot -o %s", d.config.Output)
+		args = fmt.Sprintf("/ko-app/eidos --debug --log-json snapshot -o %s", d.config.Output)
 	}
 
 	return &batchv1.Job{

@@ -52,7 +52,7 @@ spec:
           args:
             - |
               set -e
-              /ko-app/eidos --debug snapshot -o cm://gpu-operator/eidos-snapshot
+              /ko-app/eidos --debug --log-json snapshot -o cm://gpu-operator/eidos-snapshot
           resources:
             requests:
               cpu: "1"

@@ -4,9 +4,12 @@ import (
 	"context"
 	"testing"
 
+	authv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 )
 
 const testName = "eidos"
@@ -265,6 +268,17 @@ func TestDeployer_EnsureJob(t *testing.T) {
 
 func TestDeployer_Deploy(t *testing.T) {
 	clientset := fake.NewClientset()
+
+	// Mock SelfSubjectAccessReview to allow all permissions
+	clientset.PrependReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		return true, &authv1.SelfSubjectAccessReview{
+			Status: authv1.SubjectAccessReviewStatus{
+				Allowed: true,
+				Reason:  "test permissions allowed",
+			},
+		}, nil
+	})
+
 	config := Config{
 		Namespace:          "test-namespace",
 		ServiceAccountName: testName,
@@ -325,6 +339,17 @@ func TestDeployer_Deploy(t *testing.T) {
 
 func TestDeployer_Cleanup(t *testing.T) {
 	clientset := fake.NewClientset()
+
+	// Mock SelfSubjectAccessReview to allow all permissions
+	clientset.PrependReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		return true, &authv1.SelfSubjectAccessReview{
+			Status: authv1.SubjectAccessReviewStatus{
+				Allowed: true,
+				Reason:  "test permissions allowed",
+			},
+		}, nil
+	})
+
 	config := Config{
 		Namespace:          "test-namespace",
 		ServiceAccountName: testName,

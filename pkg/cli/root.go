@@ -67,6 +67,11 @@ func Execute() {
 				Usage:   "enable debug logging",
 				Sources: cli.EnvVars("EIDOS_DEBUG"),
 			},
+			&cli.BoolFlag{
+				Name:    "log-json",
+				Usage:   "enable structured logging",
+				Sources: cli.EnvVars("EIDOS_LOG_JSON"),
+			},
 		},
 		Before: func(ctx context.Context, c *cli.Command) (context.Context, error) {
 			isDebug := c.Bool("debug")
@@ -74,7 +79,19 @@ func Execute() {
 			if isDebug {
 				logLevel = "debug"
 			}
-			logging.SetDefaultStructuredLoggerWithLevel(name, version, logLevel)
+
+			// Configure logger based on flags
+			switch {
+			case c.Bool("log-json"):
+				logging.SetDefaultStructuredLoggerWithLevel(name, version, logLevel)
+			case isDebug:
+				// In debug mode, use text logger with full metadata
+				logging.SetDefaultLoggerWithLevel(name, version, logLevel)
+			default:
+				// Default mode: use CLI logger for clean, user-friendly output
+				logging.SetDefaultCLILogger(logLevel)
+			}
+
 			slog.Debug("starting",
 				"name", name,
 				"version", version,
