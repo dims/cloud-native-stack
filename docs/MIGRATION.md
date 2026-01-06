@@ -16,20 +16,20 @@ This document compares two approaches for deploying NVIDIA Cloud Native Stack co
 - Supply chain: SLSA Build Level 3 attestations, SBOM generation
 - Agent deployment: Kubernetes Job writes to ConfigMap (no PersistentVolume required)
 
-Legacy documentation is archived in `docs/v1/` directory.
+Legacy documentation is archived in `cns-v1/` directory.
 
 ---
 
 ## PREVIOUS APPROACH: Documentation-Driven Installation
 
-### Structure (Now in docs/v1/)
+### Structure (Now in cns-v1/)
 
-- **docs/v1/install-guides/**: 14+ platform/version-specific markdown guides (e.g., Ubuntu-24-04_Server_x86-arm64_v16.0.md)
-- **docs/v1/playbooks/**: Ansible automation with version-specific YAML files (cns_values_14.0.yaml, 15.0, 16.0, etc.)
-- **docs/v1/optimizations/**: Hardware-specific tuning guides (GB200-NVL72.md)
-- **docs/v1/troubleshooting/**: Issue resolution guides
+- **cns-v1/install-guides/**: 14+ platform/version-specific markdown guides (e.g., Ubuntu-24-04_Server_x86-arm64_v16.0.md)
+- **cns-v1/playbooks/**: Ansible automation with version-specific YAML files (cns_values_14.0.yaml, 15.0, 16.0, etc.)
+- **cns-v1/optimizations/**: Hardware-specific tuning guides (GB200-NVL72.md)
+- **cns-v1/troubleshooting/**: Issue resolution guides
 
-**Note**: All legacy documentation has been preserved in the docs/v1/ directory.
+**Note**: All legacy documentation has been preserved in the cns-v1/ directory.
 
 ### Characteristics
 
@@ -386,7 +386,7 @@ eidos recipe -f cm://gpu-operator/eidos-snapshot --intent training -o recipe.yam
 **Reasoning**: These are foundational infrastructure components that bundles layer on top of.
 
 #### 3. Platform-Specific Optimizations
-**Current Location**: docs/optimizations/GB200-NVL72.md
+**Current Location**: cns-v1/optimizations/GB200-NVL72.md
 
 **Example GB200 Optimizations:**
 ```bash
@@ -413,7 +413,7 @@ iommu.passthrough=1
 **Potential**: Each could have dedicated bundler implementation.
 
 #### 5. Troubleshooting Automation
-**Current Location**: docs/troubleshooting/
+**Current Location**: cns-v1/troubleshooting/
 
 **Potential Enhancements:**
 - Add validation/diagnostic commands to bundles
@@ -532,7 +532,7 @@ iommu.passthrough=1
    - ✅ **docs/user-guide/**: Installation, CLI reference, agent deployment
    - ✅ **docs/integration/**: API reference, data flow, automation, Kubernetes deployment
    - ✅ **docs/architecture/**: System design, bundler development, data architecture
-   - ✅ **docs/v1/**: Legacy documentation preserved for reference
+   - ✅ **cns-v1/**: Legacy documentation preserved for reference
 
 2. **CLI-First Workflow Documentation**
    - Primary recommendation: `eidos snapshot → recipe → bundle → deploy`
@@ -541,7 +541,7 @@ iommu.passthrough=1
    - API integration patterns for automation
 
 3. **Legacy Documentation Preserved**
-   - All v1 documentation available in docs/v1/
+   - All v1 documentation available in cns-v1/
    - Ansible playbooks for full-stack automation
    - Platform-specific installation guides
    - Useful for understanding historical context and alternative approaches
@@ -572,7 +572,7 @@ iommu.passthrough=1
 - ✅ **Agent deployment** - ConfigMap output (no volume dependencies)
 
 **Legacy Preserved:**
-- ✅ All v1 documentation in docs/v1/
+- ✅ All v1 documentation in cns-v1/
 - ✅ Ansible playbooks for full-stack automation
 - ✅ Platform-specific installation guides (14+ guides)
 - ✅ Version matrices and component tracking
@@ -611,7 +611,7 @@ The project has successfully transitioned from a **documentation-driven** approa
 3. Contribute following [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 **For Legacy Approach:**
-- All legacy documentation remains in [docs/v1](v1/)
+- All legacy documentation remains in [cns-v1](../cns-v1/)
 - Ansible playbooks still available for full-stack automation
 - Useful for understanding historical context and alternative deployment methods
 

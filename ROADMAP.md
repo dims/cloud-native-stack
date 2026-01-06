@@ -178,7 +178,7 @@ Current recipes are largely generic and do not encode hardware-specific tuning.
 - [ ] Documentation describing rationale and trade-offs
 
 **Reference**
-- `docs/v1/optimizations/GB200-NVL72.md`
+- `cns-v1/optimizations/GB200-NVL72.md`
 
 #### Bundlers & Deployment Artifacts
 
