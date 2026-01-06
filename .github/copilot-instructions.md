@@ -162,7 +162,9 @@ measurement.NewMeasurement(measurement.TypeK8s).
 
 **4. Singleton Pattern (K8s Client)**
 ```go
-client, config, err := k8s.GetKubeClient()  // Uses sync.Once
+import "github.com/NVIDIA/cloud-native-stack/pkg/k8s/client"
+
+clientset, config, err := client.GetKubeClient()  // Uses sync.Once
 ```
 
 ### Error Handling (Required Pattern)
@@ -426,7 +428,7 @@ eidos bundle --recipe recipe.yaml --output ./bundles
 
 ### Integration Points
 
-- **Kubernetes**: Singleton client via `k8s.GetKubeClient()`
+- **Kubernetes**: Singleton client via `pkg/k8s/client.GetKubeClient()`
 - **NVIDIA Operators**: GPU Operator, Network Operator, NIM Operator, Nsight Operator
 - **Container Images**: ghcr.io/nvidia/eidos, ghcr.io/nvidia/eidos-api-server
 - **Observability**: Prometheus metrics at `/metrics`, structured JSON logs to stderr

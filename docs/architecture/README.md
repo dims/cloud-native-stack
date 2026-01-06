@@ -122,6 +122,27 @@ if err := g.Wait(); err != nil {
 **Rationale**: Prevents resource leaks; enables graceful degradation  
 **Reference**: [Go Context Package](https://pkg.go.dev/context)
 
+### 9. Kubernetes Client Singleton
+**Pattern**: Cached Kubernetes client with `sync.Once` initialization  
+**Location**: `pkg/k8s/client` package  
+**Rationale**: Prevents connection exhaustion and reduces load on Kubernetes API server  
+**Trade-offs**: Single client instance vs flexibility; appropriate for read-heavy workloads  
+**Reference**: [Go sync.Once](https://pkg.go.dev/sync#Once)
+
+**Implementation**:
+```go
+import "github.com/NVIDIA/cloud-native-stack/pkg/k8s/client"
+
+// First call creates client; subsequent calls return cached instance
+clientset, config, err := client.GetKubeClient()
+```
+
+**Authentication Modes**:
+- **In-cluster**: Uses service account credentials automatically
+- **Out-of-cluster**: Loads from `KUBECONFIG` environment variable or `~/.kube/config`
+
+**Usage in Collectors**: The K8s collector and ConfigMap serializer both use this singleton to ensure efficient connection reuse across all Kubernetes API operations.
+
 ## Deployment Topologies
 
 ### Topology 1: Standalone CLI
@@ -222,6 +243,7 @@ flowchart TD
     PKG --> SVR
     PKG --> BUN
     PKG --> SNAP
+    PKG --> K8SCLI
     
     COLL["collector/<br/>System data collection<br/>(OS, K8s, GPU, SystemD)<br/>Parallel with errgroup"]
     MEAS["measurement/<br/>Data model for<br/>collected metrics<br/>Builder pattern"]
@@ -232,6 +254,7 @@ flowchart TD
     SVR["server/<br/>HTTP server<br/>infrastructure (API only)<br/>Rate limiting, metrics"]
     BUN["bundler/<br/>Parallel bundle generation<br/>(Helm, manifests, scripts)<br/>Registry pattern + BaseBundler helper<br/>Internal utilities (15+ helpers)<br/>TestHarness for standardized testing"]
     SNAP["snapshotter/<br/>Orchestrates parallel<br/>collector execution<br/>Measurement aggregation"]
+    K8SCLI["k8s/client/<br/>Singleton Kubernetes client<br/>In-cluster & kubeconfig<br/>Connection reuse (sync.Once)"]
 ```
 
 ## Data Flow

@@ -11,10 +11,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/NVIDIA/cloud-native-stack/pkg/k8s/client"
 	"gopkg.in/yaml.v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/NVIDIA/cloud-native-stack/pkg/collector/k8s"
 )
 
 // FormatFromPath determines the serialization format based on file extension.
@@ -356,7 +355,7 @@ func FromFile[T any](path string) (*T, error) {
 
 // fromConfigMap reads and deserializes data from a Kubernetes ConfigMap.
 func fromConfigMap[T any](namespace, name string) (*T, error) {
-	client, _, err := k8s.GetKubeClient()
+	client, _, err := client.GetKubeClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get kubernetes client: %w", err)
 	}

@@ -7,11 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/NVIDIA/cloud-native-stack/pkg/k8s/client"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/NVIDIA/cloud-native-stack/pkg/collector/k8s"
 )
 
 // ConfigMapWriter writes serialized data to a Kubernetes ConfigMap.
@@ -42,7 +41,7 @@ func NewConfigMapWriter(namespace, name string, format Format) *ConfigMapWriter 
 // - data.format: The format used (yaml or json)
 // - data.timestamp: ISO 8601 timestamp of when the snapshot was created
 func (w *ConfigMapWriter) Serialize(snapshot any) error {
-	client, _, err := k8s.GetKubeClient()
+	client, _, err := client.GetKubeClient()
 	if err != nil {
 		return fmt.Errorf("failed to get kubernetes client: %w", err)
 	}

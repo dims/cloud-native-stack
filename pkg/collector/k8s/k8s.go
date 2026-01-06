@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/NVIDIA/cloud-native-stack/pkg/k8s/client"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -70,7 +71,7 @@ func (k *Collector) getClient() error {
 		return nil
 	}
 	var err error
-	k.ClientSet, k.RestConfig, err = GetKubeClient()
+	k.ClientSet, k.RestConfig, err = client.GetKubeClient()
 	if err != nil {
 		return fmt.Errorf("failed to get kubernetes client: %w", err)
 	}

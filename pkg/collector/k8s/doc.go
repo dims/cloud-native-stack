@@ -54,16 +54,16 @@
 //
 // # Kubernetes Client
 //
-// The collector uses the standard Kubernetes client:
+// The collector uses the centralized Kubernetes client from pkg/k8s/client:
 //
-//	// Automatically uses in-cluster config when running as pod
-//	client, _, err := k8s.GetKubeClient()
+//	import "github.com/NVIDIA/cloud-native-stack/pkg/k8s/client"
 //
-//	// Or specify kubeconfig path
-//	client, _, err := k8s.GetKubeClientWithConfig(kubeconfigPath)
+//	// Automatically uses in-cluster config when running as pod, or kubeconfig
+//	clientset, config, err := client.GetKubeClient()
 //
 // The client is cached using sync.Once for efficient reuse across multiple
-// collector calls.
+// collector calls. The k8s/client package handles both in-cluster (service account)
+// and out-of-cluster (kubeconfig) authentication automatically.
 //
 // # Provider Detection
 //
