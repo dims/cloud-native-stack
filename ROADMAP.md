@@ -4,8 +4,7 @@
 > Priorities may evolve based on validation results, partner feedback, and community input.
 
 **Announcement Goal**  
-The initial public announcement target for the next generation of Cloud Native Stack is **KubeCon + CloudNativeCon Europe (March 2026)**.  
-Near-term and launch-blocking items are prioritized to support this milestone.
+The initial public announcement target for the next generation of Cloud Native Stack is **KubeCon + CloudNativeCon Europe (March 2026)**. Near-term and launch-blocking items are prioritized to support this milestone.
 
 **Table of Contents**
 - [High-Level Roadmap](#high-level-roadmap)
