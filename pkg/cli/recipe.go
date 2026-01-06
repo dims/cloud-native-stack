@@ -105,6 +105,7 @@ The recipe can be output in JSON, YAML, or table format.`,
 			// Load snapshot
 			snapFilePath := cmd.String("snapshot")
 			if snapFilePath != "" {
+				slog.Info("loading snapshot from", "uri", snapFilePath)
 				snap, err := serializer.FromFileWithKubeconfig[snapshotter.Snapshot](snapFilePath, cmd.String("kubeconfig"))
 				if err != nil {
 					return fmt.Errorf("failed to load snapshot from %q: %w", snapFilePath, err)
@@ -115,6 +116,7 @@ The recipe can be output in JSON, YAML, or table format.`,
 					return fmt.Errorf("error building recipe from snapshot: %w", err)
 				}
 			} else {
+				slog.Info("building snapshot from query")
 				q, err := buildQueryFromCmd(cmd)
 				if err != nil {
 					return fmt.Errorf("error parsing recipe input parameter: %w", err)
@@ -126,7 +128,8 @@ The recipe can be output in JSON, YAML, or table format.`,
 				}
 			}
 
-			ser := serializer.NewFileWriterOrStdout(outFormat, cmd.String("output"))
+			output := cmd.String("output")
+			ser := serializer.NewFileWriterOrStdout(outFormat, output)
 			defer func() {
 				if closer, ok := ser.(interface{ Close() error }); ok {
 					if err := closer.Close(); err != nil {
@@ -135,7 +138,13 @@ The recipe can be output in JSON, YAML, or table format.`,
 				}
 			}()
 
-			return ser.Serialize(rec)
+			if err := ser.Serialize(rec); err != nil {
+				return fmt.Errorf("failed to serialize recipe: %w", err)
+			}
+
+			slog.Info("recipe generation completed", "output", output)
+
+			return nil
 		},
 	}
 }
