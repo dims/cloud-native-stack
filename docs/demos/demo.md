@@ -1,8 +1,8 @@
 # eidos demo
 
-> Note: latest CNS updates are all in a fork (https://github.com/mchmarny/cloud-native-stack/tree/main). Some of the links in there won’t work until PR is merged upstream. Here are the key bits you can use today: 
-
 ![demo overview](./demo.png)
+
+> Note: latest CNS updates are all in a fork (https://github.com/mchmarny/cloud-native-stack/tree/main). Some of the links in there won’t work until PR is merged upstream. Here are the key bits you can use today.
 
 ## Install
 
