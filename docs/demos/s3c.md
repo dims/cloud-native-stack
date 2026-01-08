@@ -1,6 +1,6 @@
 # eidos s3c demo
 
-![software supply chain security](./s3c.png)
+![software supply chain security](images/s3c.png)
 
 Cloud Native Stack (CNS) provides supply chain security artifacts:
 
