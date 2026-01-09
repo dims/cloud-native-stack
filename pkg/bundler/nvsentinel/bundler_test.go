@@ -142,8 +142,12 @@ func createTestRecipe() *internal.RecipeBuilder {
 			internal.ImageSubtype(map[string]string{
 				"nvsentinel": testVersion,
 			}),
-			internal.RegistrySubtype(map[string]string{
-				"uri": "ghcr.io/nvidia",
-			}),
+			measurement.Subtype{
+				Name: "nvsentinel-config",
+				Data: map[string]measurement.Reading{
+					"helm_chart_repo":   measurement.Str("oci://ghcr.io/nvidia/nvsentinel"),
+					"helm_release_name": measurement.Str("nvsentinel"),
+				},
+			},
 		)
 }

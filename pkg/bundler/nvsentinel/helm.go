@@ -52,9 +52,10 @@ func (v *HelmValues) extractK8sSettings(m *measurement.Measurement) {
 		if st.Name == "image" {
 			if val, ok := st.Data["nvsentinel"]; ok {
 				if s, ok := val.Any().(string); ok {
+					ctx := common.GetFieldContext(st.Context, "nvsentinel", subtypeContext)
 					v.NVSentinelVersion = common.ValueWithContext{
 						Value:   s,
-						Context: subtypeContext,
+						Context: ctx,
 					}
 				}
 			}

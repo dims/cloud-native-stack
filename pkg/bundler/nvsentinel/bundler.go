@@ -131,11 +131,17 @@ func (b *Bundler) extractK8sConfig(m *measurement.Measurement, configMap map[str
 			}
 		}
 
-		if st.Name == "registry" {
-			// Registry URI
-			if val, ok := st.Data["uri"]; ok {
+		if st.Name == "nvsentinel-config" {
+			// Helm chart repository
+			if val, ok := st.Data["helm_chart_repo"]; ok {
 				if s, ok := val.Any().(string); ok {
 					configMap["helm_chart_repo"] = s
+				}
+			}
+			// Helm release name
+			if val, ok := st.Data["helm_release_name"]; ok {
+				if s, ok := val.Any().(string); ok {
+					configMap["helm_release_name"] = s
 				}
 			}
 		}

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	common "github.com/NVIDIA/cloud-native-stack/pkg/bundler/internal"
+	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 )
 
@@ -30,5 +31,41 @@ func GenerateScriptData(recipe *recipe.Recipe, config map[string]string) *Script
 		NVSentinelVersion: common.ValueWithContext{Value: common.GetConfigValue(config, "nvsentinel_version", "v0.6.0")},
 	}
 
+	// Extract NVSentinel configuration from recipe measurements
+	for _, m := range recipe.Measurements {
+		if m.Type == measurement.TypeK8s {
+			data.extractK8sSettings(m)
+		}
+	}
+
 	return data
+}
+
+// extractK8sSettings extracts Kubernetes-related settings from measurements.
+func (s *ScriptData) extractK8sSettings(m *measurement.Measurement) {
+	for _, st := range m.Subtypes {
+		subtypeContext := common.GetSubtypeContext(st.Context)
+
+		// Extract configuration from 'nvsentinel-config' subtype
+		if st.Name == "nvsentinel-config" {
+			if val, ok := st.Data["helm_chart_repo"]; ok {
+				if repoStr, ok := val.Any().(string); ok {
+					ctx := common.GetFieldContext(st.Context, "helm_chart_repo", subtypeContext)
+					s.HelmChartRepo = common.ValueWithContext{
+						Value:   repoStr,
+						Context: ctx,
+					}
+				}
+			}
+			if val, ok := st.Data["helm_release_name"]; ok {
+				if releaseStr, ok := val.Any().(string); ok {
+					ctx := common.GetFieldContext(st.Context, "helm_release_name", subtypeContext)
+					s.HelmReleaseName = common.ValueWithContext{
+						Value:   releaseStr,
+						Context: ctx,
+					}
+				}
+			}
+		}
+	}
 }

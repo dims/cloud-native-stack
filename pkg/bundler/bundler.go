@@ -17,6 +17,7 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 
 	// Import bundler packages for auto-registration via init()
+	_ "github.com/NVIDIA/cloud-native-stack/pkg/bundler/certmanager"
 	_ "github.com/NVIDIA/cloud-native-stack/pkg/bundler/gpuoperator"
 	_ "github.com/NVIDIA/cloud-native-stack/pkg/bundler/networkoperator"
 	_ "github.com/NVIDIA/cloud-native-stack/pkg/bundler/nvsentinel"

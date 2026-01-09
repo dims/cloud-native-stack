@@ -13,6 +13,7 @@ const (
 	BundleTypeNetworkOperator BundleType = "network-operator"
 	BundleTypeSkyhook         BundleType = "skyhook"
 	BundleTypeNVSentinel      BundleType = "nvsentinel"
+	BundleTypeCertManager     BundleType = "cert-manager"
 )
 
 // String returns the string representation of the bundle type.
@@ -32,6 +33,8 @@ func ParseType(s string) (BundleType, error) {
 		return BundleTypeSkyhook, nil
 	case string(BundleTypeNVSentinel):
 		return BundleTypeNVSentinel, nil
+	case string(BundleTypeCertManager):
+		return BundleTypeCertManager, nil
 	default:
 		return "", fmt.Errorf("unsupported bundle type: %s", s)
 	}
@@ -44,6 +47,7 @@ func SupportedTypes() []BundleType {
 		BundleTypeGpuOperator,
 		BundleTypeNetworkOperator,
 		BundleTypeNVSentinel,
+		BundleTypeCertManager,
 	}
 }
 

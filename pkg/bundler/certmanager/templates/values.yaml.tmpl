@@ -1,0 +1,72 @@
+# cert-manager Helm Values
+# Generated from Cloud Native Stack Recipe
+# Timestamp: {{ .Timestamp }}
+# Bundler Version: {{ .Version }}
+# Recipe Bundler Version: {{ .RecipeVersion }}
+
+global:
+  imagePullSecrets:
+    - name: {{ .ImagePullSecret.Value }}
+
+image:
+  repository: {{ .ControllerImage.Value }}
+
+resources:
+  requests:
+    memory: {{ .ControllerMemoryRequest.Value }}
+    cpu: {{ .ControllerCPURequest.Value }}
+  limits:
+    memory: {{ .ControllerMemoryLimit.Value }}
+    cpu: {{ .ControllerCPULimit.Value }}
+
+installCRDs: {{ .InstallCRDs.Value }}
+
+prometheus:
+  servicemonitor:
+    enabled: {{ .EnablePrometheus.Value }}
+
+tolerations:
+- key: {{ .TolerationKey.Value }}
+  value: {{ .TolerationValue.Value }}
+
+nodeSelector:
+  {{ .NodeSelectorKey.Value }}: {{ .NodeSelectorValue.Value }}
+
+webhook:
+  image:
+    repository: {{ .WebhookImage.Value }}
+  tolerations:
+  - key: {{ .TolerationKey.Value }}
+    value: {{ .TolerationValue.Value }}
+  nodeSelector:
+    {{ .NodeSelectorKey.Value }}: {{ .NodeSelectorValue.Value }}
+  resources:
+    requests:
+      memory: {{ .WebhookMemoryRequest.Value }}
+      cpu: {{ .WebhookCPURequest.Value }}
+    limits:
+      memory: {{ .WebhookMemoryLimit.Value }}
+      cpu: {{ .WebhookCPULimit.Value }}
+
+cainjector:
+  image:
+    repository: {{ .CAInjectorImage.Value }}
+  tolerations:
+  - key: {{ .TolerationKey.Value }}
+    value: {{ .TolerationValue.Value }}
+  nodeSelector:
+    {{ .NodeSelectorKey.Value }}: {{ .NodeSelectorValue.Value }}
+  resources:
+    requests:
+      memory: {{ .CAInjectorMemoryRequest.Value }}
+      cpu: {{ .CAInjectorCPURequest.Value }}
+    limits:
+      memory: {{ .CAInjectorMemoryLimit.Value }}
+      cpu: {{ .CAInjectorCPULimit.Value }}
+
+startupapicheck:
+  tolerations:
+  - key: {{ .TolerationKey.Value }}
+    value: {{ .TolerationValue.Value }}
+  nodeSelector:
+    {{ .NodeSelectorKey.Value }}: {{ .NodeSelectorValue.Value }}

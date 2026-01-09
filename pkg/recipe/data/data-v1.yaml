@@ -154,10 +154,12 @@ base:
           name: nvcr.io
           repo: nvidia
           uri: nvcr.io/nvidia
+          cert-manager-uri: nvcr.io/0491946863192633
         context:
           name: NVIDIA NGC container registry for GPU-optimized images
           repo: NVIDIA NGC repository
           uri: Full URI for accessing NVIDIA NGC registry
+          cert-manager-uri: NVIDIA NGC private registry for cert-manager images
 
       - subtype: image
         data:
@@ -186,6 +188,11 @@ base:
           skyhook-agent: v0.1.0
           kube-rbac-proxy: v0.18.1
           nodeos-updater-tuning: v1.0.0
+          cert-manager: v1.19.1
+          cert-manager-controller: v1.19.1
+          cert-manager-webhook: v1.19.1
+          cert-manager-cainjector: v1.19.1
+          nvsentinel: v0.6.0
         context:
           container-toolkit: NVIDIA container runtime for GPU access in containers
           dcgm: Data Center GPU Manager for GPU health monitoring and diagnostics
@@ -212,6 +219,11 @@ base:
           skyhook-agent: Skyhook agent that applies system configurations on GPU nodes
           kube-rbac-proxy: RBAC proxy for securing Kubernetes API access in operator deployments
           nodeos-updater-tuning: Node OS updater for applying system tuning packages (GRUB, sysctl, containerd)
+          cert-manager: X.509 certificate management for Kubernetes workloads with TLS
+          cert-manager-controller: Core cert-manager controller managing certificates and certificate requests
+          cert-manager-webhook: Validating and mutating webhook for cert-manager CRDs
+          cert-manager-cainjector: CA injector for automatically injecting CA certificates into resources
+          nvsentinel: NVIDIA Sentinel for GPU node security and compliance monitoring
 
       - subtype: config
         data:
@@ -272,6 +284,56 @@ base:
           node_selector_values: Comma-separated values matching node_selector label (e.g., GPU models)
           toleration_key: Toleration key for scheduling on tainted GPU nodes
           toleration_value: Toleration value for matching tainted GPU nodes
+
+      - subtype: cert-manager-config
+        data:
+          install_crds: true
+          enable_prometheus: true
+          controller_cpu_request: 50m
+          controller_cpu_limit: 50m
+          controller_memory_request: 90Mi
+          controller_memory_limit: 90Mi
+          webhook_cpu_request: 50m
+          webhook_cpu_limit: 50m
+          webhook_memory_request: 40Mi
+          webhook_memory_limit: 40Mi
+          cainjector_cpu_request: 50m
+          cainjector_cpu_limit: 50m
+          cainjector_memory_request: 320Mi
+          cainjector_memory_limit: 320Mi
+          toleration_key: dedicated
+          toleration_value: system-workload
+          node_selector_key: nodeGroup
+          node_selector_value: system-cpu
+          image_pull_secret: nvidia-ngcuser-pull-secret
+        context:
+          install_crds: Install Custom Resource Definitions required for cert-manager operation
+          enable_prometheus: Enable Prometheus ServiceMonitor for certificate expiration and operation metrics
+          controller_cpu_request: Minimum CPU guaranteed for cert-manager controller pod
+          controller_cpu_limit: Maximum CPU allocation for cert-manager controller pod
+          controller_memory_request: Minimum memory guaranteed for cert-manager controller pod
+          controller_memory_limit: Maximum memory allocation for cert-manager controller pod
+          webhook_cpu_request: Minimum CPU guaranteed for cert-manager webhook pod
+          webhook_cpu_limit: Maximum CPU allocation for cert-manager webhook pod
+          webhook_memory_request: Minimum memory guaranteed for cert-manager webhook pod
+          webhook_memory_limit: Maximum memory allocation for cert-manager webhook pod
+          cainjector_cpu_request: Minimum CPU guaranteed for cert-manager CA injector pod
+          cainjector_cpu_limit: Maximum CPU allocation for cert-manager CA injector pod
+          cainjector_memory_request: Minimum memory guaranteed for cert-manager CA injector pod (higher due to CA operations)
+          cainjector_memory_limit: Maximum memory allocation for cert-manager CA injector pod
+          toleration_key: Toleration key for scheduling cert-manager pods on dedicated system nodes
+          toleration_value: Toleration value matching system workload nodes
+          node_selector_key: Node selector key for targeting CPU nodes for cert-manager
+          node_selector_value: Node selector value for system CPU node pool
+          image_pull_secret: Image pull secret for accessing NVIDIA NGC private registry
+
+      - subtype: nvsentinel-config
+        data:
+          helm_chart_repo: oci://ghcr.io/nvidia/nvsentinel
+          helm_release_name: nvsentinel
+        context:
+          helm_chart_repo: OCI-based Helm chart repository for NVSentinel deployment
+          helm_release_name: Helm release name for NVSentinel installation
 
   - type: GPU
     subtypes:
