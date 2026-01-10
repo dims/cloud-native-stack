@@ -131,7 +131,7 @@ func New(opts ...Option) *DefaultBundler {
 // It accepts various options to customize the bundling process.
 // Returns a result.Output summarizing the results of the bundling operation.
 // Errors encountered during the process are returned as well.
-// The input can be either a v1 Recipe (Measurements-based) or v2 RecipeResult (ComponentRefs-based).
+// The input can be either a legacy Recipe (measurements-based) or RecipeResult (component references).
 func (b *DefaultBundler) Make(ctx context.Context, input recipe.RecipeInput, dir string) (*result.Output, error) {
 	start := time.Now()
 
@@ -140,7 +140,7 @@ func (b *DefaultBundler) Make(ctx context.Context, input recipe.RecipeInput, dir
 		return nil, errors.New(errors.ErrCodeInvalidRequest, "recipe input cannot be nil")
 	}
 
-	// For v1 Recipe, validate structure
+	// For legacy measurements-based Recipe, validate structure
 	if r, ok := input.(*recipe.Recipe); ok {
 		if err := r.ValidateStructure(); err != nil {
 			return nil, errors.Wrap(errors.ErrCodeInvalidRequest, "recipe validation failed", err)

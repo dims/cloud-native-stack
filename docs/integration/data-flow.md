@@ -47,7 +47,7 @@ Each stage transforms input data into a different format:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│ Snapshot (snapshot.dgxc.io/v1)                          │
+│ Snapshot (cns.nvidia.com/v1alpha1)                      │
 ├─────────────────────────────────────────────────────────┤
 │ metadata:                                               │
 │   created: timestamp                                    │
@@ -87,7 +87,7 @@ metadata:
 data:
   snapshot.yaml: |
     # Complete snapshot YAML stored as ConfigMap data
-    apiVersion: snapshot.dgxc.io/v1
+    apiVersion: cns.nvidia.com/v1alpha1
     kind: Snapshot
     measurements: [...]
 ```
@@ -237,7 +237,7 @@ Result: MATCH (os wildcarded)
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│ Recipe (recipe.dgxc.io/v1)                              │
+│ Recipe (cns.nvidia.com/v1alpha1)                        │
 ├─────────────────────────────────────────────────────────┤
 │ metadata:                                               │
 │   created: timestamp                                    │

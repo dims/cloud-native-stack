@@ -10,7 +10,7 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
 
-//go:embed data/*.yaml data/values/*.yaml
+//go:embed data/*.yaml data/components/*/*.yaml
 var dataFS embed.FS
 
 // RecipeInput is an interface that both Recipe and RecipeResult implement.
@@ -43,9 +43,9 @@ func (r *Recipe) GetComponentRef(name string) *ComponentRef {
 }
 
 // GetValuesForComponent extracts values from measurements for Recipe.
-// This maintains backward compatibility with the v1 format.
+// This maintains backward compatibility with the legacy measurements-based format.
 func (r *Recipe) GetValuesForComponent(name string) (map[string]interface{}, error) {
-	// For v1 Recipe, values are embedded in measurements
+	// For legacy Recipe, values are embedded in measurements
 	// This is a no-op - bundlers extract their own values from measurements
 	return make(map[string]interface{}), nil
 }
@@ -96,14 +96,14 @@ func (r *RecipeResult) GetValuesForComponent(name string) (map[string]interface{
 	return values, nil
 }
 
-// IsV2Recipe checks if the input is a v2 RecipeResult.
-func IsV2Recipe(input RecipeInput) bool {
+// HasComponentRefs checks if the input is a RecipeResult with component references.
+func HasComponentRefs(input RecipeInput) bool {
 	_, ok := input.(*RecipeResult)
 	return ok
 }
 
 // ToRecipeResult converts a RecipeInput to RecipeResult if possible.
-// Returns nil if the input is a v1 Recipe.
+// Returns nil if the input is a legacy measurements-based Recipe.
 func ToRecipeResult(input RecipeInput) *RecipeResult {
 	if result, ok := input.(*RecipeResult); ok {
 		return result
@@ -112,7 +112,7 @@ func ToRecipeResult(input RecipeInput) *RecipeResult {
 }
 
 // ToRecipe converts a RecipeInput to Recipe if possible.
-// Returns nil if the input is a v2 RecipeResult.
+// Returns nil if the input is a RecipeResult with component references.
 func ToRecipe(input RecipeInput) *Recipe {
 	if recipe, ok := input.(*Recipe); ok {
 		return recipe

@@ -5,6 +5,9 @@ import (
 	"time"
 )
 
+// Test API version constant - matches cns.nvidia.com/v1alpha1 used by snapshotter and recipe packages
+const testAPIVersion = "cns.nvidia.com/v1alpha1"
+
 func TestKind_String(t *testing.T) {
 	tests := []struct {
 		name string
@@ -169,9 +172,9 @@ func TestWithAPIVersion(t *testing.T) {
 		want    string
 	}{
 		{
-			name:    "Set v1 API version",
-			version: "snapshot.dgxc.io/v1",
-			want:    "snapshot.dgxc.io/v1",
+			name:    "Set v1alpha1 API version",
+			version: "cns.nvidia.com/v1alpha1",
+			want:    "cns.nvidia.com/v1alpha1",
 		},
 		{
 			name:    "Set custom API version",
@@ -283,7 +286,7 @@ func TestNew(t *testing.T) {
 			name: "Create header with all options",
 			opts: []Option{
 				WithKind(KindRecipe),
-				WithAPIVersion("recipe.dgxc.io/v1"),
+				WithAPIVersion("cns.nvidia.com/v1alpha1"),
 				WithMetadata("version", "1.0.0"),
 				WithMetadata("created", "2025-01-01T00:00:00Z"),
 			},
@@ -291,8 +294,8 @@ func TestNew(t *testing.T) {
 				if h.Kind != KindRecipe {
 					t.Errorf("Kind = %v, want %v", h.Kind, KindRecipe)
 				}
-				if h.APIVersion != "recipe.dgxc.io/v1" {
-					t.Errorf("APIVersion = %v, want recipe.dgxc.io/v1", h.APIVersion)
+				if h.APIVersion != "cns.nvidia.com/v1alpha1" {
+					t.Errorf("APIVersion = %v, want cns.nvidia.com/v1alpha1", h.APIVersion)
 				}
 				if len(h.Metadata) != 2 {
 					t.Errorf("Metadata length = %v, want 2", len(h.Metadata))
@@ -327,8 +330,8 @@ func TestHeader_Init(t *testing.T) {
 				if h.Kind != KindSnapshot {
 					t.Errorf("Kind = %v, want %v", h.Kind, KindSnapshot)
 				}
-				if h.APIVersion != "snapshot.dgxc.io/v1" {
-					t.Errorf("APIVersion = %v, want snapshot.dgxc.io/v1", h.APIVersion)
+				if h.APIVersion != testAPIVersion {
+					t.Errorf("APIVersion = %v, want %s", h.APIVersion, testAPIVersion)
 				}
 				if h.Metadata == nil {
 					t.Fatal("Metadata is nil")
@@ -349,8 +352,8 @@ func TestHeader_Init(t *testing.T) {
 				if h.Kind != KindRecipe {
 					t.Errorf("Kind = %v, want %v", h.Kind, KindRecipe)
 				}
-				if h.APIVersion != "recipe.dgxc.io/v1" {
-					t.Errorf("APIVersion = %v, want recipe.dgxc.io/v1", h.APIVersion)
+				if h.APIVersion != testAPIVersion {
+					t.Errorf("APIVersion = %v, want %s", h.APIVersion, testAPIVersion)
 				}
 				if _, exists := h.Metadata["recipe-timestamp"]; !exists {
 					t.Error("recipe-timestamp not found in metadata")
@@ -365,7 +368,7 @@ func TestHeader_Init(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			h := &Header{}
-			h.Init(tt.kind, tt.version)
+			h.Init(tt.kind, testAPIVersion, tt.version)
 			tt.check(t, h)
 		})
 	}
@@ -373,7 +376,7 @@ func TestHeader_Init(t *testing.T) {
 
 func TestHeader_Init_TimestampFormat(t *testing.T) {
 	h := &Header{}
-	h.Init(KindSnapshot, "v1.0.0")
+	h.Init(KindSnapshot, testAPIVersion, "v1.0.0")
 
 	timestamp, exists := h.Metadata["snapshot-timestamp"]
 	if !exists {
@@ -403,15 +406,15 @@ func TestHeader_Init_OverwritesExistingData(t *testing.T) {
 		},
 	}
 
-	h.Init(KindSnapshot, "v2.0.0")
+	h.Init(KindSnapshot, testAPIVersion, "v2.0.0")
 
 	// Check that old data is replaced
 	if h.Kind != KindSnapshot {
 		t.Errorf("Kind was not updated, got %v, want %v", h.Kind, KindSnapshot)
 	}
 
-	if h.APIVersion != "snapshot.dgxc.io/v1" {
-		t.Errorf("APIVersion was not updated, got %v", h.APIVersion)
+	if h.APIVersion != testAPIVersion {
+		t.Errorf("APIVersion was not updated, got %v, want %s", h.APIVersion, testAPIVersion)
 	}
 
 	// Metadata should be completely replaced
@@ -432,10 +435,8 @@ func TestConstants(t *testing.T) {
 	if KindRecipe != "Recipe" {
 		t.Errorf("KindRecipe = %v, want Recipe", KindRecipe)
 	}
-	if ApiVersionDomain != "dgxc.io" {
-		t.Errorf("ApiVersionDomain = %v, want dgxc.io", ApiVersionDomain)
-	}
-	if ApiVersionV1 != "v1" {
-		t.Errorf("ApiVersionV1 = %v, want v1", ApiVersionV1)
-	}
+	// Note: API version constants moved to resource-specific packages
+	// - snapshotter.FullAPIVersion for Snapshot resources
+	// - recipe.FullAPIVersion for Recipe resources
+	// This allows independent evolution of each resource type's API version
 }

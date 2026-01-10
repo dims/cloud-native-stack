@@ -49,7 +49,7 @@ metadata:
     app.kubernetes.io/component: snapshot
 data:
   snapshot.yaml: |  # Complete snapshot YAML
-    apiVersion: snapshot.dgxc.io/v1
+    apiVersion: cns.nvidia.com/v1alpha1
     kind: Snapshot
     measurements: [...]
   format: yaml

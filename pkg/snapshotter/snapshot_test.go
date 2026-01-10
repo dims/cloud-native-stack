@@ -99,7 +99,7 @@ func TestNodeSnapshotter_Measure(t *testing.T) {
 
 func TestSnapshot_Init(t *testing.T) {
 	snap := NewSnapshot()
-	snap.Init(header.KindSnapshot, "1.0.0")
+	snap.Init(header.KindSnapshot, FullAPIVersion, "1.0.0")
 
 	if snap.Kind != header.KindSnapshot {
 		t.Errorf("Kind = %s, want %s", snap.Kind, header.KindSnapshot)

@@ -88,7 +88,7 @@
 //
 // Snapshots contain a header and measurements:
 //
-//	apiVersion: snapshot.dgxc.io/v1
+//	apiVersion: cns.nvidia.com/v1alpha1
 //	kind: Snapshot
 //	metadata:
 //	  snapshot-version: v1.0.0

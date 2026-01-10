@@ -139,7 +139,7 @@ func (h *TestHarness) createDefaultRecipe() *recipe.Recipe {
 			},
 		},
 	}
-	r.Init(header.KindRecipe, "v1")
+	r.Init(header.KindRecipe, recipe.FullAPIVersion, "test")
 	return r
 }
 
@@ -219,7 +219,7 @@ func (rb *RecipeBuilder) Build() *recipe.Recipe {
 	r := &recipe.Recipe{
 		Measurements: rb.measurements,
 	}
-	r.Init(header.KindRecipe, "v1")
+	r.Init(header.KindRecipe, recipe.FullAPIVersion, "test")
 	return r
 }
 

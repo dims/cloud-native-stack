@@ -229,7 +229,7 @@ flowchart TD
     
     D1 & D2 & D3 & D4 & D5 --> E["All goroutines complete<br/>or first error returns"]
     
-    E --> F["Snapshot Structure<br/>kind: Snapshot<br/>apiVersion: snapshot.dgxc.io/v1<br/>measurements: [k8s, systemd, os, gpu]"]
+    E --> F["Snapshot Structure<br/>kind: Snapshot<br/>apiVersion: cns.nvidia.com/v1alpha1<br/>measurements: [k8s, systemd, os, gpu]"]
     
     F --> G[serializer.NewFileWriterOrStdout]
     
@@ -515,7 +515,7 @@ eidos recipe \
 #### Recipe Output Structure
 
 ```yaml
-apiVersion: recipe.dgxc.io/v1
+apiVersion: cns.nvidia.com/v1alpha1
 kind: Recipe
 metadata:
   created: "2025-01-15T10:30:00Z"

@@ -40,12 +40,12 @@ func (b *Bundler) Make(ctx context.Context, input recipe.RecipeInput, outputDir 
 		return nil, errors.Wrap(errors.ErrCodeTimeout, "context cancelled", err)
 	}
 
-	// For v2 RecipeResult, use values file directly
-	if recipe.IsV2Recipe(input) {
-		return b.makeFromV2(ctx, input, outputDir)
+	// For RecipeResult with component references, use values file directly
+	if recipe.HasComponentRefs(input) {
+		return b.makeFromRecipeResult(ctx, input, outputDir)
 	}
 
-	// For v1 Recipe, use legacy measurement-based logic
+	// For legacy Recipe, use measurement-based logic
 	r, ok := input.(*recipe.Recipe)
 	if !ok {
 		return nil, errors.New(errors.ErrCodeInvalidRequest, "unsupported recipe input type")
@@ -118,11 +118,11 @@ func (b *Bundler) Make(ctx context.Context, input recipe.RecipeInput, outputDir 
 	return b.Result, nil
 }
 
-// makeFromV2 generates the Network Operator bundle from a v2 RecipeResult.
-func (b *Bundler) makeFromV2(ctx context.Context, input recipe.RecipeInput, outputDir string) (*result.Result, error) {
+// makeFromRecipeResult generates the Network Operator bundle from a RecipeResult with component references.
+func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeInput, outputDir string) (*result.Result, error) {
 	start := time.Now()
 
-	slog.Debug("generating Network Operator bundle from v2 recipe",
+	slog.Debug("generating Network Operator bundle from recipe result",
 		"output_dir", outputDir,
 		"namespace", Name,
 	)
@@ -173,7 +173,7 @@ func (b *Bundler) makeFromV2(ctx context.Context, input recipe.RecipeInput, outp
 	// Finalize bundle generation
 	b.Finalize(start)
 
-	slog.Debug("Network Operator bundle generated from v2 recipe",
+	slog.Debug("Network Operator bundle generated from recipe result",
 		"files", len(b.Result.Files),
 		"size_bytes", b.Result.Size,
 		"duration", b.Result.Duration.Round(time.Millisecond),

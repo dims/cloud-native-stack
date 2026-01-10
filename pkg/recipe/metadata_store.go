@@ -58,13 +58,13 @@ func loadMetadataStore(_ context.Context) (*MetadataStore, error) {
 
 			filename := filepath.Base(path)
 
-			// Handle values files (files in the values/ directory)
-			if strings.Contains(path, "values/") {
+			// Handle component files (files in the components/ directory)
+			if strings.Contains(path, "components/") {
 				content, readErr := metadataFS.ReadFile(path)
 				if readErr != nil {
-					return fmt.Errorf("failed to read values file %s: %w", path, readErr)
+					return fmt.Errorf("failed to read component file %s: %w", path, readErr)
 				}
-				// Store with relative path from data/ directory (e.g., "values/cert-manager.yaml")
+				// Store with relative path from data/ directory (e.g., "components/cert-manager/values.yaml")
 				relPath := strings.TrimPrefix(path, "data/")
 				store.ValuesFiles[relPath] = content
 				return nil
@@ -167,8 +167,19 @@ func (s *MetadataStore) FindMatchingOverlays(criteria *Criteria) []*RecipeMetada
 
 // BuildRecipeResult builds a RecipeResult by merging base with matching overlays.
 func (s *MetadataStore) BuildRecipeResult(ctx context.Context, criteria *Criteria) (*RecipeResult, error) {
-	// ctx reserved for future timeout/cancellation support
-	_ = ctx
+	// Check if ctx has been canceled and exit early if so
+	select {
+	case <-ctx.Done():
+		return nil, cnserrors.WrapWithContext(
+			cnserrors.ErrCodeTimeout,
+			"build recipe result context cancelled during initialization",
+			ctx.Err(),
+			map[string]interface{}{
+				"stage": "initialization",
+			},
+		)
+	default:
+	}
 
 	// Start with a copy of the base spec
 	mergedSpec := RecipeMetadataSpec{
@@ -208,7 +219,6 @@ func (s *MetadataStore) BuildRecipeResult(ctx context.Context, criteria *Criteri
 		DeploymentOrder: deployOrder,
 	}
 	result.Metadata.GeneratedAt = time.Now().UTC()
-	result.Metadata.BaseName = s.Base.Metadata.Name
 	result.Metadata.AppliedOverlays = appliedOverlays
 
 	return result, nil

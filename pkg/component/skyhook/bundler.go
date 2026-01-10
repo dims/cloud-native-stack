@@ -38,12 +38,12 @@ func NewBundler(conf *config.Config) *Bundler {
 
 // Make generates the Skyhook bundle based on the provided recipe.
 func (b *Bundler) Make(ctx context.Context, input recipe.RecipeInput, dir string) (*result.Result, error) {
-	// For v2 RecipeResult, use values file directly
-	if recipe.IsV2Recipe(input) {
-		return b.makeFromV2(ctx, input, dir)
+	// For RecipeResult with component references, use values file directly
+	if recipe.HasComponentRefs(input) {
+		return b.makeFromRecipeResult(ctx, input, dir)
 	}
 
-	// For v1 Recipe, use legacy measurement-based logic
+	// For legacy Recipe, use measurement-based logic
 	r, ok := input.(*recipe.Recipe)
 	if !ok {
 		return nil, errors.New(errors.ErrCodeInvalidRequest, "unsupported recipe input type")
@@ -116,11 +116,11 @@ func (b *Bundler) Make(ctx context.Context, input recipe.RecipeInput, dir string
 	return b.Result, nil
 }
 
-// makeFromV2 generates the Skyhook bundle from a v2 RecipeResult.
-func (b *Bundler) makeFromV2(ctx context.Context, input recipe.RecipeInput, dir string) (*result.Result, error) {
+// makeFromRecipeResult generates the Skyhook bundle from a RecipeResult with component references.
+func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeInput, dir string) (*result.Result, error) {
 	start := time.Now()
 
-	slog.Debug("generating Skyhook bundle from v2 recipe",
+	slog.Debug("generating Skyhook bundle from recipe result",
 		"output_dir", dir,
 		"namespace", Name,
 	)
@@ -171,7 +171,7 @@ func (b *Bundler) makeFromV2(ctx context.Context, input recipe.RecipeInput, dir 
 	// Finalize bundle generation
 	b.Finalize(start)
 
-	slog.Debug("Skyhook bundle generated from v2 recipe",
+	slog.Debug("Skyhook bundle generated from recipe result",
 		"files", len(b.Result.Files),
 		"size_bytes", b.Result.Size,
 		"duration", b.Result.Duration.Round(time.Millisecond),

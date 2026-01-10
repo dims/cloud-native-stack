@@ -73,7 +73,7 @@ data:
   format: yaml
   snapshot.yaml: |
     kind: Snapshot
-    apiVersion: snapshot.dgxc.io/v1
+    apiVersion: cns.nvidia.com/v1alpha1
     metadata:
         snapshot-timestamp: "2026-01-07T16:11:21Z"
         snapshot-version: 0.9.0
@@ -126,7 +126,7 @@ eidos recipe \
     --context
 ```
 
-Ypu can also query the CNS APIs directly (https://cns.dgxc.io):
+You can also query the CNS API server directly (https://cns.dgxc.io):
 
 ```shell
 curl -fsSL "https://cns.dgxc.io/v1/recipe?gpu=gb200&service=eks&intent=training" | jq .

@@ -145,7 +145,7 @@
 //
 // Base structure (data/base.yaml):
 //
-//	apiVersion: recipe.dgxc.io/v2
+//	apiVersion: cns.nvidia.com/v1alpha1
 //	kind: Base
 //	metadata:
 //	  name: base
@@ -157,7 +157,7 @@
 //
 // Overlay structure (data/overlays/*.yaml):
 //
-//	apiVersion: recipe.dgxc.io/v2
+//	apiVersion: cns.nvidia.com/v1alpha1
 //	kind: Overlay
 //	metadata:
 //	  name: h100-training

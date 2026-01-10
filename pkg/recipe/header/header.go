@@ -11,11 +11,6 @@ const (
 	KindRecipe   = "Recipe"
 )
 
-var (
-	ApiVersionDomain = "dgxc.io"
-	ApiVersionV1     = "v1"
-)
-
 // Kind represents the type of CNS resource.
 type Kind string
 
@@ -97,12 +92,12 @@ type Header struct {
 	Metadata map[string]string `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 }
 
-// Init initializes the Header with the specified kind and version.
+// Init initializes the Header with the specified kind, apiVersion, and version.
 // It sets the Kind, APIVersion, and populates Metadata with timestamp and version.
-func (h *Header) Init(kind Kind, version string) {
+func (h *Header) Init(kind Kind, apiVersion string, version string) {
 	h.Kind = kind
+	h.APIVersion = apiVersion
 	kindStr := strings.ToLower(string(kind))
-	h.APIVersion = fmt.Sprintf("%s.%s/%s", kindStr, ApiVersionDomain, ApiVersionV1)
 	h.Metadata = make(map[string]string)
 	h.Metadata[fmt.Sprintf("%s-timestamp", kindStr)] = time.Now().UTC().Format(time.RFC3339)
 	if version != "" {

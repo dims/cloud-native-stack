@@ -1,5 +1,5 @@
 kind: Snapshot
-apiVersion: snapshot.dgxc.io/v1
+apiVersion: cns.nvidia.com/v1alpha1
 metadata:
     snapshot-timestamp: "2026-01-02T18:01:13Z"
     snapshot-version: 0.8.12

@@ -80,7 +80,7 @@ func (n *NodeSnapshotter) measure(ctx context.Context) error {
 		}()
 		nodeName := k8s.GetNodeName()
 		mu.Lock()
-		snap.Init(header.KindSnapshot, n.Version)
+		snap.Init(header.KindSnapshot, FullAPIVersion, n.Version)
 		snap.Metadata["source-node"] = nodeName
 		mu.Unlock()
 		slog.Debug("obtained node metadata", slog.String("name", nodeName), slog.String("version", n.Version))

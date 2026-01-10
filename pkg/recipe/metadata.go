@@ -100,9 +100,6 @@ type RecipeResult struct {
 		// GeneratedAt is the timestamp when this result was generated.
 		GeneratedAt time.Time `json:"generatedAt" yaml:"generatedAt"`
 
-		// BaseName is the name of the base recipe used.
-		BaseName string `json:"baseName" yaml:"baseName"`
-
 		// AppliedOverlays lists the overlay names in order of application.
 		AppliedOverlays []string `json:"appliedOverlays,omitempty" yaml:"appliedOverlays,omitempty"`
 	} `json:"metadata" yaml:"metadata"`
@@ -275,7 +272,7 @@ func (s *RecipeMetadataSpec) TopologicalSort() ([]string, error) {
 		}
 	}
 
-	// Actually, we need to count dependencies correctly
+	// Count dependencies
 	// inDegree[X] = number of components that X depends on
 	// For deployment order, we want components with no dependencies first
 	// So we use reverse: inDegree[X] = number of deps X has
@@ -285,6 +282,7 @@ func (s *RecipeMetadataSpec) TopologicalSort() ([]string, error) {
 	}
 
 	// Kahn's algorithm
+	// https://www.geeksforgeeks.org/dsa/topological-sorting-indegree-based-solution/
 	var queue []string
 	for name, degree := range inDegree {
 		if degree == 0 {

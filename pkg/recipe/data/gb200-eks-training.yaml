@@ -25,7 +25,7 @@ spec:
       type: Helm
       source: https://helm.ngc.nvidia.com/nvidia
       version: v25.3.3
-      valuesFile: values/gpu-operator-eks-gb200-training.yaml
+      valuesFile: components/gpu-operator/eks-gb200-training.yaml
       dependencyRefs:
         - cert-manager
 
@@ -33,6 +33,6 @@ spec:
       type: Helm
       source: https://helm.ngc.nvidia.com/nvidia
       version: v25.4.0
-      valuesFile: values/network-operator-eks-gb200-training.yaml
+      valuesFile: components/network-operator/eks-gb200-training.yaml
       dependencyRefs:
         - cert-manager

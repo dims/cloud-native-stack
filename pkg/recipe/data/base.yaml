@@ -14,13 +14,13 @@ spec:
       type: Helm
       source: https://charts.jetstack.io
       version: v1.17.2
-      valuesFile: values/cert-manager.yaml
+      valuesFile: components/cert-manager/values.yaml
 
     - name: gpu-operator
       type: Helm
       source: https://helm.ngc.nvidia.com/nvidia
       version: v25.3.3
-      valuesFile: values/gpu-operator.yaml
+      valuesFile: components/gpu-operator/values.yaml
       dependencyRefs:
         - cert-manager
 
@@ -28,7 +28,7 @@ spec:
       type: Helm
       source: https://helm.ngc.nvidia.com/nvidia
       version: v25.4.0
-      valuesFile: values/network-operator.yaml
+      valuesFile: components/network-operator/values.yaml
       dependencyRefs:
         - cert-manager
 
@@ -43,4 +43,4 @@ spec:
       type: Helm
       source: oci://ghcr.io/nvidia/skyhook
       version: v0.4.0
-      valuesFile: values/skyhook.yaml
+      valuesFile: components/skyhook/values.yaml

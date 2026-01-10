@@ -191,7 +191,7 @@ data:
 
 **Snapshot Structure:**
 ```yaml
-apiVersion: snapshot.dgxc.io/v1
+apiVersion: cns.nvidia.com/v1alpha1
 kind: Snapshot
 metadata:
   created: "2025-12-31T10:30:00Z"
@@ -303,7 +303,7 @@ eidos recipe -f system.yaml -i inference -o recipe.yaml --format yaml
 
 **Output structure:**
 ```yaml
-apiVersion: recipe.dgxc.io/v1
+apiVersion: cns.nvidia.com/v1alpha1
 kind: Recipe
 metadata:
   created: "2025-12-31T10:30:00Z"

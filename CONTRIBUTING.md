@@ -186,7 +186,7 @@ cloud-native-stack/
 - **Purpose**: Orchestrate parallel collection of system measurements
 - **Output**: Complete snapshot with metadata and all collector measurements
 - **Usage**: CLI command, Kubernetes Job agent
-- **Format**: Structured snapshot (snapshot.dgxc.io/v1)
+- **Format**: Structured snapshot (cns.nvidia.com/v1alpha1)
 
 #### Bundler Framework
 - **Location**: `pkg/bundler/`

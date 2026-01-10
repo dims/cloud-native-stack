@@ -14,7 +14,7 @@ import (
 // Bundler defines the interface for creating application bundles.
 // Implementations generate deployment artifacts from recipes.
 // The RecipeInput interface allows bundlers to work with both
-// v1 recipes (Measurements-based) and v2 recipes (ComponentRefs-based).
+// both legacy recipes (measurements-based) and modern recipes (component references).
 type Bundler interface {
 	Make(ctx context.Context, input recipe.RecipeInput, dir string) (*result.Result, error)
 }
