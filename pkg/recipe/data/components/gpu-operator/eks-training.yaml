@@ -1,13 +1,8 @@
 # GPU Operator Helm values
-# EKS GB200 Training configuration overrides
+# EKS Training configuration overrides
 
-# Override driver version for GB200
 driver:
   version: "570.86.16"
-
-# GB200-specific features
-gdrcopy:
-  enabled: true
 
 gds:
   enabled: true

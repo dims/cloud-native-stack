@@ -69,65 +69,77 @@ func (r *RecipeResult) GetComponentRef(name string) *ComponentRef {
 	return nil
 }
 
-// GetValuesForComponent loads values from the component's valuesFile.
-// If the component has an overlay valuesFile, it merges base values with overlay values.
+// GetValuesForComponent loads values from the component's valuesFile and inline overrides.
+// Merge order: base values → ValuesFile → Overrides (highest precedence).
+// This supports three patterns:
+//  1. ValuesFile only: Traditional separate file approach
+//  2. Overrides only: Fully self-contained recipe with inline overrides
+//  3. ValuesFile + Overrides: Hybrid - reusable base with recipe-specific tweaks
 func (r *RecipeResult) GetValuesForComponent(name string) (map[string]interface{}, error) {
 	ref := r.GetComponentRef(name)
 	if ref == nil {
 		return nil, fmt.Errorf("component %q not found in recipe", name)
 	}
 
-	if ref.ValuesFile == "" {
-		// No values file, return empty map
-		return make(map[string]interface{}), nil
+	// Start with empty result
+	result := make(map[string]interface{})
+
+	// If no valuesFile and no overrides, return empty map
+	if ref.ValuesFile == "" && len(ref.Overrides) == 0 {
+		return result, nil
 	}
 
-	// Determine if this is an overlay values file (not the base values.yaml)
-	baseValuesFile := fmt.Sprintf("components/%s/values.yaml", name)
-	isOverlay := ref.ValuesFile != baseValuesFile
+	// Step 1: Load base and/or overlay values from files (if ValuesFile specified)
+	if ref.ValuesFile != "" {
+		// Determine if this is an overlay values file (not the base values.yaml)
+		baseValuesFile := fmt.Sprintf("components/%s/values.yaml", name)
+		isOverlay := ref.ValuesFile != baseValuesFile
 
-	var result map[string]interface{}
-
-	if isOverlay {
-		// Load base values first
-		baseValuesPath := fmt.Sprintf("data/%s", baseValuesFile)
-		baseData, err := dataFS.ReadFile(baseValuesPath)
-		if err != nil {
-			// If base file doesn't exist, that's okay - just use overlay
-			result = make(map[string]interface{})
-		} else {
-			err = yaml.Unmarshal(baseData, &result)
+		if isOverlay {
+			// Load base values first
+			baseValuesPath := fmt.Sprintf("data/%s", baseValuesFile)
+			baseData, err := dataFS.ReadFile(baseValuesPath)
 			if err != nil {
-				return nil, fmt.Errorf("failed to parse base values file %q: %w", baseValuesFile, err)
+				// If base file doesn't exist, that's okay - just use overlay
+				result = make(map[string]interface{})
+			} else {
+				err = yaml.Unmarshal(baseData, &result)
+				if err != nil {
+					return nil, fmt.Errorf("failed to parse base values file %q: %w", baseValuesFile, err)
+				}
+			}
+
+			// Load overlay values
+			overlayPath := fmt.Sprintf("data/%s", ref.ValuesFile)
+			overlayData, err := dataFS.ReadFile(overlayPath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read overlay values file %q: %w", ref.ValuesFile, err)
+			}
+
+			var overlayValues map[string]interface{}
+			if err := yaml.Unmarshal(overlayData, &overlayValues); err != nil {
+				return nil, fmt.Errorf("failed to parse overlay values file %q: %w", ref.ValuesFile, err)
+			}
+
+			// Merge overlay into base (overlay takes precedence over base)
+			mergeValues(result, overlayValues)
+		} else {
+			// Just load the base values file
+			valuesPath := fmt.Sprintf("data/%s", ref.ValuesFile)
+			data, err := dataFS.ReadFile(valuesPath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read values file %q: %w", ref.ValuesFile, err)
+			}
+
+			if err := yaml.Unmarshal(data, &result); err != nil {
+				return nil, fmt.Errorf("failed to parse values file %q: %w", ref.ValuesFile, err)
 			}
 		}
+	}
 
-		// Load overlay values
-		overlayPath := fmt.Sprintf("data/%s", ref.ValuesFile)
-		overlayData, err := dataFS.ReadFile(overlayPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read overlay values file %q: %w", ref.ValuesFile, err)
-		}
-
-		var overlayValues map[string]interface{}
-		if err := yaml.Unmarshal(overlayData, &overlayValues); err != nil {
-			return nil, fmt.Errorf("failed to parse overlay values file %q: %w", ref.ValuesFile, err)
-		}
-
-		// Merge overlay into base (overlay takes precedence)
-		mergeValues(result, overlayValues)
-	} else {
-		// Just load the base values file
-		valuesPath := fmt.Sprintf("data/%s", ref.ValuesFile)
-		data, err := dataFS.ReadFile(valuesPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read values file %q: %w", ref.ValuesFile, err)
-		}
-
-		result = make(map[string]interface{})
-		if err := yaml.Unmarshal(data, &result); err != nil {
-			return nil, fmt.Errorf("failed to parse values file %q: %w", ref.ValuesFile, err)
-		}
+	// Step 2: Apply inline overrides (highest precedence)
+	if len(ref.Overrides) > 0 {
+		mergeValues(result, ref.Overrides)
 	}
 
 	return result, nil

@@ -305,29 +305,33 @@ func (b *DefaultBundler) executeBundler(ctx context.Context, bundlerType types.B
 	)
 
 	// Execute the bundler
-	result, err := bundler.Make(ctx, input, dir)
+	res, err := bundler.Make(ctx, input, dir)
 	if err != nil {
 		recordBundleGenerated(bundlerType, false)
 		recordBundleError(bundlerType, "execution_error")
-		return result, fmt.Errorf("bundler %s failed: %w", bundlerType, err)
+		// Ensure we always return a valid result, even on error
+		if res == nil {
+			res = result.New(bundlerType)
+		}
+		return res, fmt.Errorf("bundler %s failed: %w", bundlerType, err)
 	}
 
-	result.Duration = time.Since(start)
+	res.Duration = time.Since(start)
 
 	// Record metrics
-	recordBundleGenerated(bundlerType, result.Success)
-	recordBundleDuration(bundlerType, result.Duration.Seconds())
-	recordBundleSize(bundlerType, result.Size)
-	recordBundleFiles(bundlerType, len(result.Files))
+	recordBundleGenerated(bundlerType, res.Success)
+	recordBundleDuration(bundlerType, res.Duration.Seconds())
+	recordBundleSize(bundlerType, res.Size)
+	recordBundleFiles(bundlerType, len(res.Files))
 
 	slog.Debug("bundler completed",
 		"bundler_type", bundlerType,
-		"files", len(result.Files),
-		"size_bytes", result.Size,
-		"duration", result.Duration.Round(time.Millisecond),
+		"files", len(res.Files),
+		"size_bytes", res.Size,
+		"duration", res.Duration.Round(time.Millisecond),
 	)
 
-	return result, nil
+	return res, nil
 }
 
 // selectBundlers selects which bundlers to execute based on options.

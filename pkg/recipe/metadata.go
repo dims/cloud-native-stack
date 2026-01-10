@@ -45,6 +45,10 @@ type ComponentRef struct {
 	// ValuesFile is the path to the values file (relative to data directory).
 	ValuesFile string `json:"valuesFile,omitempty" yaml:"valuesFile,omitempty"`
 
+	// Overrides contains inline values that override those from ValuesFile.
+	// Merge order: base values → ValuesFile → Overrides (highest precedence).
+	Overrides map[string]interface{} `json:"overrides,omitempty" yaml:"overrides,omitempty"`
+
 	// Patches is a list of patch files to apply (for Kustomize).
 	Patches []string `json:"patches,omitempty" yaml:"patches,omitempty"`
 
