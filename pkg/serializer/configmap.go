@@ -52,13 +52,14 @@ func (w *ConfigMapWriter) Serialize(ctx context.Context, snapshot any) error {
 
 	// Log authentication context for audit
 	authInfo := "default"
-	if config.AuthProvider != nil {
+	switch {
+	case config.AuthProvider != nil:
 		authInfo = config.AuthProvider.Name
-	} else if config.ExecProvider != nil {
+	case config.ExecProvider != nil:
 		authInfo = "exec"
-	} else if config.BearerToken != "" {
+	case config.BearerToken != "":
 		authInfo = "bearer-token"
-	} else if config.CertData != nil {
+	case config.CertData != nil:
 		authInfo = "cert"
 	}
 

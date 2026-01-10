@@ -26,7 +26,7 @@ type StdoutSerializer struct {
 // Serialize outputs the given snapshot data to stdout in JSON format.
 // It implements the Serializer interface.
 // Context is provided for consistency but not actively used for stdout writes.
-func (s *StdoutSerializer) Serialize(ctx context.Context, snapshot any) error {
+func (s *StdoutSerializer) Serialize(_ context.Context, snapshot any) error {
 	j, err := json.MarshalIndent(snapshot, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to serialize to json: %w", err)
