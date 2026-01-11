@@ -9,9 +9,9 @@ This directory contains architecture documentation for the Cloud Native Stack (C
   - Recipe generation modes: Query mode (direct parameters) and snapshot mode (analyze captured state)
   - ConfigMap integration: Read and write operations using `cm://namespace/name` URI format
   - Testing: `tools/e2e` script validates complete workflow
-- **[API Server Architecture](api-server.md)**: HTTP REST API for recipe generation
-  - Endpoint: `GET /v1/recipe` (query mode only)
-  - Does not support snapshot capture or bundle generation
+- **[API Server Architecture](api-server.md)**: HTTP REST API for recipe generation and bundle creation
+  - Endpoints: `GET /v1/recipe` (query mode only), `POST /v1/bundle` (bundle generation)
+  - Does not support snapshot capture (use CLI or agent)
   - Production deployment: https://cns.dgxc.io
 - **Bundler Framework**: Extensible system for generating deployment artifacts
   - Execution model: Multiple bundlers run concurrently by default
@@ -52,14 +52,15 @@ Produces optimized configuration recipes based on environment criteria or captur
 ### Step 3: Bundle – Create Deployment Artifacts
 Generates deployment-ready bundles (Helm values, Kubernetes manifests, installation scripts) from recipes.
 - **CLI**: `eidos bundle` command
-- **ConfigMap Input**: Can read recipes from ConfigMap URIs
+- **API Server**: `POST /v1/bundle` endpoint (returns zip archive)
+- **ConfigMap Input**: Can read recipes from ConfigMap URIs (CLI only)
 - **Parallel execution** of multiple bundlers by default
 - **Available bundlers**: GPU Operator, Network Operator, Skyhook, Cert-Manager, NVSentinel
-- **Value Overrides**: Use `--set bundler:path.to.field=value` to customize generated bundles
-- **Node Scheduling**: Use `--system-node-selector`, `--accelerated-node-selector`, and toleration flags for workload placement
+- **Value Overrides**: Use `--set bundler:path.to.field=value` to customize generated bundles (CLI only)
+- **Node Scheduling**: Use `--system-node-selector`, `--accelerated-node-selector`, and toleration flags for workload placement (CLI only)
 - **Output**: Complete deployment bundle with values, manifests, scripts, and checksums
 
-**Note:** The API Server only supports recipe generation (Step 2). For complete workflow including snapshot capture and bundle generation, use the CLI.
+**Note:** The API Server supports recipe generation (Step 2) and bundle creation (Step 3). For snapshot capture, use the CLI.
 
 ## Key Design Principles
 

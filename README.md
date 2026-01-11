@@ -67,6 +67,7 @@ These use cases reflect common ways teams interact with Cloud Native Stack.
 You are responsible for deploying and operating GPU-accelerated Kubernetes clusters. 
 - **[Installation Guide](docs/user-guide/installation.md)** – Install the eidos CLI (automated script, manual, or build from source)
 - **[CLI Reference](docs/user-guide/cli-reference.md)** – Complete command reference with examples
+- **[API Reference](docs/user-guide/api-reference.md)** – Complete API reference with examples
 - **[Agent Deployment](docs/user-guide/agent-deployment.md)** – Deploy the Kubernetes agent to get automated configuration snapshots
 </details>
 

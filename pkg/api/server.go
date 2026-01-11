@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler"
 	"github.com/NVIDIA/cloud-native-stack/pkg/logging"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 	"github.com/NVIDIA/cloud-native-stack/pkg/server"
@@ -38,12 +39,16 @@ func Serve() error {
 	)
 
 	// Setup recipe handler
-	b := recipe.NewBuilder(
+	rb := recipe.NewBuilder(
 		recipe.WithVersion(version),
 	)
 
+	// Setup bundle handler
+	bb := bundler.New()
+
 	r := map[string]http.HandlerFunc{
-		"/v1/recipe": b.HandleRecipes,
+		"/v1/recipe": rb.HandleRecipes,
+		"/v1/bundle": bb.HandleBundles,
 	}
 
 	// Create and run server

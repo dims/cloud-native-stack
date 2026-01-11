@@ -18,6 +18,8 @@ servers:
 tags:
   - name: Recipes
     description: Configuration recipe operations
+  - name: Bundles
+    description: Deployment bundle generation
   - name: Health
     description: Service health and readiness checks
 
@@ -47,7 +49,7 @@ paths:
                     type: array
                     items:
                       type: string
-                    example: ["/v1/recipe"]
+                    example: ["/v1/recipe", "/v1/bundle"]
 
   /v1/recipe:
     get:
@@ -233,6 +235,176 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+
+  /v1/bundle:
+    post:
+      tags: [Bundles]
+      summary: Generate deployment bundles from recipe
+      operationId: createBundle
+      description: >
+        Generates deployment bundles (Helm values, Kubernetes manifests, installation scripts)
+        from a recipe and returns them as a compressed zip archive.
+
+        The request body contains the recipe (RecipeResult) directly. Bundler types can be
+        specified via the "bundlers" query parameter (comma-delimited). If no bundlers are
+        specified, all registered bundlers are executed.
+
+        This design enables a simple workflow: pipe the output from GET /v1/recipe directly
+        to POST /v1/bundle.
+
+        The response is a binary zip file containing all generated bundle artifacts
+        organized by bundler type (e.g., gpu-operator/, network-operator/).
+      parameters:
+        - name: bundlers
+          in: query
+          required: false
+          description: >
+            Comma-delimited list of bundler types to execute.
+            If not specified, all registered bundlers are executed.
+          schema:
+            type: string
+          examples:
+            single:
+              summary: Single bundler
+              value: "gpu-operator"
+            multiple:
+              summary: Multiple bundlers
+              value: "gpu-operator,network-operator"
+      requestBody:
+        required: true
+        description: The recipe (RecipeResult) to generate bundles from
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecipeResponse"
+            examples:
+              simpleRecipe:
+                summary: Simple recipe with GPU operator
+                value:
+                  apiVersion: cns.nvidia.com/v1alpha1
+                  kind: Recipe
+                  componentRefs:
+                    - name: gpu-operator
+                      version: v25.3.3
+                      type: helm
+                      repository: https://helm.ngc.nvidia.com/nvidia
+              fullRecipe:
+                summary: Full recipe with metadata
+                value:
+                  apiVersion: cns.nvidia.com/v1alpha1
+                  kind: Recipe
+                  metadata:
+                    version: v1.0.0
+                    created: "2025-01-15T10:30:00Z"
+                    appliedOverlays:
+                      - "service=eks, accelerator=h100, intent=training"
+                  criteria:
+                    service: eks
+                    accelerator: h100
+                    intent: training
+                    os: ubuntu
+                  componentRefs:
+                    - name: gpu-operator
+                      version: v25.3.3
+                      order: 1
+                      repository: https://helm.ngc.nvidia.com/nvidia
+      responses:
+        "200":
+          description: Zip archive containing generated bundles
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            Content-Disposition:
+              schema:
+                type: string
+                example: 'attachment; filename="bundles.zip"'
+              description: Indicates the response should be downloaded as a file
+            X-Bundle-Files:
+              schema:
+                type: integer
+              description: Total number of files in the bundle
+              example: 12
+            X-Bundle-Size:
+              schema:
+                type: integer
+              description: Total size of all files in bytes (uncompressed)
+              example: 45678
+            X-Bundle-Duration:
+              schema:
+                type: string
+              description: Time taken to generate bundles
+              example: "1.234s"
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Invalid request (invalid recipe or bundler type)
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                emptyRecipe:
+                  summary: Recipe must have components
+                  value:
+                    code: INVALID_REQUEST
+                    message: "Recipe must contain at least one component reference"
+                    requestId: "550e8400-e29b-41d4-a716-446655440000"
+                    timestamp: "2025-01-15T10:30:00Z"
+                    retryable: false
+                invalidBundler:
+                  summary: Invalid bundler type
+                  value:
+                    code: INVALID_REQUEST
+                    message: "Invalid bundler type"
+                    details:
+                      bundler: "invalid-bundler"
+                      error: "unsupported bundle type: invalid-bundler"
+                      valid: ["gpu-operator", "network-operator", "skyhook", "nvsentinel", "cert-manager"]
+                    requestId: "550e8400-e29b-41d4-a716-446655440000"
+                    timestamp: "2025-01-15T10:30:00Z"
+                    retryable: false
+        "429":
+          description: Rate limit exceeded
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Seconds until retry allowed
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Bundle generation failed
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                bundlerError:
+                  summary: Some bundlers failed
+                  value:
+                    code: INTERNAL_ERROR
+                    message: "Some bundlers failed"
+                    details:
+                      errors:
+                        - bundler: gpu-operator
+                          error: "template rendering failed"
+                      success_count: 2
+                    requestId: "550e8400-e29b-41d4-a716-446655440000"
+                    timestamp: "2025-01-15T10:30:00Z"
+                    retryable: true
 
   /health:
     get:
@@ -524,3 +696,25 @@ components:
           type: object
           description: Deployment constraints (driver versions, etc.)
           additionalProperties: true
+
+    BundleRequest:
+      type: object
+      description: Request body for bundle generation
+      deprecated: true
+      x-deprecation-reason: >
+        Use RecipeResponse directly as the request body and specify bundlers
+        via the "bundlers" query parameter (comma-delimited).
+      required: [recipe]
+      properties:
+        recipe:
+          $ref: "#/components/schemas/RecipeResponse"
+          description: The recipe to generate bundles from
+        bundlers:
+          type: array
+          items:
+            type: string
+            enum: [gpu-operator, network-operator, skyhook, nvsentinel, cert-manager]
+          description: >
+            Optional list of bundler types to execute.
+            If not specified, all registered bundlers are executed.
+          example: [gpu-operator, network-operator]

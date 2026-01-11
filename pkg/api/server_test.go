@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 )
 
@@ -59,24 +60,32 @@ func TestConstants(t *testing.T) {
 // TestRouteConfiguration verifies that the correct routes are set up
 func TestRouteConfiguration(t *testing.T) {
 	// Test that the route map is properly structured
-	b := recipe.NewBuilder(
+	rb := recipe.NewBuilder(
 		recipe.WithVersion("test-version"),
 	)
+	bb := bundler.New()
 
 	routes := map[string]http.HandlerFunc{
-		"/v1/recipe": b.HandleRecipes,
+		"/v1/recipe": rb.HandleRecipes,
+		"/v1/bundle": bb.HandleBundles,
 	}
 
-	// Verify expected route exists
+	// Verify expected routes exist
 	if handler, exists := routes["/v1/recipe"]; !exists {
 		t.Error("expected /v1/recipe route to exist")
 	} else if handler == nil {
 		t.Error("expected /v1/recipe handler to be non-nil")
 	}
 
+	if handler, exists := routes["/v1/bundle"]; !exists {
+		t.Error("expected /v1/bundle route to exist")
+	} else if handler == nil {
+		t.Error("expected /v1/bundle handler to be non-nil")
+	}
+
 	// Verify no extra routes
-	if len(routes) != 1 {
-		t.Errorf("expected exactly 1 route, got %d", len(routes))
+	if len(routes) != 2 {
+		t.Errorf("expected exactly 2 routes, got %d", len(routes))
 	}
 }
 

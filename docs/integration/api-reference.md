@@ -4,13 +4,14 @@ Complete reference for the Eidos API Server REST API.
 
 ## Overview
 
-The API server provides HTTP REST access to recipe generation (Step 2 of the three-stage workflow). The API accepts query parameters describing system characteristics and returns configuration recommendations.
+The API server provides HTTP REST access to recipe generation and bundle creation for GPU-accelerated infrastructure. The API accepts query parameters or recipe payloads and returns configuration recommendations or deployment bundles.
 
 **Base URL:** `https://cns.dgxc.io`
 
 **Capabilities:**
 
 - Recipe generation from query parameters (service type, accelerator, OS, workload intent, node count)
+- Bundle generation from recipes (returns zip archive with Helm values, manifests, scripts)
 - Rate limiting (100 requests/second)
 - Health and readiness probes
 - Prometheus metrics endpoint
@@ -19,7 +20,6 @@ The API server provides HTTP REST access to recipe generation (Step 2 of the thr
 **Limitations:**
 
 - Does not capture snapshots (use CLI `eidos snapshot` or Kubernetes agent Job)
-- Does not generate bundles (use CLI `eidos bundle`)
 - Does not analyze snapshots (query mode only; snapshot mode requires CLI)
 - Does not interact with Kubernetes ConfigMaps (use CLI for `cm://` URIs)
 
@@ -66,7 +66,7 @@ Service information and available routes.
 {
   "service": "eidos-api-server",
   "version": "v0.7.6",
-  "routes": ["/v1/recipe"]
+  "routes": ["/v1/recipe", "/v1/bundle"]
 }
 ```
 
@@ -199,6 +199,128 @@ Response includes `Retry-After` header.
 
 ---
 
+### POST /v1/bundle
+
+Generate deployment bundles from a recipe.
+
+**Description:**
+
+Generates deployment bundles (Helm values, Kubernetes manifests, installation scripts) from a recipe and returns them as a compressed zip archive. The request body contains the recipe (RecipeResult) directly. Bundler types can be specified via the "bundlers" query parameter (comma-delimited). If no bundlers are specified, all registered bundlers are executed.
+
+This design enables a simple workflow: pipe the output from GET /v1/recipe directly to POST /v1/bundle.
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `bundlers` | string | No | Comma-delimited list of bundler types to execute. If empty, all bundlers run. |
+
+**Request Body:**
+
+The recipe (RecipeResult) directly in the body:
+
+```json
+{
+  "apiVersion": "cns.nvidia.com/v1alpha1",
+  "kind": "Recipe",
+  "componentRefs": [
+    {
+      "name": "gpu-operator",
+      "version": "v25.3.3",
+      "type": "helm",
+      "repository": "https://helm.ngc.nvidia.com/nvidia",
+      "valuesFile": "components/gpu-operator/values.yaml"
+    }
+  ]
+}
+```
+
+**Supported Bundler Types:**
+
+- `gpu-operator` - NVIDIA GPU Operator
+- `network-operator` - NVIDIA Network Operator
+- `skyhook` - Skyhook node optimization
+- `nvsentinel` - NVSentinel monitoring
+- `cert-manager` - Certificate Manager
+
+**Response Headers:**
+
+| Header | Description |
+|--------|-------------|
+| `Content-Type` | `application/zip` |
+| `Content-Disposition` | `attachment; filename="bundles.zip"` |
+| `X-Bundle-Files` | Total number of files in the bundle |
+| `X-Bundle-Size` | Total size in bytes (uncompressed) |
+| `X-Bundle-Duration` | Time taken to generate bundles |
+
+**Success Response (200 OK):**
+
+Returns a binary zip archive containing the generated bundles. The archive structure:
+
+```
+bundles.zip
+├── gpu-operator/
+│   ├── values.yaml
+│   ├── manifests/
+│   │   └── clusterpolicy.yaml
+│   ├── scripts/
+│   │   ├── install.sh
+│   │   └── uninstall.sh
+│   ├── README.md
+│   └── checksums.txt
+└── network-operator/
+    ├── values.yaml
+    └── ...
+```
+
+**Error Responses:**
+
+**400 Bad Request** - Empty recipe or missing components:
+```json
+{
+  "code": "INVALID_REQUEST",
+  "message": "Recipe must contain at least one component reference",
+  "requestId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-31T10:30:00Z",
+  "retryable": false
+}
+```
+
+**400 Bad Request** - Invalid bundler type:
+```json
+{
+  "code": "INVALID_REQUEST",
+  "message": "Invalid bundler type",
+  "details": {
+    "bundler": "invalid-bundler",
+    "error": "unsupported bundle type: invalid-bundler",
+    "valid": ["gpu-operator", "network-operator", "skyhook", "nvsentinel", "cert-manager"]
+  },
+  "requestId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-31T10:30:00Z",
+  "retryable": false
+}
+```
+
+**500 Internal Server Error** - Some bundlers failed:
+```json
+{
+  "code": "INTERNAL_ERROR",
+  "message": "Some bundlers failed",
+  "details": {
+    "errors": [
+      {"bundler": "gpu-operator", "error": "template rendering failed"}
+    ],
+    "success_count": 2
+  },
+  "requestId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-31T10:30:00Z",
+  "retryable": true
+}
+```
+
+---
+
 ### GET /health
 
 Liveness probe endpoint.
@@ -283,6 +405,18 @@ curl -H "X-Request-Id: $(uuidgen)" \
 **Save to file:**
 ```shell
 curl "https://cns.dgxc.io/v1/recipe?os=ubuntu&gpu=h100" -o recipe.json
+```
+
+**Generate bundles (pipe recipe directly):**
+```shell
+# One-liner: get recipe and generate bundle
+curl -s "https://cns.dgxc.io/v1/recipe?os=ubuntu&gpu=h100&service=eks" | \
+  curl -X POST "https://cns.dgxc.io/v1/bundle?bundlers=gpu-operator" \
+    -H "Content-Type: application/json" -d @- -o bundles.zip
+
+# Or from saved recipe file
+curl -X POST "https://cns.dgxc.io/v1/bundle?bundlers=gpu-operator,network-operator" \
+  -H "Content-Type: application/json" -d @recipe.json -o bundles.zip
 ```
 
 ### Python (requests)
@@ -547,6 +681,7 @@ curl https://cns.dgxc.io/metrics
 
 ## See Also
 
+- [User Guide: API Reference](../user-guide/api-reference.md) - Quick start and usage examples
 - [Data Flow](data-flow.md) - Understanding recipe data architecture
 - [Automation](automation.md) - CI/CD integration patterns
 - [Kubernetes Deployment](kubernetes-deployment.md) - Self-hosted deployment

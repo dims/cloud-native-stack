@@ -1,10 +1,10 @@
 # API Server Architecture
 
-The `eidos-api-server` provides HTTP REST API access to Cloud Native Stack configuration recipe generation capabilities.
+The `eidos-api-server` provides HTTP REST API access to Cloud Native Stack configuration recipe generation and bundle creation capabilities.
 
 ## Overview
 
-The API server provides HTTP REST access to **Step 2 of the Cloud Native Stack workflow** – recipe generation. It is a production-ready HTTP service built on Go's `net/http` with middleware for rate limiting, metrics, request tracking, and graceful shutdown.
+The API server provides HTTP REST access to **Steps 2 and 3 of the Cloud Native Stack workflow** – recipe generation and bundle creation. It is a production-ready HTTP service built on Go's `net/http` with middleware for rate limiting, metrics, request tracking, and graceful shutdown.
 
 ### Three-Step Workflow Context
 
@@ -12,11 +12,12 @@ The API server provides HTTP REST access to **Step 2 of the Cloud Native Stack w
 ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
 │   Snapshot   │─────▶│    Recipe    │─────▶│    Bundle    │
 └──────────────┘      └──────────────┘      └──────────────┘
-   CLI/Agent only       API Server       CLI only
+   CLI/Agent only       API Server          API Server
 ```
 
 **API Server Capabilities:**
 - **Recipe generation** (Step 2) via `GET /v1/recipe` endpoint
+- **Bundle creation** (Step 3) via `POST /v1/bundle` endpoint
 - **Query mode only** – generates recipes from environment parameters
 - Health and metrics endpoints for Kubernetes deployment
 - Production-ready HTTP server with middleware stack
@@ -24,9 +25,9 @@ The API server provides HTTP REST access to **Step 2 of the Cloud Native Stack w
 
 **API Server Limitations:**
 - **No snapshot capture** – Use CLI `eidos snapshot` or Kubernetes Agent
-- **No bundle generation** – Use CLI `eidos bundle` command
 - **No snapshot mode** – Cannot analyze captured snapshots (query mode only)
 - **No ConfigMap integration** – API server doesn't read/write ConfigMaps
+- **No value overrides** – Use CLI for `--set` and node selector flags
 
 **For complete workflow**, use the CLI which supports:
 - All three steps: snapshot → recipe → bundle
@@ -40,17 +41,22 @@ The API server provides HTTP REST access to **Step 2 of the Cloud Native Stack w
 flowchart TD
     A["eidos-api-server<br/>cmd/eidos-api-server/main.go"] --> B["pkg/api/server.go<br/>Serve()"]
     
-    B --> B1["• Initialize logging<br/>• Create recipe.Builder<br/>• Setup route: /v1/recipe<br/>• Create server with middleware<br/>• Graceful shutdown"]
+    B --> B1["• Initialize logging<br/>• Create recipe.Builder<br/>• Create bundler.DefaultBundler<br/>• Setup routes: /v1/recipe, /v1/bundle<br/>• Create server with middleware<br/>• Graceful shutdown"]
     
     B1 --> C["pkg/server/server.go<br/>HTTP Server Infrastructure"]
     
     C --> C1["Server Config:<br/>Port: 8080, Rate: 100 req/s<br/>Timeouts, Max Header: 64KB"]
     C --> C2["Middleware Chain:<br/>1. Metrics<br/>2. Request ID<br/>3. Panic Recovery<br/>4. Rate Limiting<br/>5. Logging<br/>6. Handler"]
-    C --> C3["Routes:<br/>/health, /ready, /metrics<br/>/v1/recipe"]
+    C --> C3["Routes:<br/>/health, /ready, /metrics<br/>/v1/recipe, /v1/bundle"]
     
-    C3 --> D["Application Handler<br/>recipe.Builder.HandleRecipes"]
+    C3 --> D["Application Handlers"]
     
-    D --> D1["1. Method validation (GET)<br/>2. Parse query params<br/>3. Build query<br/>4. Builder.Build(ctx, query)<br/>5. Return JSON response"]
+    D --> D1["recipe.Builder.HandleRecipes<br/>GET /v1/recipe"]
+    D --> D2["bundler.DefaultBundler.HandleBundles<br/>POST /v1/bundle"]
+    
+    D1 --> D1a["1. Method validation (GET)<br/>2. Parse query params<br/>3. Build query<br/>4. Builder.Build(ctx, query)<br/>5. Return JSON response"]
+    
+    D2 --> D2a["1. Method validation (POST)<br/>2. Parse JSON body<br/>3. Validate recipe<br/>4. Generate bundles<br/>5. Return ZIP response"]
 ```
 
 ## Request Flow
