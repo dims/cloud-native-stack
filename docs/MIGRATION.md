@@ -7,14 +7,16 @@ This document compares two approaches for deploying NVIDIA Cloud Native Stack co
 1. **Documentation-driven** (legacy): Manual installation following markdown guides and Ansible playbooks
 2. **CLI-driven** (current): Automated bundle generation from system snapshots or query parameters
 
-**Current implementation status**:
+**Current implementation status** (January 2026):
 
-- CLI workflow: Snapshot → Recipe → Bundle (implemented)
-- Available bundlers: GPU Operator, Network Operator, Skyhook
+- CLI workflow: Snapshot → Recipe → Bundle (fully implemented)
+- Available bundlers: GPU Operator, Network Operator, Cert-Manager, NVSentinel, Skyhook
+- Recipe system: Base-plus-overlay architecture with criteria matching
 - ConfigMap URI support: Read and write operations using `cm://namespace/name` syntax
 - Testing: End-to-end validation via `tools/e2e` script
 - Supply chain: SLSA Build Level 3 attestations, SBOM generation
 - Agent deployment: Kubernetes Job writes to ConfigMap (no PersistentVolume required)
+- Value overrides: CLI `--set bundler:path.to.field=value` for runtime customization
 
 Legacy documentation is archived in `~archive/cns-v1/` directory.
 
@@ -115,19 +117,35 @@ Adjusts for environment → Executes → Troubleshoots → Repeats
 
 ### Structure
 
-**Implementation:**
-- **pkg/bundler/gpuoperator/**: GPU Operator bundler (completed)
-  - `bundler.go`: Core logic
-  - `helm.go`: Helm values generation
-  - `manifests.go`, `scripts.go`: Manifest and script generation
-  - `templates/`: Go templates (values.yaml.tmpl, clusterpolicy.yaml.tmpl, install.sh.tmpl, uninstall.sh.tmpl, README.md.tmpl)
-- **pkg/bundler/networkoperator/**: Network Operator bundler (completed)
+**Implementation** (organized under `pkg/component/`):
+- **pkg/component/gpuoperator/**: GPU Operator bundler
+  - `bundler.go`: Core logic with BaseBundler embedding
+  - `scripts.go`: Script metadata generation
+  - `templates/`: Go templates (values.yaml.tmpl, install.sh.tmpl, uninstall.sh.tmpl, README.md.tmpl)
+- **pkg/component/networkoperator/**: Network Operator bundler
   - Similar structure with RDMA, SR-IOV, OFED configurations
   - Templates for NICClusterPolicy, network definitions, IPAM config
-- **pkg/bundler/internal/**: Shared utilities for all bundlers
-  - Recipe data extraction helpers
+- **pkg/component/certmanager/**: Cert-Manager bundler
+  - Certificate management deployment
+- **pkg/component/nvsentinel/**: NVSentinel bundler
+  - NVIDIA monitoring and diagnostics deployment
+- **pkg/component/skyhook/**: Skyhook bundler
+  - Node optimization deployment
+- **pkg/component/internal/**: Shared utilities for all bundlers
+  - BaseBundler helper (reduces boilerplate by ~75%)
   - Template generation functions
   - TestHarness for consistent testing
+
+**Recipe Data** (organized under `pkg/recipe/data/`):
+- **base.yaml**: Default component configurations
+- **gb200-eks-training.yaml**: GB200 + EKS training overlay
+- **h100-eks-training.yaml**: H100 + EKS training overlay
+- **h100-inference.yaml**: H100 inference overlay
+- **components/**: Component-specific Helm values
+  - `gpu-operator/`: Base and EKS training values
+  - `network-operator/`: Network configuration values
+  - `cert-manager/`: Certificate manager values
+  - `skyhook/`: Node optimization values
 
 ### Characteristics
 
@@ -175,6 +193,28 @@ network-operator/
 └── checksums.txt            # File integrity verification
 ```
 
+**Cert-Manager Bundle:**
+```
+cert-manager/
+├── values.yaml              # Helm configuration for cert-manager
+├── scripts/
+│   ├── install.sh           # Installation script
+│   └── uninstall.sh         # Cleanup script
+├── README.md                # Deployment guide
+└── checksums.txt            # File integrity verification
+```
+
+**NVSentinel Bundle:**
+```
+nvsentinel/
+├── values.yaml              # Helm configuration for NVSentinel
+├── scripts/
+│   ├── install.sh           # Installation script
+│   └── uninstall.sh         # Cleanup script
+├── README.md                # Deployment guide
+└── checksums.txt            # File integrity verification
+```
+
 **Skyhook Bundle:**
 ```
 skyhook/
@@ -187,17 +227,20 @@ skyhook/
 ├── README.md                # Deployment guide
 └── checksums.txt            # File integrity verification
 ```
-├── scripts/
-│   ├── install.sh           # RDMA/SR-IOV setup automation
-│   └── uninstall.sh         # Cleanup script
-├── README.md                # Deployment instructions
-└── checksums.txt            # SHA256 verification
-```
 
 **Multi-Bundler Generation:**
 ```bash
-# Generate both bundles simultaneously (parallel execution)
+# Generate all bundles simultaneously (parallel execution by default)
 eidos bundle --recipe recipe.yaml --output ./bundles
+
+# Generate specific bundlers
+eidos bundle --recipe recipe.yaml -b gpu-operator -b network-operator --output ./bundles
+
+# Override values at generation time
+eidos bundle --recipe recipe.yaml -b gpu-operator \
+  --set gpuoperator:gds.enabled=true \
+  --set gpuoperator:driver.version=570.86.16 \
+  --output ./bundles
 
 # Output:
 # bundles/
@@ -319,8 +362,8 @@ eidos recipe -f cm://gpu-operator/eidos-snapshot --intent training -o recipe.yam
 | Aspect | Documentation-Driven | CLI Bundle Generation |
 |--------|---------------------|----------------------|
 | **Configuration Source** | Human-written markdown + Ansible YAML | Machine-generated from recipes |
-| **Version Management** | Manual updates across 14+ guides | Centralized recipe data (data-v1.yaml) |
-| **Customization** | Edit 95+ Ansible variables | Specify intent + GPU type |
+| **Version Management** | Manual updates across 14+ guides | Centralized recipe data |
+| **Customization** | Edit 95+ Ansible variables | Specify intent + GPU type + `--set` overrides |
 | **Validation** | Manual verification post-install | Built into install scripts |
 | **Maintenance** | Update docs for each CNS version | Update recipe rules once |
 | **Error Prevention** | Copy-paste errors common | Generated code reduces errors |
@@ -335,6 +378,8 @@ eidos recipe -f cm://gpu-operator/eidos-snapshot --intent training -o recipe.yam
 | **Kubernetes Integration** | Manual file management | Native ConfigMap storage |
 | **E2E Testing** | Manual testing only | Automated with `tools/e2e` |
 | **Supply Chain Security** | No attestations | SLSA Level 3 + SBOM |
+| **Available Bundlers** | N/A (manual process) | GPU Op, Network Op, Cert-Manager, NVSentinel, Skyhook |
+| **Recipe Coverage** | N/A | GB200, H100, A100 (planned), L40 (planned) |
 
 ---
 
@@ -345,6 +390,9 @@ eidos recipe -f cm://gpu-operator/eidos-snapshot --intent training -o recipe.yam
 **CLI Bundle Approach (Implemented):**
 - ✅ GPU Operator deployment bundle
 - ✅ Network Operator deployment bundle
+- ✅ Cert-Manager deployment bundle
+- ✅ NVSentinel deployment bundle
+- ✅ Skyhook deployment bundle
 - ✅ Helm values generation with version management
 - ✅ ClusterPolicy and NICClusterPolicy manifest generation
 - ✅ Installation/uninstallation scripts with validation
@@ -360,12 +408,13 @@ eidos recipe -f cm://gpu-operator/eidos-snapshot --intent training -o recipe.yam
 - ✅ **E2E testing framework** - `tools/e2e` script validates complete workflow
 - ✅ **Supply chain security** - SLSA attestations, SBOM generation
 - ✅ **Agent deployment** - writes snapshots to ConfigMap (no volumes)
+- ✅ **Value overrides** - `--set bundler:path.to.field=value` at bundle generation
 
 ### What Remains for Future Phases
 
 #### 1. Network Operator Bundle Status
 **Status**: ✅ Completed  
-**Implementation**: `pkg/bundler/networkoperator/`
+**Implementation**: `pkg/component/networkoperator/`
 
 **Includes:**
 - ✅ Templates for RDMA, SR-IOV, OFED configurations
@@ -375,7 +424,14 @@ eidos recipe -f cm://gpu-operator/eidos-snapshot --intent training -o recipe.yam
 - ✅ Installation and uninstallation scripts
 - ✅ Comprehensive README with deployment instructions
 
-#### 2. Full Stack Installation
+#### 2. Additional Component Bundlers Status
+**Status**: ✅ Completed
+
+- **Cert-Manager** (`pkg/component/certmanager/`): Certificate management
+- **NVSentinel** (`pkg/component/nvsentinel/`): Monitoring and diagnostics
+- **Skyhook** (`pkg/component/skyhook/`): Node optimization
+
+#### 3. Full Stack Installation
 **Status**: Still in documentation/playbooks  
 **Not Covered by Bundles:**
 - Container runtime installation (Containerd/CRI-O)
@@ -385,7 +441,7 @@ eidos recipe -f cm://gpu-operator/eidos-snapshot --intent training -o recipe.yam
 
 **Reasoning**: These are foundational infrastructure components that bundles layer on top of.
 
-#### 3. Platform-Specific Optimizations
+#### 4. Platform-Specific Optimizations
 **Current Location**: ~archive/cns-v1/optimizations/GB200-NVL72.md
 
 **Example GB200 Optimizations:**
@@ -396,13 +452,13 @@ numa_balancing=disable
 iommu.passthrough=1
 ```
 
-**Potential**: Could be embedded in recipe overlays for GB200 GPU type and automatically included in generated bundles.
+**Potential**: Could be embedded in recipe overlays for GB200 GPU type and automatically included in generated bundles. See Recipe Expansion Roadmap - Option 4.
 
-#### 4. Add-On Services
+#### 5. Add-On Services
 **Status**: In playbooks but not bundlers
 
 **Not Yet Bundled:**
-- **KServe** (Istio, Knative, CertManager)
+- **KServe** (Istio, Knative, CertManager integration)
 - **Monitoring** (Prometheus, Grafana, Elastic)
 - **Storage** (NFS, Local Path Provisioner)
 - **LoadBalancer** (MetalLB)
@@ -410,9 +466,25 @@ iommu.passthrough=1
 - **NIM Operator**
 - **Nsight Operator**
 
-**Potential**: Each could have dedicated bundler implementation.
+**Potential**: Each could have dedicated bundler implementation following the BaseBundler pattern.
 
-#### 5. Troubleshooting Automation
+#### 6. Recipe Library Expansion
+**Status**: Planned
+
+The current recipe library covers:
+- ✅ Base configuration
+- ✅ GB200 + EKS training
+- ✅ H100 + EKS training
+- ✅ H100 inference
+
+**Planned Expansions** (see Recipe Expansion Roadmap):
+- A100 training/inference recipes
+- L40 inference recipes
+- GKE/AKS variants for all GPU types
+- Ubuntu 22.04 and RHEL recipes
+- CNS version-pinned recipes
+
+#### 7. Troubleshooting Automation
 **Current Location**: ~archive/cns-v1/troubleshooting/
 
 **Potential Enhancements:**
@@ -425,23 +497,36 @@ iommu.passthrough=1
 **Phase 1: Core Operators (Completed)**
 - ✅ GPU Operator bundler
 - ✅ Network Operator bundler
+- ✅ Cert-Manager bundler
+- ✅ NVSentinel bundler
+- ✅ Skyhook bundler
 - ✅ Bundler framework with BaseBundler helper
 - ✅ Registry pattern for self-registration
 - ✅ Parallel bundler execution
 - ✅ TestHarness for consistent testing
+- ✅ Value override support (`--set` flag)
 
-**Phase 2: Add-On Services**
+**Phase 2: Recipe Library Expansion**
+- A100/L40 GPU type recipes
+- GKE/AKS cloud service provider recipes
+- Ubuntu 22.04/RHEL OS variant recipes
+- CNS version-pinned recipes
+
+**Phase 3: Add-On Service Bundlers**
 - Monitoring stack bundler (Prometheus/Grafana)
 - Storage bundler (NFS/Local Path)
 - KServe bundler
 - LoadBalancer bundler (MetalLB)
+- NIM Operator bundler
+- Nsight Operator bundler
 
-**Phase 3: Platform Optimizations**
+**Phase 4: Platform Optimizations**
 - Embed GB200 optimizations in recipes
 - H100/A100-specific tuning
 - AWS/Azure/GKE platform-specific configurations
+- OS boot parameter support in recipe schema
 
-**Phase 4: Integration**
+**Phase 5: Integration**
 - Full-stack bundle orchestration
 - Multi-bundler dependency management
 - End-to-end deployment workflows
@@ -493,12 +578,25 @@ iommu.passthrough=1
    - nvIPAM and secondary network configuration
    - NICClusterPolicy generation
 
-3. **Add-On Services** 📋 Future
+3. **Cert-Manager Deployment** ✅ Completed
+   - Certificate management configuration
+   - CRD installation
+   - Webhook setup
+
+4. **NVSentinel Deployment** ✅ Completed
+   - Monitoring and diagnostics configuration
+   - Metrics collection setup
+
+5. **Skyhook Deployment** ✅ Completed
+   - Node optimization configuration
+   - Skyhook CR generation
+
+6. **Add-On Services** 📋 Future
    - Monitoring stack deployment
    - Storage provisioners
    - KServe deployment
    - LoadBalancer configuration
-   - Platform-specific optimizations
+   - NIM/Nsight Operator deployment
 
 ### New Documentation Features
 
@@ -550,17 +648,21 @@ iommu.passthrough=1
 
 ## Summary
 
-### Current State (December 2025)
+### Current State (January 2026)
 
 **Fully Implemented:**
 - ✅ CLI tool (`eidos`) with 3-step workflow (snapshot → recipe → bundle)
 - ✅ GPU Operator bundler with full feature support
 - ✅ Network Operator bundler with RDMA/SR-IOV/OFED
-- ✅ Recipe engine with intent-based optimization
-- ✅ REST API server for integration
+- ✅ Cert-Manager bundler for certificate management
+- ✅ NVSentinel bundler for monitoring and diagnostics
+- ✅ Skyhook bundler for node optimization
+- ✅ Recipe engine with intent-based optimization (training/inference)
+- ✅ REST API server for integration (https://cns.dgxc.io)
 - ✅ Kubernetes agent for automated snapshots
-- ✅ BaseBundler framework reducing development effort by 75%
-- ✅ Parallel bundler execution
+- ✅ BaseBundler framework reducing development effort by ~75%
+- ✅ Parallel bundler execution (all bundlers run concurrently)
+- ✅ Value overrides via `--set bundler:path.to.field=value`
 - ✅ Comprehensive documentation (9+ guides across 3 audience types)
 - ✅ TestHarness for consistent bundler testing
 - ✅ CI/CD integration examples and patterns
@@ -570,6 +672,13 @@ iommu.passthrough=1
 - ✅ **Supply chain security** - SLSA Build Level 3 attestations
 - ✅ **SBOM generation** - Cosign-signed attestations in SPDX format
 - ✅ **Agent deployment** - ConfigMap output (no volume dependencies)
+
+**Recipe Library:**
+- ✅ Base recipe with default configurations
+- ✅ GB200 + EKS training recipe
+- ✅ H100 + EKS training recipe
+- ✅ H100 inference recipe
+- 📋 Additional GPU/CSP/OS recipes planned (see Recipe Expansion Roadmap)
 
 **Legacy Preserved:**
 - ✅ All v1 documentation in ~archive/cns-v1/
@@ -614,6 +723,7 @@ The project has successfully transitioned from a **documentation-driven** approa
 - All legacy documentation remains in [~archive/cns-v1](../~archive/cns-v1/)
 - Ansible playbooks still available for full-stack automation
 - Useful for understanding historical context and alternative deployment methods
+- **Data extraction source** for building new recipes (see Recipe Expansion Roadmap)
 
 ### Future Roadmap
 
@@ -623,4 +733,167 @@ The project has successfully transitioned from a **documentation-driven** approa
 - Multi-bundler dependency orchestration
 - Advanced troubleshooting automation in install scripts
 - Integration with additional cloud provider APIs (AWS, Azure, GCP)
+
+---
+
+## Recipe Expansion Roadmap
+
+The `~archive/cns-v1/` directory contains valuable historical data that can be used to expand the recipe library. This section outlines options for creating additional recipes using the archived content.
+
+### Archive Content Summary
+
+| Source | Content | Extractable Data |
+|--------|---------|------------------|
+| **cns.json** | Version matrix for CNS 6.0-16.0 (1136 lines) | Component versions per K8s version, OS versions, platform support (x86/ARM, Jetson), containerd/cri-o versions |
+| **playbooks/cns_values_*.yaml** | Ansible configurations (v14.0-16.0) | GPU Operator settings, Network Operator settings, CSP configs (EKS/GKE/AKS), driver versions, MIG profiles |
+| **playbooks/gpu_operator.yaml** | GPU Operator version history | Complete mapping of 18+ GPU Operator releases with all sub-component versions |
+| **install-guides/*.md** | Manual installation steps | Kernel requirements, sysctl settings, CNI configurations per OS/version |
+| **optimizations/GB200-NVL72.md** | Platform-specific optimizations | Boot parameters (init_on_alloc, iommu.passthrough, numa_balancing) |
+
+### Option 1: Add GPU Type Recipes (Low Effort)
+
+Extract A100/L40 configurations from `cns.json` and `cns_values.yaml`:
+
+**New recipes:**
+- `a100-eks-training.yaml`
+- `a100-inference.yaml`
+- `l40-inference.yaml`
+- `l40-gke-inference.yaml`
+
+**Data sources:**
+- `cns.json`: Driver versions supported (550.x, 570.x, 580.x series)
+- `playbooks/gpu_operator.yaml`: Sub-component versions per GPU Operator release
+- Use existing `components/gpu-operator/values.yaml` as base
+
+**Effort:** Low - reuse existing `componentRefs` structure, only change `criteria.accelerator` and `constraints`
+
+### Option 2: Add Cloud Service Provider Recipes (Medium Effort)
+
+Create service-specific recipes using CSP configurations from playbooks:
+
+**New recipes:**
+- `h100-gke-training.yaml`
+- `h100-aks-training.yaml`
+- `gb200-gke-training.yaml`
+- `a100-gke-training.yaml`
+- `a100-aks-training.yaml`
+
+**Data sources:**
+- `cns_values.yaml`: AWS/GKE/AKS region configs
+- `install-guides/`: Service-specific networking requirements
+- May need new component values files (e.g., `components/gpu-operator/gke-training.yaml`)
+
+**Effort:** Medium - requires creating service-specific values files for each CSP
+
+### Option 3: Add OS Version Recipes (Medium Effort)
+
+Create recipes for different Ubuntu versions and RHEL:
+
+**New recipes:**
+- `h100-ubuntu2204-training.yaml` (Ubuntu 22.04 with K8s 1.31.x)
+- `h100-rhel-training.yaml` (RHEL 8.10)
+- `gb200-ubuntu2204-training.yaml`
+
+**Data sources:**
+- `cns.json`: Version matrix shows Ubuntu 22.04/24.04 + RHEL 8.10 support
+- `install-guides/`: OS-specific kernel/driver requirements
+- `cns_values_14.x.yaml`: Ubuntu 22.04 specific settings
+
+**Effort:** Medium - may require different driver versions and kernel constraints
+
+### Option 4: Add Platform-Specific Optimizations (Higher Effort)
+
+Incorporate optimization data from `optimizations/GB200-NVL72.md`:
+
+**New capabilities:**
+- Add boot parameters to recipes (init_on_alloc, iommu.passthrough, numa_balancing)
+- Add kernel requirements (NVIDIA 64k kernel for GB200)
+- Create platform-aware deployment bundles
+
+**Data sources:**
+- `optimizations/GB200-NVL72.md`: GB200-specific boot/kernel params
+- Would require schema changes to support OS-level optimizations
+
+**Effort:** Higher - requires extending the recipe schema to include OS optimization parameters
+
+### Option 5: Add CNS Version-Pinned Recipes (Comprehensive)
+
+Create recipes that match exact CNS release versions (16.0, 15.1, 14.2):
+
+**New recipes:**
+- `cns-16.0-h100-training.yaml`
+- `cns-15.1-h100-training.yaml`
+- `cns-14.2-h100-training.yaml`
+
+**Data sources:**
+- `cns.json`: Exact component versions per CNS release
+- `playbooks/gpu_operator.yaml`: All sub-component versions
+- `cns_values_16.0.yaml`: Feature flags and settings
+
+**Effort:** Medium - mechanically extractable from JSON/YAML files
+
+### Option 6: Add Inference vs Training Differentiation (Low-Medium Effort)
+
+Expand the training/inference dimension with more granular configurations:
+
+**Current state:** Only `h100-inference.yaml` and `*-training.yaml` variants
+
+**New recipes:**
+- `gb200-inference.yaml`
+- `a100-training.yaml`
+- `a100-inference.yaml`
+- `l40-inference.yaml` (L40 typically used for inference)
+
+**Data sources:**
+- Infer from existing patterns
+- `cns_values.yaml`: MIG settings (training: mig disabled, inference: mig enabled options)
+
+**Effort:** Low-Medium - mostly copy patterns with appropriate settings
+
+### Recommended Implementation Phases
+
+**Phase 1: Quick Wins (Low Effort)**
+1. Add **A100 recipes** - high demand, simple extraction from cns.json
+2. Add **L40 inference** recipe - common inference GPU
+3. Fill out **GKE/AKS variants** for H100/GB200
+
+**Phase 2: OS/Version Coverage (Medium Effort)**
+4. Add **Ubuntu 22.04** recipes (still widely deployed)
+5. Add **RHEL 8.x** recipes (enterprise use cases)
+6. Add **CNS version-pinned** recipes for reproducibility
+
+**Phase 3: Platform Optimizations (Higher Effort)**
+7. Extend schema to include **OS boot parameters**
+8. Add **Jetson** platform support (from cns.json Jetson data)
+
+### Data Transformation Example
+
+To convert archive data to recipes:
+
+**Extract from `cns.json`:**
+```python
+# Example: Extract K8s + GPU Operator version mapping
+cns["versions"]["16.0"]["platforms"][0]["components"]["NVIDIA GPU Operator"]  # "25.3.2"
+cns["versions"]["16.0"]["platforms"][0]["components"]["k8s version"]  # "1.33.2"
+```
+
+**Extract from `playbooks/gpu_operator.yaml`:**
+```yaml
+release_25_3_4:
+  gpu_driver_version: 580.82.07
+  container_toolkit: v1.17.8
+  device_plugin: v0.17.3
+  # ... more sub-components
+```
+
+**Map to recipe format:**
+```yaml
+spec:
+  constraints:
+    - name: k8s
+      value: ">= 1.33"
+  componentRefs:
+    - name: gpu-operator
+      version: v25.3.4  # From gpu_operator.yaml
+```
 
