@@ -176,9 +176,13 @@ build_binary() {
   esac
   
   # Try to find the binary with various naming patterns
+  # goreleaser uses different suffixes:
+  # - _v1 for amd64 (x86_64 microarchitecture level 1)
+  # - _v8.0 for arm64 (ARMv8.0 baseline)
   EIDOS_BIN=""
   for pattern in \
     "${ROOT}/dist/eidos_${os_name}_${arch_name}/eidos" \
+    "${ROOT}/dist/eidos_${os_name}_${arch_name}_v1/eidos" \
     "${ROOT}/dist/eidos_${os_name}_${arch_name}_v8.0/eidos" \
     "${ROOT}/dist/eidos_${os_name}_all/eidos"; do
     if [ -x "$pattern" ]; then

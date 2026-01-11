@@ -1,0 +1,54 @@
+# Cert-Manager Helm Values
+# Generated from Cloud Native Stack Recipe
+# Timestamp: 2026-01-11T08:17:47-08:00
+# Bundler Version: v0.12.4-next
+# Recipe Version: 
+
+cainjector:
+  nodeSelector:
+    nodeGroup: system-pool
+    workload: control-plane
+  resources:
+    limits:
+      cpu: 50m
+      memory: 320Mi
+    requests:
+      cpu: 50m
+      memory: 320Mi
+  tolerations:
+    - operator: Exists
+installCRDs: true
+nodeSelector:
+  nodeGroup: system-pool
+  workload: control-plane
+prometheus:
+  servicemonitor:
+    enabled: true
+resources:
+  limits:
+    cpu: 50m
+    memory: 90Mi
+  requests:
+    cpu: 50m
+    memory: 90Mi
+startupapicheck:
+  nodeSelector:
+    nodeGroup: system-pool
+    workload: control-plane
+  tolerations:
+    - operator: Exists
+tolerations:
+  - operator: Exists
+webhook:
+  nodeSelector:
+    nodeGroup: system-pool
+    workload: control-plane
+  resources:
+    limits:
+      cpu: 50m
+      memory: 40Mi
+    requests:
+      cpu: 50m
+      memory: 40Mi
+  tolerations:
+    - operator: Exists

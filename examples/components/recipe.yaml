@@ -1,0 +1,63 @@
+kind: recipeResult
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  generatedAt: 2026-01-11T16:17:47.226919Z
+  version: v0.12.4-next
+  appliedOverlays:
+    - gb200-eks-training
+criteria:
+  service: eks
+  accelerator: gb200
+  intent: training
+  os: ubuntu
+constraints:
+  - name: k8s
+    value: '>= 1.32.4'
+  - name: kernel
+    value: '>= 6.8'
+  - name: os
+    value: ubuntu
+  - name: os-version
+    value: "24.04"
+componentRefs:
+  - name: cert-manager
+    type: Helm
+    source: https://charts.jetstack.io
+    version: v1.17.2
+    valuesFile: components/cert-manager/values.yaml
+  - name: gpu-operator
+    type: Helm
+    source: https://helm.ngc.nvidia.com/nvidia
+    version: v25.3.3
+    valuesFile: components/gpu-operator/values-eks-training.yaml
+    overrides:
+      cdi:
+        default: false
+        enabled: true
+      driver:
+        kernelModuleConfig:
+          name: kernel-module-params
+        version: 580.82.07
+      gdrcopy:
+        enabled: true
+    dependencyRefs:
+      - cert-manager
+  - name: nvsentinel
+    type: Helm
+    source: oci://ghcr.io/nvidia/nvsentinel
+    version: v0.6.0
+    valuesFile: components/nvsentinel/values.yaml
+    dependencyRefs:
+      - cert-manager
+  - name: skyhook
+    type: Helm
+    source: oci://ghcr.io/nvidia/skyhook
+    version: v0.4.0
+    valuesFile: components/skyhook/values.yaml
+    overrides:
+      customization: ubuntu
+deploymentOrder:
+  - cert-manager
+  - gpu-operator
+  - nvsentinel
+  - skyhook

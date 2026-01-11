@@ -1,0 +1,22 @@
+# NVSentinel Helm Values
+# Generated from Cloud Native Stack Recipe
+# Timestamp: 2026-01-11T08:17:47-08:00
+# Bundler Version: v0.12.4-next
+# Recipe Version: 
+
+global:
+  tolerations:
+    - effect: NoSchedule
+      key: nvidia.com/gpu
+      operator: Equal
+      value: present
+platformConnector:
+  maxUnavailable: 1
+  resources:
+    limits:
+      cpu: 200m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 512Mi
+  updateStrategy: RollingUpdate

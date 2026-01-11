@@ -1,0 +1,82 @@
+# GPU Operator Helm Values
+# Generated from Cloud Native Stack Recipe
+# Timestamp: 2026-01-11T08:17:47-08:00
+# Bundler Version: v0.12.4-next
+# Recipe Version: 
+
+cdi:
+  default: false
+  enabled: true
+daemonsets:
+  tolerations:
+    - operator: Exists
+dcgm:
+  enabled: true
+dcgmExporter:
+  config:
+    create: true
+    name: dcgm-exporter
+  serviceMonitor:
+    enabled: true
+    interval: 60s
+devicePlugin:
+  env:
+    - name: DP_DISABLE_HEALTHCHECKS
+      value: "109"
+    - name: DEVICE_LIST_STRATEGY
+      value: volume-mounts
+driver:
+  enabled: true
+  kernelModuleConfig:
+    name: kernel-module-params
+  maxParallelUpgrades: 5
+  rdma:
+    enabled: true
+  useOpenKernelModules: true
+  version: 580.82.07
+gdrcopy:
+  enabled: true
+  version: v2.5
+gfd:
+  enabled: true
+hostPaths:
+  driverInstallDir: /run/nvidia/driver
+migManager:
+  enabled: true
+node-feature-discovery:
+  gc:
+    nodeSelector:
+      nodeGroup: system-pool
+      workload: control-plane
+    tolerations:
+      - operator: Exists
+  master:
+    nodeSelector:
+      nodeGroup: system-pool
+      workload: control-plane
+    tolerations:
+      - operator: Exists
+  worker:
+    tolerations:
+      - operator: Exists
+operator:
+  nodeSelector:
+    nodeGroup: system-pool
+    workload: control-plane
+  resources:
+    limits:
+      cpu: 500m
+      memory: 700Mi
+    requests:
+      cpu: 200m
+      memory: 300Mi
+  tolerations:
+    - operator: Exists
+  upgradeCRD: true
+toolkit:
+  enabled: true
+  env:
+    - name: ACCEPT_NVIDIA_VISIBLE_DEVICES_ENVVAR_WHEN_UNPRIVILEGED
+      value: "false"
+    - name: ACCEPT_NVIDIA_VISIBLE_DEVICES_AS_VOLUME_MOUNTS
+      value: "true"

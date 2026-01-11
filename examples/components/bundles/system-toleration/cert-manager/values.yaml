@@ -1,0 +1,54 @@
+# Cert-Manager Helm Values
+# Generated from Cloud Native Stack Recipe
+# Timestamp: 2026-01-11T08:17:47-08:00
+# Bundler Version: v0.12.4-next
+# Recipe Version: 
+
+cainjector:
+  resources:
+    limits:
+      cpu: 50m
+      memory: 320Mi
+    requests:
+      cpu: 50m
+      memory: 320Mi
+  tolerations:
+    - effect: NoSchedule
+      key: dedicated
+      operator: Equal
+      value: system-workload
+installCRDs: true
+prometheus:
+  servicemonitor:
+    enabled: true
+resources:
+  limits:
+    cpu: 50m
+    memory: 90Mi
+  requests:
+    cpu: 50m
+    memory: 90Mi
+startupapicheck:
+  tolerations:
+    - effect: NoSchedule
+      key: dedicated
+      operator: Equal
+      value: system-workload
+tolerations:
+  - effect: NoSchedule
+    key: dedicated
+    operator: Equal
+    value: system-workload
+webhook:
+  resources:
+    limits:
+      cpu: 50m
+      memory: 40Mi
+    requests:
+      cpu: 50m
+      memory: 40Mi
+  tolerations:
+    - effect: NoSchedule
+      key: dedicated
+      operator: Equal
+      value: system-workload

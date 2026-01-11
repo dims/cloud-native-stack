@@ -64,6 +64,12 @@ test: ## Runs unit tests
 	echo "Test coverage"; \
 	go tool cover -func=coverage.out
 
+.PHONY: e2e
+e2e: ## Runs integration tests
+	@set -e; \
+	echo "Running e2e integration tests"; \
+	tools/e2e
+
 .PHONY: scan
 scan: ## Scans for source vulnerabilities
 	@set -e; \
