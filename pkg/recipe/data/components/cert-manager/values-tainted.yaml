@@ -1,0 +1,30 @@
+# cert-manager Helm values
+# Tainted configuration for system-workload deployments
+
+tolerations:
+- key: dedicated
+  value: "system-workload"
+
+nodeSelector:
+  nodeGroup: system-cpu
+
+webhook:
+  tolerations:
+  - key: dedicated
+    value: "system-workload"
+  nodeSelector:
+    nodeGroup: system-cpu
+
+cainjector:
+  tolerations:
+  - key: dedicated
+    value: "system-workload"
+  nodeSelector:
+    nodeGroup: system-cpu
+
+startupapicheck:
+  tolerations:
+  - key: dedicated
+    value: "system-workload"
+  nodeSelector:
+    nodeGroup: system-cpu

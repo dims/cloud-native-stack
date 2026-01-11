@@ -149,13 +149,19 @@ func (s *RecipeMetadataSpec) Merge(other *RecipeMetadataSpec) {
 		return s.Constraints[i].Name < s.Constraints[j].Name
 	})
 
-	// Merge componentRefs - other takes precedence for same name
+	// Merge componentRefs - overlay fields take precedence, but inherit missing from base
 	componentMap := make(map[string]ComponentRef)
 	for _, c := range s.ComponentRefs {
 		componentMap[c.Name] = c
 	}
-	for _, c := range other.ComponentRefs {
-		componentMap[c.Name] = c
+	for _, overlay := range other.ComponentRefs {
+		if base, exists := componentMap[overlay.Name]; exists {
+			// Merge overlay into base - overlay takes precedence for non-empty fields
+			componentMap[overlay.Name] = mergeComponentRef(base, overlay)
+		} else {
+			// New component from overlay
+			componentMap[overlay.Name] = overlay
+		}
 	}
 	s.ComponentRefs = make([]ComponentRef, 0, len(componentMap))
 	for _, c := range componentMap {
@@ -165,6 +171,59 @@ func (s *RecipeMetadataSpec) Merge(other *RecipeMetadataSpec) {
 	sort.Slice(s.ComponentRefs, func(i, j int) bool {
 		return s.ComponentRefs[i].Name < s.ComponentRefs[j].Name
 	})
+}
+
+// mergeComponentRef merges overlay into base, with overlay taking precedence
+// for non-empty fields. Empty/zero fields in overlay inherit from base.
+func mergeComponentRef(base, overlay ComponentRef) ComponentRef {
+	result := base // Start with base values
+
+	// Type: overlay takes precedence if set
+	if overlay.Type != "" {
+		result.Type = overlay.Type
+	}
+
+	// Source: overlay takes precedence if set
+	if overlay.Source != "" {
+		result.Source = overlay.Source
+	}
+
+	// Version: overlay takes precedence if set
+	if overlay.Version != "" {
+		result.Version = overlay.Version
+	}
+
+	// Tag: overlay takes precedence if set
+	if overlay.Tag != "" {
+		result.Tag = overlay.Tag
+	}
+
+	// ValuesFile: overlay takes precedence if set
+	if overlay.ValuesFile != "" {
+		result.ValuesFile = overlay.ValuesFile
+	}
+
+	// Overrides: merge maps, overlay takes precedence
+	if len(overlay.Overrides) > 0 {
+		if result.Overrides == nil {
+			result.Overrides = make(map[string]interface{})
+		}
+		for k, v := range overlay.Overrides {
+			result.Overrides[k] = v
+		}
+	}
+
+	// Patches: overlay replaces if set
+	if len(overlay.Patches) > 0 {
+		result.Patches = overlay.Patches
+	}
+
+	// DependencyRefs: overlay replaces if set
+	if len(overlay.DependencyRefs) > 0 {
+		result.DependencyRefs = overlay.DependencyRefs
+	}
+
+	return result
 }
 
 // ValidateDependencies validates that all dependencyRefs reference existing components.

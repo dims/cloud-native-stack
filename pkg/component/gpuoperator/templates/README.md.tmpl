@@ -14,7 +14,9 @@ This bundle contains everything needed to deploy the NVIDIA GPU Operator on your
 ## Contents
 
 - `values.yaml` - Helm values configuration
-- `clusterpolicy.yaml` - ClusterPolicy manifest
+- `manifests/clusterpolicy.yaml` - ClusterPolicy manifest
+- `manifests/dcgm-exporter.yaml` - DCGM Exporter metrics ConfigMap (if enabled)
+- `manifests/kernel-module-params.yaml` - Kernel module params ConfigMap (GB200 only)
 - `scripts/install.sh` - Installation script
 - `scripts/uninstall.sh` - Uninstallation script
 - `checksums.txt` - File integrity checksums
@@ -28,24 +30,31 @@ This bundle contains everything needed to deploy the NVIDIA GPU Operator on your
 
 ## Installation
 
-### Option 1: Using the Installation Script
+### Option 1: Automated Installation
+
+Run the installation script to automatically apply manifests and install the GPU Operator:
 
 ```bash
 chmod +x scripts/install.sh
 ./scripts/install.sh
 ```
 
-### Option 2: Manual Installation with Helm
+### Option 2: Manual Installation
+
+Step-by-step installation for more control over the process:
 
 ```bash
-# Add Helm repository
+# 1. Add Helm repository
 helm repo add nvidia {{ .Script.HelmRepository }}
 helm repo update
 
-# Create namespace
+# 2. Create namespace
 kubectl create namespace {{ .Script.Namespace }}
 
-# Install GPU Operator
+# 3. Apply manifests (ConfigMaps and ClusterPolicy)
+kubectl apply -f manifests/ -n {{ .Script.Namespace }}
+
+# 4. Install GPU Operator with Helm
 helm upgrade --install gpu-operator nvidia/gpu-operator \
   --namespace {{ .Script.Namespace }} \
   {{- if .Script.HelmChartVersion }}
@@ -53,12 +62,6 @@ helm upgrade --install gpu-operator nvidia/gpu-operator \
   {{- end }}
   --values values.yaml \
   --wait
-```
-
-### Option 3: Using kubectl
-
-```bash
-kubectl apply -f clusterpolicy.yaml
 ```
 
 ## Verification
@@ -108,6 +111,7 @@ Or manually:
 
 ```bash
 helm uninstall gpu-operator -n {{ .Script.Namespace }}
+kubectl delete -f manifests/ --ignore-not-found=true
 kubectl delete crd clusterpolicies.nvidia.com
 ```
 

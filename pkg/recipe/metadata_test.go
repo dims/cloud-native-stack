@@ -249,6 +249,57 @@ func TestRecipeMetadataSpecMerge(t *testing.T) {
 	}
 }
 
+// TestComponentRefMergeInheritsFromBase verifies that when an overlay specifies
+// only partial fields for a component, the missing fields are inherited from base.
+func TestComponentRefMergeInheritsFromBase(t *testing.T) {
+	base := RecipeMetadataSpec{
+		ComponentRefs: []ComponentRef{
+			{
+				Name:       "cert-manager",
+				Type:       ComponentTypeHelm,
+				Source:     "https://charts.jetstack.io",
+				Version:    "v1.17.2",
+				ValuesFile: "components/cert-manager/values.yaml",
+			},
+		},
+	}
+
+	// Overlay only specifies name, type, and new valuesFile
+	overlay := RecipeMetadataSpec{
+		ComponentRefs: []ComponentRef{
+			{
+				Name:       "cert-manager",
+				Type:       ComponentTypeHelm,
+				ValuesFile: "components/cert-manager/tainted-values.yaml",
+			},
+		},
+	}
+
+	base.Merge(&overlay)
+
+	if len(base.ComponentRefs) != 1 {
+		t.Fatalf("expected 1 component, got %d", len(base.ComponentRefs))
+	}
+
+	comp := base.ComponentRefs[0]
+
+	// Verify inherited fields from base
+	if comp.Source != "https://charts.jetstack.io" {
+		t.Errorf("Source should be inherited from base, got %q", comp.Source)
+	}
+	if comp.Version != "v1.17.2" {
+		t.Errorf("Version should be inherited from base, got %q", comp.Version)
+	}
+
+	// Verify overridden field from overlay
+	if comp.ValuesFile != "components/cert-manager/tainted-values.yaml" {
+		t.Errorf("ValuesFile should be from overlay, got %q", comp.ValuesFile)
+	}
+
+	t.Logf("ComponentRef correctly merged: source=%s, version=%s, valuesFile=%s",
+		comp.Source, comp.Version, comp.ValuesFile)
+}
+
 // Helper function
 func containsString(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && (s[:len(substr)] == substr || containsString(s[1:], substr)))

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
@@ -104,8 +105,11 @@ func (b *Bundler) Make(ctx context.Context, input recipe.RecipeInput, dir string
 		}
 	}
 
+	// Get criteria to make accelerator-specific decisions
+	criteria := input.GetCriteria()
+
 	// Generate ClusterPolicy manifest using values map directly
-	if err := b.generateManifestsFromData(ctx, values, scriptData, dirs.Root); err != nil {
+	if err := b.generateManifestsFromData(ctx, values, scriptData, criteria, dirs.Root); err != nil {
 		return b.Result, err
 	}
 
@@ -159,15 +163,64 @@ func (b *Bundler) generateScriptsFromData(ctx context.Context, scriptData *Scrip
 }
 
 // generateManifestsFromData generates manifests from pre-built data.
-func (b *Bundler) generateManifestsFromData(ctx context.Context, values map[string]interface{}, scriptData *ScriptData, dir string) error {
+func (b *Bundler) generateManifestsFromData(ctx context.Context, values map[string]interface{}, scriptData *ScriptData, criteria *recipe.Criteria, dir string) error {
 	// Combine values map with script metadata for template
 	manifestData := map[string]interface{}{
 		"Values": values,
 		"Script": scriptData,
 	}
+
+	// Generate ClusterPolicy manifest (always generated)
 	filePath := filepath.Join(dir, "manifests", "clusterpolicy.yaml")
-	return b.GenerateFileFromTemplate(ctx, GetTemplate, "clusterpolicy",
-		filePath, manifestData, 0644)
+	if err := b.GenerateFileFromTemplate(ctx, GetTemplate, "clusterpolicy",
+		filePath, manifestData, 0644); err != nil {
+		return err
+	}
+
+	// Generate DCGM Exporter ConfigMap if enabled
+	if shouldGenerateDCGMExporterConfigMap(values) {
+		dcgmPath := filepath.Join(dir, "manifests", "dcgm-exporter.yaml")
+		if err := b.GenerateFileFromTemplate(ctx, GetTemplate, "dcgm-exporter",
+			dcgmPath, manifestData, 0644); err != nil {
+			return err
+		}
+	}
+
+	// Generate Kernel Module Params ConfigMap for GB200 accelerator
+	if shouldGenerateKernelModuleConfigMap(criteria) {
+		kmpPath := filepath.Join(dir, "manifests", "kernel-module-params.yaml")
+		if err := b.GenerateFileFromTemplate(ctx, GetTemplate, "kernel-module-params",
+			kmpPath, manifestData, 0644); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// shouldGenerateDCGMExporterConfigMap checks if DCGM exporter ConfigMap should be generated.
+// Returns true if dcgmExporter.config.create is true.
+func shouldGenerateDCGMExporterConfigMap(values map[string]interface{}) bool {
+	dcgmExporter, ok := values["dcgmExporter"].(map[string]interface{})
+	if !ok {
+		return false
+	}
+	config, ok := dcgmExporter["config"].(map[string]interface{})
+	if !ok {
+		return false
+	}
+	create, ok := config["create"].(bool)
+	return ok && create
+}
+
+// shouldGenerateKernelModuleConfigMap checks if kernel module params ConfigMap should be generated.
+// Returns true for GB200 accelerator which requires special kernel module parameters.
+func shouldGenerateKernelModuleConfigMap(criteria *recipe.Criteria) bool {
+	if criteria == nil {
+		return false
+	}
+	// GB200 requires kernel module params ConfigMap for NVreg settings
+	return strings.EqualFold(string(criteria.Accelerator), "gb200")
 }
 
 // getValueOverrides retrieves value overrides for this bundler from config.

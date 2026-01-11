@@ -19,7 +19,7 @@ spec:
     - name: gpu-operator
       type: Helm
       source: https://helm.ngc.nvidia.com/nvidia
-      version: v25.3.3
+      version: v25.10.1
       valuesFile: components/gpu-operator/values.yaml
       dependencyRefs:
         - cert-manager

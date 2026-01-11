@@ -29,6 +29,16 @@ uninstall_gpu_operator() {
     fi
 }
 
+delete_manifests() {
+    log_info "Deleting manifests..."
+    
+    # Delete all manifests (ConfigMaps and ClusterPolicy)
+    if ls manifests/*.yaml &>/dev/null; then
+        kubectl delete -f manifests/ -n "$NAMESPACE" --ignore-not-found=true
+        log_info "Manifests deleted."
+    fi
+}
+
 delete_crds() {
     log_info "Deleting CRDs..."
     kubectl delete crd clusterpolicies.nvidia.com --ignore-not-found=true
@@ -45,6 +55,7 @@ main() {
     log_info "Starting GPU Operator uninstallation..."
     
     uninstall_gpu_operator
+    delete_manifests
     delete_crds
     
     read -p "Delete namespace $NAMESPACE? (y/N): " confirm

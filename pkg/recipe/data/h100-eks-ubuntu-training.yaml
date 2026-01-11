@@ -22,11 +22,18 @@ spec:
       value: ">= 6.8"
 
   componentRefs:
+
+    # Tainted configuration for system-workload deployments
+    - name: cert-manager
+      type: Helm
+      valuesFile: components/cert-manager/values-tainted.yaml
+
+    # Override with tainted configuration and add H100-specific features via overrides
     - name: gpu-operator
       type: Helm
-      version: v25.3.4
-      valuesFile: components/gpu-operator/eks-training.yaml
+      valuesFile: components/gpu-operator/values-eks-training-tainted.yaml
       overrides:
-        # H100-specific features over regular EKS training configuration
+        driver:
+          version: 570.133.20
         gdrcopy:
           enabled: false

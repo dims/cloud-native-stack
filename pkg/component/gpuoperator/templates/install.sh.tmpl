@@ -66,6 +66,18 @@ add_helm_repo() {
     helm repo update
 }
 
+apply_manifests() {
+    log_info "Applying manifests..."
+    
+    # Apply all manifests (ConfigMaps and ClusterPolicy)
+    if ls manifests/*.yaml &>/dev/null; then
+        kubectl apply -f manifests/ -n "$NAMESPACE"
+        log_info "Manifests applied."
+    else
+        log_warn "No manifests found in manifests/ directory."
+    fi
+}
+
 install_gpu_operator() {
     log_info "Installing GPU Operator..."
     
@@ -106,6 +118,7 @@ main() {
     check_prerequisites
     create_namespace
     add_helm_repo
+    apply_manifests
     install_gpu_operator
     verify_installation
     

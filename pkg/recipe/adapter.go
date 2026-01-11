@@ -26,6 +26,10 @@ type RecipeInput interface {
 	// GetVersion returns the recipe version (CLI version that generated the recipe).
 	// Returns empty string if version is not available.
 	GetVersion() string
+
+	// GetCriteria returns the criteria used to generate this recipe.
+	// Returns nil if criteria is not available (e.g., for legacy Recipe format).
+	GetCriteria() *Criteria
 }
 
 // Ensure Recipe implements RecipeInput
@@ -52,12 +56,22 @@ func (r *Recipe) GetVersion() string {
 	return r.Metadata["recipe-version"]
 }
 
+// GetCriteria returns nil for Recipe (v1 format doesn't have criteria).
+func (r *Recipe) GetCriteria() *Criteria {
+	return nil
+}
+
 // Ensure RecipeResult implements RecipeInput
 var _ RecipeInput = (*RecipeResult)(nil)
 
 // GetVersion returns the recipe version from metadata.
 func (r *RecipeResult) GetVersion() string {
 	return r.Metadata.Version
+}
+
+// GetCriteria returns the criteria used to generate this recipe result.
+func (r *RecipeResult) GetCriteria() *Criteria {
+	return r.Criteria
 }
 
 // GetComponentRef returns the component reference for a given component name.
