@@ -22,13 +22,13 @@ func recipeCmd() *cli.Command {
 	return &cli.Command{
 		Name:                  "recipe",
 		EnableShellCompletion: true,
-		Usage:                 "Generate configuration recipe for a given environment",
+		Usage:                 "Generate configuration recipe for a given set of environment parameters.",
 		Description: `Generate configuration recipe based on specified environment parameters including:
   - Kubernetes service type (eks, gke, aks, oke, self-managed)
   - Accelerator type (h100, gb200, a100, l40)
   - Workload intent (training, inference)
-  - Operating system (ubuntu, rhel, cos, amazonlinux)
-  - Number of nodes
+  - GPU node operating system (ubuntu, rhel, cos, amazonlinux)
+  - Number of GPU nodes in the cluster
 
 The recipe returns a list of components with deployment order based on dependencies.
 Output can be in JSON or YAML format.`,
@@ -52,7 +52,7 @@ Output can be in JSON or YAML format.`,
 			},
 			&cli.IntFlag{
 				Name:  "nodes",
-				Usage: "Number of worker/GPU nodes",
+				Usage: "Number of worker/GPU nodes in the cluster",
 			},
 			&cli.StringFlag{
 				Name:    "snapshot",
@@ -182,26 +182,56 @@ func extractCriteriaFromSnapshot(snap *snapshotter.Snapshot) *recipe.Criteria {
 			// Look for service type in server subtype
 			for _, st := range m.Subtypes {
 				if st.Name == "server" {
+					// Try direct "service" field first
 					if svcType, ok := st.Data["service"]; ok {
 						if parsed, err := recipe.ParseCriteriaServiceType(svcType.String()); err == nil {
 							criteria.Service = parsed
+						}
+					}
+
+					// Extract service from K8s version string (e.g., "v1.33.5-eks-3025e55")
+					if version, ok := st.Data["version"]; ok {
+						versionStr := version.String()
+						switch {
+						case strings.Contains(versionStr, "-eks-"):
+							criteria.Service = recipe.CriteriaServiceEKS
+						case strings.Contains(versionStr, "-gke"):
+							criteria.Service = recipe.CriteriaServiceGKE
+						case strings.Contains(versionStr, "-aks"):
+							criteria.Service = recipe.CriteriaServiceAKS
 						}
 					}
 				}
 			}
 
 		case measurement.TypeGPU:
-			// Look for GPU/accelerator type
+			// Look for GPU/accelerator type in smi or device subtype
 			for _, st := range m.Subtypes {
-				if st.Name == "device" {
-					if model, ok := st.Data["model"]; ok {
+				if st.Name == "smi" || st.Name == "device" {
+					// Try "gpu.model" field (from nvidia-smi)
+					if model, ok := st.Data["gpu.model"]; ok {
 						modelStr := model.String()
 						// Map model names to accelerator types
 						switch {
-						case containsIgnoreCase(modelStr, "h100"):
-							criteria.Accelerator = recipe.CriteriaAcceleratorH100
 						case containsIgnoreCase(modelStr, "gb200"):
 							criteria.Accelerator = recipe.CriteriaAcceleratorGB200
+						case containsIgnoreCase(modelStr, "h100"):
+							criteria.Accelerator = recipe.CriteriaAcceleratorH100
+						case containsIgnoreCase(modelStr, "a100"):
+							criteria.Accelerator = recipe.CriteriaAcceleratorA100
+						case containsIgnoreCase(modelStr, "l40"):
+							criteria.Accelerator = recipe.CriteriaAcceleratorL40
+						}
+					}
+
+					// Also try plain "model" field
+					if model, ok := st.Data["model"]; ok {
+						modelStr := model.String()
+						switch {
+						case containsIgnoreCase(modelStr, "gb200"):
+							criteria.Accelerator = recipe.CriteriaAcceleratorGB200
+						case containsIgnoreCase(modelStr, "h100"):
+							criteria.Accelerator = recipe.CriteriaAcceleratorH100
 						case containsIgnoreCase(modelStr, "a100"):
 							criteria.Accelerator = recipe.CriteriaAcceleratorA100
 						case containsIgnoreCase(modelStr, "l40"):
