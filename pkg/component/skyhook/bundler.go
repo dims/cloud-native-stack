@@ -68,6 +68,15 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeI
 		}
 	}
 
+	// Apply accelerated node selector overrides from CLI flags
+	// Skyhook is for GPU/accelerated nodes, so use accelerated node selectors/tolerations
+	common.ApplyNodeSelectorOverrides(values, b.Config.AcceleratedNodeSelector(),
+		"controllerManager.selectors")
+
+	// Apply accelerated tolerations overrides from CLI flags
+	common.ApplyTolerationsOverrides(values, b.Config.AcceleratedNodeTolerations(),
+		"controllerManager.tolerations")
+
 	// Create bundle directory structure
 	dirs, err := b.CreateBundleDir(dir, Name)
 	if err != nil {
@@ -75,8 +84,20 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeI
 			"failed to create bundle directory", err)
 	}
 
-	// Serialize values to YAML
-	valuesYAML, err := common.MarshalYAML(values)
+	// Build config map with base settings for metadata extraction
+	configMap := b.BuildConfigMapFromInput(input)
+	configMap["namespace"] = Name
+	configMap["helm_repository"] = componentRef.Source
+	configMap["helm_chart_version"] = componentRef.Version
+
+	// Serialize values to YAML with header
+	header := common.ValuesHeader{
+		ComponentName:  "Skyhook",
+		Timestamp:      time.Now().Format(time.RFC3339),
+		BundlerVersion: configMap["bundler_version"],
+		RecipeVersion:  configMap["recipe_version"],
+	}
+	valuesYAML, err := common.MarshalYAMLWithHeader(values, header)
 	if err != nil {
 		return b.Result, errors.Wrap(errors.ErrCodeInternal,
 			"failed to serialize values to YAML", err)
@@ -88,12 +109,6 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeI
 		return b.Result, errors.Wrap(errors.ErrCodeInternal,
 			"failed to write values file", err)
 	}
-
-	// Build config map with base settings for metadata extraction
-	configMap := b.BuildConfigMapFromInput(input)
-	configMap["namespace"] = Name
-	configMap["helm_repository"] = componentRef.Source
-	configMap["helm_chart_version"] = componentRef.Version
 
 	// Generate ScriptData (metadata only - not in Helm values)
 	scriptData := GenerateScriptDataFromConfig(configMap)
@@ -204,6 +219,16 @@ func (b *Bundler) generateCustomizationManifests(ctx context.Context, values map
 	manifestData := map[string]interface{}{
 		"Values": values,
 		"Script": scriptData,
+	}
+
+	// Add accelerated node tolerations if provided via CLI flags
+	if tolerations := b.Config.AcceleratedNodeTolerations(); len(tolerations) > 0 {
+		manifestData["Tolerations"] = common.TolerationsToPodSpec(tolerations)
+	}
+
+	// Add accelerated node selectors as matchExpressions if provided via CLI flags
+	if nodeSelector := b.Config.AcceleratedNodeSelector(); len(nodeSelector) > 0 {
+		manifestData["NodeSelectorExpressions"] = common.NodeSelectorToMatchExpressions(nodeSelector)
 	}
 
 	// Generate the customization manifest (WriteFile creates parent dirs automatically)

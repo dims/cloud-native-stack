@@ -23,29 +23,18 @@ spec:
 
   componentRefs:
 
-    # Tainted configuration for system-workload deployments
-    - name: cert-manager
-      type: Helm
-      valuesFile: components/cert-manager/values-tainted.yaml
-
-    # Override with tainted configuration and add H100-specific features via overrides
+    # Override with training configuration and add H100-specific features via overrides
     - name: gpu-operator
       type: Helm
-      valuesFile: components/gpu-operator/values-eks-training-tainted.yaml
+      valuesFile: components/gpu-operator/values-eks-training.yaml
       overrides:
         driver:
           version: 570.133.20
         gdrcopy:
           enabled: false
 
-    # Override with tainted configuration for system-workload deployments
-    - name: nvsentinel
-      type: Helm
-      valuesFile: components/nvsentinel/values-tainted.yaml
-
-    # Override with tainted configuration for system-workload deployments
+    # Override with Ubuntu customization for Skyhook
     - name: skyhook
       type: Helm
-      valuesFile: components/skyhook/values-tainted.yaml
       overrides:
         customization: ubuntu

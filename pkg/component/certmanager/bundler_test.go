@@ -22,9 +22,7 @@ func TestNewBundler(t *testing.T) {
 		},
 		{
 			name: "with valid config",
-			cfg: config.NewConfig(
-				config.WithNamespace("test-namespace"),
-			),
+			cfg:  config.NewConfig(),
 		},
 	}
 

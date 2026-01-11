@@ -18,18 +18,41 @@ metadata:
   namespace: {{ .Script.Namespace }}
 spec:
   runtimeRequired: true
+{{- if .Tolerations }}
+  additionalTolerations:
+  {{- range .Tolerations }}
+    - {{- if .key }}
+      key: {{ .key }}
+      {{- end }}
+      {{- if .operator }}
+      operator: {{ .operator }}
+      {{- end }}
+      {{- if .value }}
+      value: {{ .value }}
+      {{- end }}
+      {{- if .effect }}
+      effect: {{ .effect }}
+      {{- end }}
+  {{- end }}
+{{- else }}
   additionalTolerations:
     - key: dedicated
       operator: Exists
+{{- end }}
   interruptionBudget:
     percent: 100
+{{- if .NodeSelectorExpressions }}
   nodeSelectors:
     matchExpressions:
-      - key: nodeGroup
-        operator: In
+    {{- range .NodeSelectorExpressions }}
+      - key: {{ .key }}
+        operator: {{ .operator }}
         values:
-          - customer-gpu
-          - customer-cpu
+        {{- range .values }}
+          - {{ . }}
+        {{- end }}
+    {{- end }}
+{{- end }}
   packages:
     tuning:
       configInterrupts:

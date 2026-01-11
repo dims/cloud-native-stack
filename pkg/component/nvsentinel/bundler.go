@@ -68,6 +68,20 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeI
 		}
 	}
 
+	// Apply system node selector overrides (for system workloads)
+	if nodeSelector := b.Config.SystemNodeSelector(); len(nodeSelector) > 0 {
+		common.ApplyNodeSelectorOverrides(values, nodeSelector,
+			"global.systemNodeSelector",
+		)
+	}
+
+	// Apply accelerated node tolerations overrides (for GPU node access)
+	if tolerations := b.Config.AcceleratedNodeTolerations(); len(tolerations) > 0 {
+		common.ApplyTolerationsOverrides(values, tolerations,
+			"global.tolerations",
+		)
+	}
+
 	// Create bundle directory structure
 	dirs, err := b.CreateBundleDir(dir, Name)
 	if err != nil {
@@ -75,8 +89,20 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeI
 			"failed to create bundle directory", err)
 	}
 
-	// Serialize values to YAML
-	valuesYAML, err := common.MarshalYAML(values)
+	// Build config map with base settings for metadata extraction
+	configMap := b.BuildConfigMapFromInput(input)
+	configMap["namespace"] = Name
+	configMap["helm_repository"] = componentRef.Source
+	configMap["helm_chart_version"] = componentRef.Version
+
+	// Serialize values to YAML with header
+	header := common.ValuesHeader{
+		ComponentName:  "NVSentinel",
+		Timestamp:      time.Now().Format(time.RFC3339),
+		BundlerVersion: configMap["bundler_version"],
+		RecipeVersion:  configMap["recipe_version"],
+	}
+	valuesYAML, err := common.MarshalYAMLWithHeader(values, header)
 	if err != nil {
 		return b.Result, errors.Wrap(errors.ErrCodeInternal,
 			"failed to serialize values to YAML", err)
@@ -88,12 +114,6 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeI
 		return b.Result, errors.Wrap(errors.ErrCodeInternal,
 			"failed to write values file", err)
 	}
-
-	// Build config map with base settings for metadata extraction
-	configMap := b.BuildConfigMapFromInput(input)
-	configMap["namespace"] = Name
-	configMap["helm_repository"] = componentRef.Source
-	configMap["helm_chart_version"] = componentRef.Version
 
 	// Generate ScriptData (metadata only - not in Helm values)
 	scriptData := GenerateScriptDataFromConfig(configMap)

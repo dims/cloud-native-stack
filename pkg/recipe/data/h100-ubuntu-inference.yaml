@@ -30,7 +30,7 @@ spec:
       dependencyRefs:
         - cert-manager
 
-    # Override with tainted configuration for system-workload deployments
+    # Override with Ubuntu customization for Skyhook
     - name: skyhook
       type: Helm
       overrides:

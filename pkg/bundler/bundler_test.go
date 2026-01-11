@@ -159,9 +159,7 @@ func TestDefaultBundler_MakeWithOptions(t *testing.T) {
 		},
 	}
 
-	config := config.NewConfig(
-		config.WithNamespace("test-namespace"),
-	)
+	config := config.NewConfig()
 
 	bundler := New(WithRegistry(testReg), WithBundlerTypes([]types.BundleType{"mock"}),
 		WithConfig(config),
@@ -343,9 +341,7 @@ func TestDefaultBundler_MakeWithConfiguration(t *testing.T) {
 		},
 	}
 
-	config := config.NewConfig(
-		config.WithNamespace("custom-namespace"),
-	)
+	config := config.NewConfig()
 
 	bundler := New(WithRegistry(testReg), WithBundlerTypes([]types.BundleType{"mock-configurable"}),
 		WithConfig(config),

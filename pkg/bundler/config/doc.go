@@ -7,12 +7,14 @@
 // # Configuration Options
 //
 // Config controls bundler behavior through various settings:
-//   - Namespace: Kubernetes namespace for deployment (default: "gpu-operator")
+//   - OutputFormat: Output format (yaml, json, helm)
+//   - Compression: Enable gzip compression
 //   - IncludeScripts: Generate installation/uninstallation scripts
 //   - IncludeReadme: Generate deployment documentation
 //   - IncludeChecksums: Generate SHA256 checksums.txt file
-//   - IncludeManifests: Generate Kubernetes manifest files
-//   - CustomValues: Additional key-value pairs for template rendering
+//   - Version: Bundler version string
+//   - ValueOverrides: Per-bundler value overrides from CLI --set flags
+//   - Verbose: Enable verbose output
 //
 // # Usage
 //
@@ -23,29 +25,27 @@
 // Customize with functional options:
 //
 //	cfg := config.NewConfig(
-//	    config.WithNamespace("nvidia-system"),
+//	    config.WithOutputFormat("yaml"),
 //	    config.WithIncludeScripts(true),
 //	    config.WithIncludeChecksums(true),
-//	    config.WithCustomValue("cluster", "production"),
+//	    config.WithVersion("v1.0.0"),
 //	)
 //
 // Access configuration:
 //
-//	namespace := cfg.Namespace()
 //	if cfg.IncludeScripts() {
 //	    // Generate scripts
 //	}
-//	clusterName, ok := cfg.CustomValue("cluster")
+//	version := cfg.Version()
 //
 // # Default Values
 //
 // The default configuration includes:
-//   - Namespace: "gpu-operator"
+//   - OutputFormat: "yaml"
 //   - IncludeScripts: true
 //   - IncludeReadme: true
 //   - IncludeChecksums: true
-//   - IncludeManifests: true
-//   - CustomValues: empty map
+//   - Version: "dev"
 //
 // # Thread Safety
 //
@@ -65,7 +65,6 @@
 //	}
 //
 //	func (b *MyBundler) Make(ctx context.Context, r *recipe.Recipe, outputDir string) (*result.Result, error) {
-//	    namespace := b.cfg.Namespace()
 //	    if b.cfg.IncludeScripts() {
 //	        // Generate scripts
 //	    }
@@ -79,7 +78,6 @@
 //	}
 //
 //	func (b *MyBundler) Make(ctx context.Context, r *recipe.Recipe, outputDir string) (*result.Result, error) {
-//	    namespace := b.Config.Namespace()
 //	    if b.Config.IncludeScripts() {
 //	        // Generate scripts
 //	    }

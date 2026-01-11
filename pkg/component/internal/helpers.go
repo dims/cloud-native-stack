@@ -211,6 +211,35 @@ func MarshalYAML(v interface{}) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// ValuesHeader contains metadata for values.yaml file headers.
+type ValuesHeader struct {
+	ComponentName  string
+	Timestamp      string
+	BundlerVersion string
+	RecipeVersion  string
+}
+
+// MarshalYAMLWithHeader serializes a value to YAML format with a metadata header.
+func MarshalYAMLWithHeader(v interface{}, header ValuesHeader) ([]byte, error) {
+	var buf bytes.Buffer
+
+	// Write header comments
+	buf.WriteString(fmt.Sprintf("# %s Helm Values\n", header.ComponentName))
+	buf.WriteString("# Generated from Cloud Native Stack Recipe\n")
+	buf.WriteString(fmt.Sprintf("# Timestamp: %s\n", header.Timestamp))
+	buf.WriteString(fmt.Sprintf("# Bundler Version: %s\n", header.BundlerVersion))
+	buf.WriteString(fmt.Sprintf("# Recipe Version: %s\n", header.RecipeVersion))
+	buf.WriteString("\n")
+
+	// Serialize the values
+	encoder := yaml.NewEncoder(&buf)
+	encoder.SetIndent(2)
+	if err := encoder.Encode(v); err != nil {
+		return nil, fmt.Errorf("failed to marshal YAML: %w", err)
+	}
+	return buf.Bytes(), nil
+}
+
 // GetConfigValue gets a value from config map with a default fallback.
 func GetConfigValue(config map[string]string, key, defaultValue string) string {
 	if val, ok := config[key]; ok && val != "" {

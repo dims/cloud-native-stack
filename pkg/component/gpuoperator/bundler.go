@@ -62,6 +62,40 @@ func (b *Bundler) Make(ctx context.Context, input recipe.RecipeInput, dir string
 		}
 	}
 
+	// Apply system node selector (for operator control plane components)
+	if nodeSelector := b.Config.SystemNodeSelector(); len(nodeSelector) > 0 {
+		common.ApplyNodeSelectorOverrides(values, nodeSelector,
+			"operator.nodeSelector",
+			"node-feature-discovery.gc.nodeSelector",
+			"node-feature-discovery.master.nodeSelector",
+		)
+	}
+
+	// Apply system node tolerations (for operator control plane components)
+	if tolerations := b.Config.SystemNodeTolerations(); len(tolerations) > 0 {
+		common.ApplyTolerationsOverrides(values, tolerations,
+			"operator.tolerations",
+			"node-feature-discovery.gc.tolerations",
+			"node-feature-discovery.master.tolerations",
+		)
+	}
+
+	// Apply accelerated node selector (for GPU node daemonsets)
+	if nodeSelector := b.Config.AcceleratedNodeSelector(); len(nodeSelector) > 0 {
+		common.ApplyNodeSelectorOverrides(values, nodeSelector,
+			"daemonsets.nodeSelector",
+			"node-feature-discovery.worker.nodeSelector",
+		)
+	}
+
+	// Apply accelerated node tolerations (for GPU node daemonsets)
+	if tolerations := b.Config.AcceleratedNodeTolerations(); len(tolerations) > 0 {
+		common.ApplyTolerationsOverrides(values, tolerations,
+			"daemonsets.tolerations",
+			"node-feature-discovery.worker.tolerations",
+		)
+	}
+
 	// Create bundle directory structure
 	dirs, err := b.CreateBundleDir(dir, Name)
 	if err != nil {
@@ -69,8 +103,20 @@ func (b *Bundler) Make(ctx context.Context, input recipe.RecipeInput, dir string
 			"failed to create bundle directory", err)
 	}
 
-	// Serialize values to YAML
-	valuesYAML, err := common.MarshalYAML(values)
+	// Build config map with base settings for metadata extraction
+	configMap := b.BuildConfigMapFromInput(input)
+	configMap["namespace"] = Name
+	configMap["helm_repository"] = componentRef.Source
+	configMap["helm_chart_version"] = componentRef.Version
+
+	// Serialize values to YAML with header
+	header := common.ValuesHeader{
+		ComponentName:  "GPU Operator",
+		Timestamp:      time.Now().Format(time.RFC3339),
+		BundlerVersion: configMap["bundler_version"],
+		RecipeVersion:  configMap["recipe_version"],
+	}
+	valuesYAML, err := common.MarshalYAMLWithHeader(values, header)
 	if err != nil {
 		return b.Result, errors.Wrap(errors.ErrCodeInternal,
 			"failed to serialize values to YAML", err)
@@ -82,12 +128,6 @@ func (b *Bundler) Make(ctx context.Context, input recipe.RecipeInput, dir string
 		return b.Result, errors.Wrap(errors.ErrCodeInternal,
 			"failed to write values file", err)
 	}
-
-	// Build config map with base settings for metadata extraction
-	configMap := b.BuildConfigMapFromInput(input)
-	configMap["namespace"] = Name
-	configMap["helm_repository"] = componentRef.Source
-	configMap["helm_chart_version"] = componentRef.Version
 
 	// Generate ScriptData (metadata only - not in Helm values)
 	scriptData := GenerateScriptDataFromConfig(configMap)

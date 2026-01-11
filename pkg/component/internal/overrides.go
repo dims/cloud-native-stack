@@ -8,6 +8,7 @@ import (
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // String constants for override values.
@@ -517,4 +518,164 @@ func parseBool(value string) (bool, error) {
 	default:
 		return false, fmt.Errorf("cannot parse %q as boolean", value)
 	}
+}
+
+// ApplyNodeSelectorOverrides applies node selector overrides to a values map.
+// If nodeSelector is non-empty, it sets or merges with the existing nodeSelector field.
+// The function applies to the specified paths in the values map (e.g., "nodeSelector", "webhook.nodeSelector").
+func ApplyNodeSelectorOverrides(values map[string]interface{}, nodeSelector map[string]string, paths ...string) {
+	if len(nodeSelector) == 0 || values == nil {
+		return
+	}
+
+	// Default to top-level "nodeSelector" if no paths specified
+	if len(paths) == 0 {
+		paths = []string{"nodeSelector"}
+	}
+
+	for _, path := range paths {
+		setNodeSelectorAtPath(values, nodeSelector, path)
+	}
+}
+
+// setNodeSelectorAtPath sets the node selector at the specified dot-notation path.
+func setNodeSelectorAtPath(values map[string]interface{}, nodeSelector map[string]string, path string) {
+	parts := strings.Split(path, ".")
+	current := values
+
+	// Navigate to the parent of the target field
+	for i := 0; i < len(parts)-1; i++ {
+		part := parts[i]
+		if next, ok := current[part]; ok {
+			if nextMap, ok := next.(map[string]interface{}); ok {
+				current = nextMap
+			} else {
+				// Path doesn't exist as expected structure, create it
+				newMap := make(map[string]interface{})
+				current[part] = newMap
+				current = newMap
+			}
+		} else {
+			// Create the intermediate path
+			newMap := make(map[string]interface{})
+			current[part] = newMap
+			current = newMap
+		}
+	}
+
+	// Set the node selector - convert map[string]string to map[string]interface{}
+	lastPart := parts[len(parts)-1]
+	nsMap := make(map[string]interface{}, len(nodeSelector))
+	for k, v := range nodeSelector {
+		nsMap[k] = v
+	}
+	current[lastPart] = nsMap
+}
+
+// ApplyTolerationsOverrides applies toleration overrides to a values map.
+// If tolerations is non-empty, it sets or replaces the existing tolerations field.
+// The function applies to the specified paths in the values map (e.g., "tolerations", "webhook.tolerations").
+func ApplyTolerationsOverrides(values map[string]interface{}, tolerations []corev1.Toleration, paths ...string) {
+	if len(tolerations) == 0 || values == nil {
+		return
+	}
+
+	// Default to top-level "tolerations" if no paths specified
+	if len(paths) == 0 {
+		paths = []string{"tolerations"}
+	}
+
+	// Convert tolerations to YAML-friendly format
+	tolList := TolerationsToPodSpec(tolerations)
+
+	for _, path := range paths {
+		setTolerationsAtPath(values, tolList, path)
+	}
+}
+
+// setTolerationsAtPath sets the tolerations at the specified dot-notation path.
+func setTolerationsAtPath(values map[string]interface{}, tolerations []map[string]interface{}, path string) {
+	parts := strings.Split(path, ".")
+	current := values
+
+	// Navigate to the parent of the target field
+	for i := 0; i < len(parts)-1; i++ {
+		part := parts[i]
+		if next, ok := current[part]; ok {
+			if nextMap, ok := next.(map[string]interface{}); ok {
+				current = nextMap
+			} else {
+				// Path doesn't exist as expected structure, create it
+				newMap := make(map[string]interface{})
+				current[part] = newMap
+				current = newMap
+			}
+		} else {
+			// Create the intermediate path
+			newMap := make(map[string]interface{})
+			current[part] = newMap
+			current = newMap
+		}
+	}
+
+	// Set the tolerations
+	lastPart := parts[len(parts)-1]
+	// Convert to []interface{} for proper YAML serialization
+	tolInterface := make([]interface{}, len(tolerations))
+	for i, t := range tolerations {
+		tolInterface[i] = t
+	}
+	current[lastPart] = tolInterface
+}
+
+// TolerationsToPodSpec converts a slice of corev1.Toleration to a YAML-friendly format.
+// This format matches what Kubernetes expects in pod specs and Helm values.
+func TolerationsToPodSpec(tolerations []corev1.Toleration) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(tolerations))
+
+	for _, t := range tolerations {
+		tolMap := make(map[string]interface{})
+
+		// Only include non-empty fields to keep YAML clean
+		if t.Key != "" {
+			tolMap["key"] = t.Key
+		}
+		if t.Operator != "" {
+			tolMap["operator"] = string(t.Operator)
+		}
+		if t.Value != "" {
+			tolMap["value"] = t.Value
+		}
+		if t.Effect != "" {
+			tolMap["effect"] = string(t.Effect)
+		}
+		if t.TolerationSeconds != nil {
+			tolMap["tolerationSeconds"] = *t.TolerationSeconds
+		}
+
+		result = append(result, tolMap)
+	}
+
+	return result
+}
+
+// NodeSelectorToMatchExpressions converts a map of node selectors to matchExpressions format.
+// This format is used by some CRDs like Skyhook that use label selector syntax.
+// Each key=value pair becomes a matchExpression with operator "In" and single value.
+func NodeSelectorToMatchExpressions(nodeSelector map[string]string) []map[string]interface{} {
+	if len(nodeSelector) == 0 {
+		return nil
+	}
+
+	result := make([]map[string]interface{}, 0, len(nodeSelector))
+	for key, value := range nodeSelector {
+		expr := map[string]interface{}{
+			"key":      key,
+			"operator": "In",
+			"values":   []string{value},
+		}
+		result = append(result, expr)
+	}
+
+	return result
 }

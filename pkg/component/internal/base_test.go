@@ -394,47 +394,15 @@ func TestBaseBundler_AddError(t *testing.T) {
 
 func TestBaseBundler_BuildBaseConfigMap(t *testing.T) {
 	cfg := config.NewConfig(
-		config.WithNamespace("test-namespace"),
-		config.WithHelmRepository("https://test.repo"),
-		config.WithHelmChartVersion("v1.2.3"),
-		config.WithCustomLabels(map[string]string{
-			"env":  "prod",
-			"team": "platform",
-		}),
-		config.WithCustomAnnotations(map[string]string{
-			"owner":   "ops-team",
-			"version": "1.0",
-		}),
+		config.WithVersion("v1.2.3"),
 	)
 
 	b := NewBaseBundler(cfg, types.BundleTypeGpuOperator)
 	configMap := b.BuildBaseConfigMap()
 
-	// Test basic config values
-	if configMap["namespace"] != "test-namespace" {
-		t.Errorf("namespace = %s, want test-namespace", configMap["namespace"])
-	}
-	if configMap["helm_repository"] != "https://test.repo" {
-		t.Errorf("helm_repository = %s, want https://test.repo", configMap["helm_repository"])
-	}
-	if configMap["helm_chart_version"] != "v1.2.3" {
-		t.Errorf("helm_chart_version = %s, want v1.2.3", configMap["helm_chart_version"])
-	}
-
-	// Test custom labels
-	if configMap["label_env"] != "prod" {
-		t.Errorf("label_env = %s, want prod", configMap["label_env"])
-	}
-	if configMap["label_team"] != "platform" {
-		t.Errorf("label_team = %s, want platform", configMap["label_team"])
-	}
-
-	// Test custom annotations
-	if configMap["annotation_owner"] != "ops-team" {
-		t.Errorf("annotation_owner = %s, want ops-team", configMap["annotation_owner"])
-	}
-	if configMap["annotation_version"] != "1.0" {
-		t.Errorf("annotation_version = %s, want 1.0", configMap["annotation_version"])
+	// Test bundler version is set
+	if configMap["bundler_version"] != "v1.2.3" {
+		t.Errorf("bundler_version = %s, want v1.2.3", configMap["bundler_version"])
 	}
 }
 
@@ -597,11 +565,7 @@ func (m *mockRecipeInput) GetVersion() string {
 
 func TestBaseBundler_BuildConfigMapFromInput(t *testing.T) {
 	cfg := config.NewConfig(
-		config.WithNamespace("test-ns"),
-		config.WithHelmRepository("https://charts.example.com"),
-		config.WithHelmChartVersion("v1.0.0"),
 		config.WithVersion("bundler-v1.2.3"),
-		config.WithCustomLabels(map[string]string{"env": "test"}),
 	)
 
 	b := NewBaseBundler(cfg, types.BundleTypeGpuOperator)
@@ -617,12 +581,6 @@ func TestBaseBundler_BuildConfigMapFromInput(t *testing.T) {
 			input:   &mockRecipeInput{version: "recipe-v1.0.0"},
 			wantKey: recipeBundlerVersionKey,
 			wantVal: "recipe-v1.0.0",
-		},
-		{
-			name:    "includes namespace",
-			input:   &mockRecipeInput{version: "v1.0.0"},
-			wantKey: "namespace",
-			wantVal: "test-ns",
 		},
 		{
 			name:    "includes bundler version",

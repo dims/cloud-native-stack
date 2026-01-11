@@ -16,6 +16,7 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/types"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
+	"github.com/NVIDIA/cloud-native-stack/pkg/snapshotter"
 	"github.com/urfave/cli/v3"
 )
 
@@ -55,6 +56,22 @@ func bundleCmd() *cli.Command {
 				Name:  "set",
 				Usage: "Override values in generated bundle files (format: bundler:path.to.field=value, e.g., --set gpuoperator:gds.enabled=true)",
 			},
+			&cli.StringSliceFlag{
+				Name:  "system-node-selector",
+				Usage: "Node selector for system components (format: key=value, can be repeated)",
+			},
+			&cli.StringSliceFlag{
+				Name:  "system-node-toleration",
+				Usage: "Toleration for system components (format: key=value:effect, can be repeated)",
+			},
+			&cli.StringSliceFlag{
+				Name:  "accelerated-node-selector",
+				Usage: "Node selector for accelerated/GPU nodes (format: key=value, can be repeated)",
+			},
+			&cli.StringSliceFlag{
+				Name:  "accelerated-node-toleration",
+				Usage: "Toleration for accelerated/GPU nodes (format: key=value:effect, can be repeated)",
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			recipeFilePath := cmd.String("recipe")
@@ -66,6 +83,26 @@ func bundleCmd() *cli.Command {
 			valueOverrides, err := parseSetFlags(setFlags)
 			if err != nil {
 				return fmt.Errorf("invalid --set flag: %w", err)
+			}
+
+			// Parse node selectors
+			systemNodeSelector, err := snapshotter.ParseNodeSelectors(cmd.StringSlice("system-node-selector"))
+			if err != nil {
+				return fmt.Errorf("invalid --system-node-selector: %w", err)
+			}
+			acceleratedNodeSelector, err := snapshotter.ParseNodeSelectors(cmd.StringSlice("accelerated-node-selector"))
+			if err != nil {
+				return fmt.Errorf("invalid --accelerated-node-selector: %w", err)
+			}
+
+			// Parse tolerations
+			systemNodeTolerations, err := snapshotter.ParseTolerations(cmd.StringSlice("system-node-toleration"))
+			if err != nil {
+				return fmt.Errorf("invalid --system-node-toleration: %w", err)
+			}
+			acceleratedNodeTolerations, err := snapshotter.ParseTolerations(cmd.StringSlice("accelerated-node-toleration"))
+			if err != nil {
+				return fmt.Errorf("invalid --accelerated-node-toleration: %w", err)
 			}
 
 			// Parse bundler types
@@ -94,6 +131,10 @@ func bundleCmd() *cli.Command {
 				config.NewConfig(
 					config.WithVersion(version),
 					config.WithValueOverrides(valueOverrides),
+					config.WithSystemNodeSelector(systemNodeSelector),
+					config.WithSystemNodeTolerations(systemNodeTolerations),
+					config.WithAcceleratedNodeSelector(acceleratedNodeSelector),
+					config.WithAcceleratedNodeTolerations(acceleratedNodeTolerations),
 				),
 			)
 

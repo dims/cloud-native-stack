@@ -1,6 +1,10 @@
 package config
 
-import "fmt"
+import (
+	"fmt"
+
+	corev1 "k8s.io/api/core/v1"
+)
 
 // Config provides immutable configuration options for bundlers.
 // All fields are read-only after creation to prevent accidental modifications.
@@ -22,21 +26,6 @@ type Config struct {
 	// includeChecksums includes checksum file for verification.
 	includeChecksums bool
 
-	// helmChartVersion specifies the Helm chart version to use.
-	helmChartVersion string
-
-	// helmRepository specifies the Helm repository URL.
-	helmRepository string
-
-	// customLabels adds custom labels to generated resources.
-	customLabels map[string]string
-
-	// customAnnotations adds custom annotations to generated resources.
-	customAnnotations map[string]string
-
-	// namespace specifies the Kubernetes namespace for resources.
-	namespace string
-
 	// verbose enables detailed output during bundle generation.
 	verbose bool
 
@@ -46,6 +35,18 @@ type Config struct {
 	// valueOverrides contains user-specified value overrides per bundler.
 	// Map structure: bundler_name -> (path -> value)
 	valueOverrides map[string]map[string]string
+
+	// systemNodeSelector contains node selector labels for system components.
+	systemNodeSelector map[string]string
+
+	// systemNodeTolerations contains tolerations for system components.
+	systemNodeTolerations []corev1.Toleration
+
+	// acceleratedNodeSelector contains node selector labels for accelerated/GPU nodes.
+	acceleratedNodeSelector map[string]string
+
+	// acceleratedNodeTolerations contains tolerations for accelerated/GPU nodes.
+	acceleratedNodeTolerations []corev1.Toleration
 }
 
 // Getter methods for read-only access
@@ -75,39 +76,6 @@ func (c *Config) IncludeChecksums() bool {
 	return c.includeChecksums
 }
 
-// HelmChartVersion returns the Helm chart version setting.
-func (c *Config) HelmChartVersion() string {
-	return c.helmChartVersion
-}
-
-// HelmRepository returns the Helm repository URL setting.
-func (c *Config) HelmRepository() string {
-	return c.helmRepository
-}
-
-// CustomLabels returns a copy of the custom labels to prevent modification.
-func (c *Config) CustomLabels() map[string]string {
-	labels := make(map[string]string, len(c.customLabels))
-	for k, v := range c.customLabels {
-		labels[k] = v
-	}
-	return labels
-}
-
-// CustomAnnotations returns a copy of the custom annotations to prevent modification.
-func (c *Config) CustomAnnotations() map[string]string {
-	annotations := make(map[string]string, len(c.customAnnotations))
-	for k, v := range c.customAnnotations {
-		annotations[k] = v
-	}
-	return annotations
-}
-
-// Namespace returns the namespace setting.
-func (c *Config) Namespace() string {
-	return c.namespace
-}
-
 // Verbose returns the verbose setting.
 func (c *Config) Verbose() bool {
 	return c.verbose
@@ -133,16 +101,56 @@ func (c *Config) ValueOverrides() map[string]map[string]string {
 	return overrides
 }
 
+// SystemNodeSelector returns a copy of the system node selector map.
+func (c *Config) SystemNodeSelector() map[string]string {
+	if c.systemNodeSelector == nil {
+		return nil
+	}
+	result := make(map[string]string, len(c.systemNodeSelector))
+	for k, v := range c.systemNodeSelector {
+		result[k] = v
+	}
+	return result
+}
+
+// SystemNodeTolerations returns a copy of the system node tolerations.
+func (c *Config) SystemNodeTolerations() []corev1.Toleration {
+	if c.systemNodeTolerations == nil {
+		return nil
+	}
+	result := make([]corev1.Toleration, len(c.systemNodeTolerations))
+	copy(result, c.systemNodeTolerations)
+	return result
+}
+
+// AcceleratedNodeSelector returns a copy of the accelerated node selector map.
+func (c *Config) AcceleratedNodeSelector() map[string]string {
+	if c.acceleratedNodeSelector == nil {
+		return nil
+	}
+	result := make(map[string]string, len(c.acceleratedNodeSelector))
+	for k, v := range c.acceleratedNodeSelector {
+		result[k] = v
+	}
+	return result
+}
+
+// AcceleratedNodeTolerations returns a copy of the accelerated node tolerations.
+func (c *Config) AcceleratedNodeTolerations() []corev1.Toleration {
+	if c.acceleratedNodeTolerations == nil {
+		return nil
+	}
+	result := make([]corev1.Toleration, len(c.acceleratedNodeTolerations))
+	copy(result, c.acceleratedNodeTolerations)
+	return result
+}
+
 // Validate checks if the Config has valid settings.
 func (c *Config) Validate() error {
 	validFormats := map[string]bool{"yaml": true, "json": true, "helm": true}
 	if !validFormats[c.outputFormat] {
 		return fmt.Errorf("invalid output format: %s (must be yaml, json, or helm)",
 			c.outputFormat)
-	}
-
-	if c.namespace == "" {
-		return fmt.Errorf("namespace cannot be empty")
 	}
 
 	return nil
@@ -185,45 +193,6 @@ func WithIncludeChecksums(enabled bool) Option {
 	}
 }
 
-// WithHelmChartVersion sets the Helm chart version for the bundler.
-func WithHelmChartVersion(version string) Option {
-	return func(c *Config) {
-		c.helmChartVersion = version
-	}
-}
-
-// WithHelmRepository sets the Helm repository URL for the bundler.
-func WithHelmRepository(url string) Option {
-	return func(c *Config) {
-		c.helmRepository = url
-	}
-}
-
-// WithCustomLabels sets custom labels for the bundler.
-func WithCustomLabels(labels map[string]string) Option {
-	return func(c *Config) {
-		for k, v := range labels {
-			c.customLabels[k] = v
-		}
-	}
-}
-
-// WithCustomAnnotations sets custom annotations for the bundler.
-func WithCustomAnnotations(annotations map[string]string) Option {
-	return func(c *Config) {
-		for k, v := range annotations {
-			c.customAnnotations[k] = v
-		}
-	}
-}
-
-// WithNamespace sets the namespace for the bundler.
-func WithNamespace(namespace string) Option {
-	return func(c *Config) {
-		c.namespace = namespace
-	}
-}
-
 // WithVerbose sets whether verbose logging is enabled for the bundler.
 func WithVerbose(enabled bool) Option {
 	return func(c *Config) {
@@ -256,20 +225,65 @@ func WithValueOverrides(overrides map[string]map[string]string) Option {
 	}
 }
 
+// WithSystemNodeSelector sets the node selector for system components.
+func WithSystemNodeSelector(selector map[string]string) Option {
+	return func(c *Config) {
+		if selector == nil {
+			return
+		}
+		c.systemNodeSelector = make(map[string]string, len(selector))
+		for k, v := range selector {
+			c.systemNodeSelector[k] = v
+		}
+	}
+}
+
+// WithSystemNodeTolerations sets the tolerations for system components.
+func WithSystemNodeTolerations(tolerations []corev1.Toleration) Option {
+	return func(c *Config) {
+		if tolerations == nil {
+			return
+		}
+		c.systemNodeTolerations = make([]corev1.Toleration, len(tolerations))
+		copy(c.systemNodeTolerations, tolerations)
+	}
+}
+
+// WithAcceleratedNodeSelector sets the node selector for accelerated/GPU nodes.
+func WithAcceleratedNodeSelector(selector map[string]string) Option {
+	return func(c *Config) {
+		if selector == nil {
+			return
+		}
+		c.acceleratedNodeSelector = make(map[string]string, len(selector))
+		for k, v := range selector {
+			c.acceleratedNodeSelector[k] = v
+		}
+	}
+}
+
+// WithAcceleratedNodeTolerations sets the tolerations for accelerated/GPU nodes.
+func WithAcceleratedNodeTolerations(tolerations []corev1.Toleration) Option {
+	return func(c *Config) {
+		if tolerations == nil {
+			return
+		}
+		c.acceleratedNodeTolerations = make([]corev1.Toleration, len(tolerations))
+		copy(c.acceleratedNodeTolerations, tolerations)
+	}
+}
+
 // NewConfig returns a Config with default values.
 func NewConfig(options ...Option) *Config {
 	c := &Config{
-		compression:       false,
-		customAnnotations: make(map[string]string),
-		customLabels:      make(map[string]string),
-		includeChecksums:  true,
-		includeReadme:     true,
-		includeScripts:    true,
-		namespace:         "default",
-		outputFormat:      "yaml",
-		valueOverrides:    make(map[string]map[string]string),
-		verbose:           false,
-		version:           "dev",
+		compression:      false,
+		includeChecksums: true,
+		includeReadme:    true,
+		includeScripts:   true,
+		outputFormat:     "yaml",
+		valueOverrides:   make(map[string]map[string]string),
+		verbose:          false,
+		version:          "dev",
 	}
 	for _, opt := range options {
 		opt(c)

@@ -2,6 +2,8 @@ package internal
 
 import (
 	"testing"
+
+	corev1 "k8s.io/api/core/v1"
 )
 
 // TestStruct is a test struct with various field types.
@@ -464,4 +466,337 @@ func containsSubstringHelper(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+func TestApplyNodeSelectorOverrides(t *testing.T) {
+	tests := []struct {
+		name         string
+		values       map[string]interface{}
+		nodeSelector map[string]string
+		paths        []string
+		verify       func(t *testing.T, values map[string]interface{})
+	}{
+		{
+			name:   "applies to top-level nodeSelector",
+			values: make(map[string]interface{}),
+			nodeSelector: map[string]string{
+				"nodeGroup": "system-cpu",
+			},
+			paths: []string{"nodeSelector"},
+			verify: func(t *testing.T, values map[string]interface{}) {
+				ns, ok := values["nodeSelector"].(map[string]interface{})
+				if !ok {
+					t.Fatal("nodeSelector not found or wrong type")
+				}
+				if ns["nodeGroup"] != "system-cpu" {
+					t.Errorf("nodeSelector.nodeGroup = %v, want system-cpu", ns["nodeGroup"])
+				}
+			},
+		},
+		{
+			name: "applies to nested paths",
+			values: map[string]interface{}{
+				"webhook": make(map[string]interface{}),
+			},
+			nodeSelector: map[string]string{
+				"role": "control-plane",
+			},
+			paths: []string{"nodeSelector", "webhook.nodeSelector"},
+			verify: func(t *testing.T, values map[string]interface{}) {
+				// Check top-level
+				ns, ok := values["nodeSelector"].(map[string]interface{})
+				if !ok {
+					t.Fatal("nodeSelector not found")
+				}
+				if ns["role"] != "control-plane" {
+					t.Errorf("nodeSelector.role = %v, want control-plane", ns["role"])
+				}
+				// Check nested
+				wh, ok := values["webhook"].(map[string]interface{})
+				if !ok {
+					t.Fatal("webhook not found")
+				}
+				whNs, ok := wh["nodeSelector"].(map[string]interface{})
+				if !ok {
+					t.Fatal("webhook.nodeSelector not found")
+				}
+				if whNs["role"] != "control-plane" {
+					t.Errorf("webhook.nodeSelector.role = %v, want control-plane", whNs["role"])
+				}
+			},
+		},
+		{
+			name:         "empty nodeSelector is no-op",
+			values:       make(map[string]interface{}),
+			nodeSelector: map[string]string{},
+			paths:        []string{"nodeSelector"},
+			verify: func(t *testing.T, values map[string]interface{}) {
+				if _, ok := values["nodeSelector"]; ok {
+					t.Error("nodeSelector should not be set for empty input")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ApplyNodeSelectorOverrides(tt.values, tt.nodeSelector, tt.paths...)
+			tt.verify(t, tt.values)
+		})
+	}
+}
+
+func TestApplyTolerationsOverrides(t *testing.T) {
+	tests := []struct {
+		name        string
+		values      map[string]interface{}
+		tolerations []corev1.Toleration
+		paths       []string
+		verify      func(t *testing.T, values map[string]interface{})
+	}{
+		{
+			name:   "applies single toleration",
+			values: make(map[string]interface{}),
+			tolerations: []corev1.Toleration{
+				{
+					Key:      "dedicated",
+					Value:    "system-workload",
+					Operator: corev1.TolerationOpEqual,
+					Effect:   corev1.TaintEffectNoSchedule,
+				},
+			},
+			paths: []string{"tolerations"},
+			verify: func(t *testing.T, values map[string]interface{}) {
+				tols, ok := values["tolerations"].([]interface{})
+				if !ok {
+					t.Fatal("tolerations not found or wrong type")
+				}
+				if len(tols) != 1 {
+					t.Fatalf("expected 1 toleration, got %d", len(tols))
+				}
+				tol, ok := tols[0].(map[string]interface{})
+				if !ok {
+					t.Fatal("toleration entry wrong type")
+				}
+				if tol["key"] != "dedicated" {
+					t.Errorf("key = %v, want dedicated", tol["key"])
+				}
+				if tol["value"] != "system-workload" {
+					t.Errorf("value = %v, want system-workload", tol["value"])
+				}
+			},
+		},
+		{
+			name: "applies to nested paths",
+			values: map[string]interface{}{
+				"webhook": make(map[string]interface{}),
+			},
+			tolerations: []corev1.Toleration{
+				{Operator: corev1.TolerationOpExists},
+			},
+			paths: []string{"tolerations", "webhook.tolerations"},
+			verify: func(t *testing.T, values map[string]interface{}) {
+				// Check top-level
+				tols, ok := values["tolerations"].([]interface{})
+				if !ok {
+					t.Fatal("tolerations not found")
+				}
+				if len(tols) != 1 {
+					t.Fatalf("expected 1 toleration, got %d", len(tols))
+				}
+				// Check nested
+				wh, ok := values["webhook"].(map[string]interface{})
+				if !ok {
+					t.Fatal("webhook not found")
+				}
+				whTols, ok := wh["tolerations"].([]interface{})
+				if !ok {
+					t.Fatal("webhook.tolerations not found")
+				}
+				if len(whTols) != 1 {
+					t.Fatalf("expected 1 webhook toleration, got %d", len(whTols))
+				}
+			},
+		},
+		{
+			name:        "empty tolerations is no-op",
+			values:      make(map[string]interface{}),
+			tolerations: []corev1.Toleration{},
+			paths:       []string{"tolerations"},
+			verify: func(t *testing.T, values map[string]interface{}) {
+				if _, ok := values["tolerations"]; ok {
+					t.Error("tolerations should not be set for empty input")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ApplyTolerationsOverrides(tt.values, tt.tolerations, tt.paths...)
+			tt.verify(t, tt.values)
+		})
+	}
+}
+
+func TestTolerationsToPodSpec(t *testing.T) {
+	tests := []struct {
+		name        string
+		tolerations []corev1.Toleration
+		verify      func(t *testing.T, result []map[string]interface{})
+	}{
+		{
+			name: "converts full toleration",
+			tolerations: []corev1.Toleration{
+				{
+					Key:      "dedicated",
+					Operator: corev1.TolerationOpEqual,
+					Value:    "gpu",
+					Effect:   corev1.TaintEffectNoSchedule,
+				},
+			},
+			verify: func(t *testing.T, result []map[string]interface{}) {
+				if len(result) != 1 {
+					t.Fatalf("expected 1 result, got %d", len(result))
+				}
+				tol := result[0]
+				if tol["key"] != "dedicated" {
+					t.Errorf("key = %v, want dedicated", tol["key"])
+				}
+				if tol["operator"] != "Equal" {
+					t.Errorf("operator = %v, want Equal", tol["operator"])
+				}
+				if tol["value"] != "gpu" {
+					t.Errorf("value = %v, want gpu", tol["value"])
+				}
+				if tol["effect"] != "NoSchedule" {
+					t.Errorf("effect = %v, want NoSchedule", tol["effect"])
+				}
+			},
+		},
+		{
+			name: "omits empty fields",
+			tolerations: []corev1.Toleration{
+				{Operator: corev1.TolerationOpExists},
+			},
+			verify: func(t *testing.T, result []map[string]interface{}) {
+				if len(result) != 1 {
+					t.Fatalf("expected 1 result, got %d", len(result))
+				}
+				tol := result[0]
+				if _, ok := tol["key"]; ok {
+					t.Error("key should be omitted when empty")
+				}
+				if tol["operator"] != "Exists" {
+					t.Errorf("operator = %v, want Exists", tol["operator"])
+				}
+				if _, ok := tol["value"]; ok {
+					t.Error("value should be omitted when empty")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := TolerationsToPodSpec(tt.tolerations)
+			tt.verify(t, result)
+		})
+	}
+}
+
+func TestNodeSelectorToMatchExpressions(t *testing.T) {
+	tests := []struct {
+		name         string
+		nodeSelector map[string]string
+		verify       func(t *testing.T, result []map[string]interface{})
+	}{
+		{
+			name: "converts single selector",
+			nodeSelector: map[string]string{
+				"nodeGroup": "gpu-nodes",
+			},
+			verify: func(t *testing.T, result []map[string]interface{}) {
+				if len(result) != 1 {
+					t.Fatalf("expected 1 expression, got %d", len(result))
+				}
+				expr := result[0]
+				if expr["key"] != "nodeGroup" {
+					t.Errorf("key = %v, want nodeGroup", expr["key"])
+				}
+				if expr["operator"] != "In" {
+					t.Errorf("operator = %v, want In", expr["operator"])
+				}
+				values, ok := expr["values"].([]string)
+				if !ok {
+					t.Fatal("values not a []string")
+				}
+				if len(values) != 1 || values[0] != "gpu-nodes" {
+					t.Errorf("values = %v, want [gpu-nodes]", values)
+				}
+			},
+		},
+		{
+			name: "converts multiple selectors",
+			nodeSelector: map[string]string{
+				"nodeGroup":   "gpu-nodes",
+				"accelerator": "nvidia-h100",
+			},
+			verify: func(t *testing.T, result []map[string]interface{}) {
+				if len(result) != 2 {
+					t.Fatalf("expected 2 expressions, got %d", len(result))
+				}
+				// Check both expressions exist (order may vary due to map iteration)
+				foundNodeGroup := false
+				foundAccelerator := false
+				for _, expr := range result {
+					if expr["key"] == "nodeGroup" {
+						foundNodeGroup = true
+						values := expr["values"].([]string)
+						if values[0] != "gpu-nodes" {
+							t.Errorf("nodeGroup values = %v, want [gpu-nodes]", values)
+						}
+					}
+					if expr["key"] == "accelerator" {
+						foundAccelerator = true
+						values := expr["values"].([]string)
+						if values[0] != "nvidia-h100" {
+							t.Errorf("accelerator values = %v, want [nvidia-h100]", values)
+						}
+					}
+				}
+				if !foundNodeGroup {
+					t.Error("missing nodeGroup expression")
+				}
+				if !foundAccelerator {
+					t.Error("missing accelerator expression")
+				}
+			},
+		},
+		{
+			name:         "returns nil for empty selector",
+			nodeSelector: map[string]string{},
+			verify: func(t *testing.T, result []map[string]interface{}) {
+				if result != nil {
+					t.Errorf("expected nil, got %v", result)
+				}
+			},
+		},
+		{
+			name:         "returns nil for nil selector",
+			nodeSelector: nil,
+			verify: func(t *testing.T, result []map[string]interface{}) {
+				if result != nil {
+					t.Errorf("expected nil, got %v", result)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := NodeSelectorToMatchExpressions(tt.nodeSelector)
+			tt.verify(t, result)
+		})
+	}
 }

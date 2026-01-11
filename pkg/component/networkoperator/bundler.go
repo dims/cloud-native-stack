@@ -76,8 +76,20 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeI
 			"failed to create bundle directory", err)
 	}
 
-	// Serialize values to YAML
-	valuesYAML, err := internal.MarshalYAML(values)
+	// Build config map with base settings for metadata extraction
+	configMap := b.BuildConfigMapFromInput(input)
+	configMap["namespace"] = Name
+	configMap["helm_repository"] = componentRef.Source
+	configMap["helm_chart_version"] = componentRef.Version
+
+	// Serialize values to YAML with header
+	header := internal.ValuesHeader{
+		ComponentName:  "Network Operator",
+		Timestamp:      time.Now().Format(time.RFC3339),
+		BundlerVersion: configMap["bundler_version"],
+		RecipeVersion:  configMap["recipe_version"],
+	}
+	valuesYAML, err := internal.MarshalYAMLWithHeader(values, header)
 	if err != nil {
 		return b.Result, errors.Wrap(errors.ErrCodeInternal,
 			"failed to serialize values to YAML", err)
@@ -89,12 +101,6 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeI
 		return b.Result, errors.Wrap(errors.ErrCodeInternal,
 			"failed to write values file", err)
 	}
-
-	// Build config map with base settings for metadata extraction
-	configMap := b.BuildConfigMapFromInput(input)
-	configMap["namespace"] = Name
-	configMap["helm_repository"] = componentRef.Source
-	configMap["helm_chart_version"] = componentRef.Version
 
 	// Generate ScriptData (metadata only - not in Helm values)
 	scriptData := GenerateScriptDataFromConfig(configMap)

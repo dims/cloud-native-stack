@@ -246,27 +246,12 @@ func GetRecipeBundlerVersion(m map[string]string) string {
 }
 
 // BuildBaseConfigMap creates a configuration map with common bundler settings.
-// Returns a map containing namespace, helm_repository, helm_chart_version,
-// and all custom labels/annotations with appropriate prefixes.
+// Returns a map containing bundler version.
 // Bundlers can extend this map with their specific values.
 func (b *BaseBundler) BuildBaseConfigMap() map[string]string {
 	config := make(map[string]string)
 
 	config[bundlerVersionKey] = b.Config.Version()
-
-	config["namespace"] = b.Config.Namespace()
-	config["helm_repository"] = b.Config.HelmRepository()
-	config["helm_chart_version"] = b.Config.HelmChartVersion()
-
-	// Add custom labels with "label_" prefix
-	for k, v := range b.Config.CustomLabels() {
-		config["label_"+k] = v
-	}
-
-	// Add custom annotations with "annotation_" prefix
-	for k, v := range b.Config.CustomAnnotations() {
-		config["annotation_"+k] = v
-	}
 
 	return config
 }

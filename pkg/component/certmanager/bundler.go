@@ -71,6 +71,25 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeI
 		}
 	}
 
+	// Apply system node selector overrides from CLI flags
+	// cert-manager is a system component, so use system node selectors/tolerations
+	nodeSelectorPaths := []string{
+		"nodeSelector",
+		"webhook.nodeSelector",
+		"cainjector.nodeSelector",
+		"startupapicheck.nodeSelector",
+	}
+	internal.ApplyNodeSelectorOverrides(values, b.Config.SystemNodeSelector(), nodeSelectorPaths...)
+
+	// Apply system tolerations overrides from CLI flags
+	tolerationPaths := []string{
+		"tolerations",
+		"webhook.tolerations",
+		"cainjector.tolerations",
+		"startupapicheck.tolerations",
+	}
+	internal.ApplyTolerationsOverrides(values, b.Config.SystemNodeTolerations(), tolerationPaths...)
+
 	// Create bundle directory structure
 	dirs, err := b.CreateBundleDir(outputDir, Name)
 	if err != nil {
@@ -78,8 +97,20 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeI
 			"failed to create bundle directory", err)
 	}
 
-	// Serialize values to YAML
-	valuesYAML, err := internal.MarshalYAML(values)
+	// Build config map with base settings for metadata extraction
+	configMap := b.BuildConfigMapFromInput(input)
+	configMap["namespace"] = Name
+	configMap["helm_repository"] = componentRef.Source
+	configMap["helm_chart_version"] = componentRef.Version
+
+	// Serialize values to YAML with header
+	header := internal.ValuesHeader{
+		ComponentName:  "Cert-Manager",
+		Timestamp:      time.Now().Format(time.RFC3339),
+		BundlerVersion: configMap["bundler_version"],
+		RecipeVersion:  configMap["recipe_version"],
+	}
+	valuesYAML, err := internal.MarshalYAMLWithHeader(values, header)
 	if err != nil {
 		return b.Result, errors.Wrap(errors.ErrCodeInternal,
 			"failed to serialize values to YAML", err)
@@ -91,12 +122,6 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeI
 		return b.Result, errors.Wrap(errors.ErrCodeInternal,
 			"failed to write values file", err)
 	}
-
-	// Build config map with base settings for metadata extraction
-	configMap := b.BuildConfigMapFromInput(input)
-	configMap["namespace"] = Name
-	configMap["helm_repository"] = componentRef.Source
-	configMap["helm_chart_version"] = componentRef.Version
 
 	// Generate ScriptData (metadata only - not in Helm values)
 	scriptData := GenerateScriptDataFromConfig(configMap)
