@@ -18,6 +18,7 @@ This directory contains architecture documentation for the Cloud Native Stack (C
   - Registration: Bundlers self-register via `init()` function
   - Current bundlers: GPU Operator, Network Operator, Skyhook, Cert-Manager, NVSentinel
   - Value overrides: CLI `--set` flag allows runtime customization of bundle values
+  - Node scheduling: `--system-node-selector`, `--accelerated-node-selector`, `--*-toleration` flags for workload placement
 
 ## Overview
 
@@ -55,6 +56,7 @@ Generates deployment-ready bundles (Helm values, Kubernetes manifests, installat
 - **Parallel execution** of multiple bundlers by default
 - **Available bundlers**: GPU Operator, Network Operator, Skyhook, Cert-Manager, NVSentinel
 - **Value Overrides**: Use `--set bundler:path.to.field=value` to customize generated bundles
+- **Node Scheduling**: Use `--system-node-selector`, `--accelerated-node-selector`, and toleration flags for workload placement
 - **Output**: Complete deployment bundle with values, manifests, scripts, and checksums
 
 **Note:** The API Server only supports recipe generation (Step 2). For complete workflow including snapshot capture and bundle generation, use the CLI.

@@ -83,6 +83,29 @@ eidos bundle -f recipe.yaml -b gpu-operator \
   --set gpuoperator:driver.version=570.86.16
 ```
 
+**Node scheduling options**:
+
+The bundle command supports node selector and toleration flags for controlling workload placement:
+```shell
+# Schedule system components (operators, controllers) on specific nodes
+eidos bundle -f recipe.yaml -b gpu-operator \
+  --system-node-selector nodeGroup=system-pool \
+  --system-node-toleration dedicated=system:NoSchedule
+
+# Schedule GPU workloads (drivers, device plugins) on GPU nodes
+eidos bundle -f recipe.yaml -b gpu-operator \
+  --accelerated-node-selector nvidia.com/gpu.present=true \
+  --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule
+```
+
+Flags:
+- `--system-node-selector key=value` – Node selector for system components (repeatable)
+- `--system-node-toleration key=value:effect` – Toleration for system components (repeatable)
+- `--accelerated-node-selector key=value` – Node selector for GPU nodes (repeatable)
+- `--accelerated-node-toleration key=value:effect` – Toleration for GPU nodes (repeatable)
+
+These flags apply selectors/tolerations to bundler-specific paths (e.g., GPU Operator uses `operator.nodeSelector` and `daemonsets.nodeSelector`).
+
 **Execution model**:
 
 - Bundlers run concurrently (parallel execution)
@@ -751,6 +774,18 @@ eidos bundle -f recipe.yaml \
   -b network-operator \
   --set gpuoperator:mig.strategy=mixed \
   --set networkoperator:rdma.enabled=true \
+  -o ./bundles
+
+# Schedule system components on system node pool
+eidos bundle -f recipe.yaml -b gpu-operator \
+  --system-node-selector nodeGroup=system-pool \
+  --system-node-toleration dedicated=system:NoSchedule \
+  -o ./bundles
+
+# Schedule GPU workloads on labeled GPU nodes
+eidos bundle -f recipe.yaml -b gpu-operator \
+  --accelerated-node-selector nvidia.com/gpu.present=true \
+  --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule \
   -o ./bundles
 ```
 

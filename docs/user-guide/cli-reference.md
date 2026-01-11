@@ -227,12 +227,12 @@ Generate recipes using direct system parameters:
 **Flags:**
 | Flag | Short | Type | Description |
 |------|-------|------|-------------|
-| `--os` | | string | OS family: ubuntu, rhel, cos |
+| `--os` | | string | OS family: ubuntu, rhel, cos, amazonlinux |
 | `--osv` | | string | OS version: 24.04, 22.04 |
 | `--kernel` | | string | Kernel version: 6.8, 5.15 |
 | `--service` | | string | K8s service: eks, gke, aks, self-managed |
 | `--k8s` | | string | Kubernetes version: v1.33, 1.32 |
-| `--gpu` | | string | GPU type: h100, gb200, a100, l40 |
+| `--accelerator` | `--gpu` | string | Accelerator/GPU type: h100, gb200, a100, l40 |
 | `--intent` | | string | Workload intent: training, inference |
 | `--context` | | bool | Include context metadata in response |
 | `--output` | `-o` | string | Output file (default: stdout) |
@@ -241,7 +241,7 @@ Generate recipes using direct system parameters:
 **Examples:**
 ```shell
 # Basic recipe for Ubuntu on EKS with H100
-eidos recipe --os ubuntu --service eks --gpu h100
+eidos recipe --os ubuntu --service eks --accelerator h100
 
 # Full specification with context
 eidos recipe \
@@ -250,12 +250,12 @@ eidos recipe \
   --kernel 6.8 \
   --service eks \
   --k8s 1.33 \
-  --gpu gb200 \
+  --accelerator gb200 \
   --intent training \
   --context \
   --format yaml
 
-# Save to file
+# Save to file (--gpu is an alias for --accelerator)
 eidos recipe --os ubuntu --gpu h100 --output recipe.yaml
 ```
 
@@ -339,6 +339,10 @@ eidos bundle [flags]
 | `--bundlers` | `-b` | string[] | Bundler types to execute (repeatable) |
 | `--output` | `-o` | string | Output directory (default: current dir) |
 | `--set` | | string[] | Override values in bundle files (repeatable) |
+| `--system-node-selector` | | string[] | Node selector for system components (format: key=value, repeatable) |
+| `--system-node-toleration` | | string[] | Toleration for system components (format: key=value:effect, repeatable) |
+| `--accelerated-node-selector` | | string[] | Node selector for accelerated/GPU nodes (format: key=value, repeatable) |
+| `--accelerated-node-toleration` | | string[] | Toleration for accelerated/GPU nodes (format: key=value:effect, repeatable) |
 
 **Available bundlers:**
 - `gpu-operator` - NVIDIA GPU Operator deployment bundle
@@ -404,6 +408,26 @@ eidos bundle -f recipe.yaml -b certmanager \
 eidos bundle -f recipe.yaml -b skyhook \
   --set skyhook:manager.resources.cpu.limit=500m \
   --set skyhook:manager.resources.memory.limit=256Mi \
+  -o ./bundles
+
+# Schedule system components on specific node pool
+eidos bundle -f recipe.yaml -b gpu-operator \
+  --system-node-selector nodeGroup=system-pool \
+  --system-node-toleration dedicated=system:NoSchedule \
+  -o ./bundles
+
+# Schedule GPU workloads on labeled GPU nodes
+eidos bundle -f recipe.yaml -b gpu-operator \
+  --accelerated-node-selector nvidia.com/gpu.present=true \
+  --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule \
+  -o ./bundles
+
+# Combined: separate system and GPU scheduling
+eidos bundle -f recipe.yaml -b gpu-operator \
+  --system-node-selector nodeGroup=system-pool \
+  --system-node-toleration dedicated=system:NoSchedule \
+  --accelerated-node-selector accelerator=nvidia-h100 \
+  --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule \
   -o ./bundles
 ```
 

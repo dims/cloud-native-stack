@@ -219,6 +219,7 @@ cloud-native-stack/
   - Prometheus metrics for observability
   - Context-aware execution with cancellation support
   - **Value overrides**: CLI `--set bundler:path.to.field=value` allows runtime customization
+  - **Node scheduling**: `--system-node-selector`, `--accelerated-node-selector`, and toleration flags for workload placement
 - **Extensibility**: Implement `Bundler` interface and self-register in init() to add new bundle types
 
 ### Common Make Targets

@@ -488,6 +488,68 @@ if err := b.GenerateFileFromTemplate(...); err != nil {
 }
 ```
 
+### Node Selector and Toleration Handling
+
+The bundle command supports `--system-node-selector`, `--system-node-toleration`, `--accelerated-node-selector`, and `--accelerated-node-toleration` flags. Bundlers receive these as pre-applied overrides in the values map.
+
+**How it works**:
+1. CLI parses node selector/toleration flags
+2. Values are applied to bundler-specific paths via `ApplyNodeSelectorOverrides()`
+3. Bundler receives values map with selectors/tolerations already set
+4. Templates render the values normally
+
+**Bundler-specific paths** (defined in each bundler):
+
+**GPU Operator** (`pkg/component/gpuoperator/bundler.go`):
+- System node selector: `operator.nodeSelector`
+- System toleration: `operator.tolerations`
+- Accelerated node selector: `daemonsets.nodeSelector`
+- Accelerated toleration: `daemonsets.tolerations`
+
+**Network Operator** (`pkg/component/networkoperator/bundler.go`):
+- System node selector: `operator.nodeSelector`
+- Accelerated node selector: `daemonsets.nodeSelector`
+
+**Cert-Manager** (`pkg/component/certmanager/bundler.go`):
+- System node selector: `controller.nodeSelector`
+- System toleration: `controller.tolerations`
+
+**Implementing in new bundlers**:
+```go
+// Define paths for your component
+func GetNodeSelectorPaths() bundler.NodeSelectorPaths {
+    return bundler.NodeSelectorPaths{
+        SystemNodeSelector:      "operator.nodeSelector",
+        SystemToleration:        "operator.tolerations",
+        AcceleratedNodeSelector: "daemonsets.nodeSelector",
+        AcceleratedToleration:   "daemonsets.tolerations",
+    }
+}
+
+// Register with bundler framework
+func init() {
+    bundler.MustRegister(bundlerType, NewBundler())
+    bundler.RegisterNodeSelectorPaths(bundlerType, GetNodeSelectorPaths())
+}
+```
+
+**Template access** (values are pre-applied):
+```yaml
+# values.yaml.tmpl
+operator:
+  nodeSelector:
+    {{- range $key, $value := index . "operator.nodeSelector" }}
+    {{ $key }}: {{ $value }}
+    {{- end }}
+  tolerations:
+    {{- range $tol := index . "operator.tolerations" }}
+    - key: {{ $tol.key }}
+      operator: {{ $tol.operator }}
+      value: {{ $tol.value }}
+      effect: {{ $tol.effect }}
+    {{- end }}
+```
+
 ## Migration from Old Architecture
 
 ### What Changed

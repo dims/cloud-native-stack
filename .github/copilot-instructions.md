@@ -430,6 +430,14 @@ eidos bundle -f recipe.yaml -b gpu-operator \
   --set gpuoperator:gds.enabled=true \
   --set gpuoperator:driver.version=570.86.16 \
   -o ./bundles
+
+# Node scheduling with selectors and tolerations
+eidos bundle -f recipe.yaml -b gpu-operator \
+  --system-node-selector nodeGroup=system-pool \
+  --system-node-toleration dedicated=system:NoSchedule \
+  --accelerated-node-selector nvidia.com/gpu.present=true \
+  --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule \
+  -o ./bundles
 ```
 
 ### Integration Points
