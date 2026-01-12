@@ -368,6 +368,11 @@ Override any value in the generated bundle files using dot notation:
 - `path` - Dot-separated path to the field
 - `value` - New value to set
 
+**Behavior:**
+- **Duplicate keys**: When the same `bundler:path` is specified multiple times, the **last value wins**
+- **Array values**: Individual array elements cannot be overridden (no `[0]` index syntax). Arrays can only be replaced entirely via recipe overrides, not via `--set` flags. Use recipe-level overrides in `componentRefs[].overrides` if you need to replace an entire array.
+- **Type conversion**: String values are automatically converted to appropriate types (`true`/`false` → bool, numeric strings → numbers)
+
 **Examples:**
 ```shell
 # Generate all bundles
