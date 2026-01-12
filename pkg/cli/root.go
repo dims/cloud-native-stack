@@ -104,6 +104,7 @@ func Execute() {
 			snapshotCmd(),
 			recipeCmd(),
 			bundleCmd(),
+			validateCmd(),
 		},
 		ShellComplete: commandLister,
 	}

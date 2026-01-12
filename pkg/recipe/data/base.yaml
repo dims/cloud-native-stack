@@ -5,8 +5,9 @@ metadata:
 
 spec:
   # Basic assumptions - will create warning in pre-flight but not block deployment
+  # Constraint names use fully qualified measurement paths: {type}.{subtype}.{key}
   constraints:
-    - name: k8s
+    - name: K8s.server.version
       value: ">= 1.25"
 
   componentRefs:

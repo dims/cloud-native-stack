@@ -11,13 +11,13 @@ criteria:
   intent: training
   os: ubuntu
 constraints:
-  - name: k8s
+  - name: K8s.server.version
     value: '>= 1.30'
-  - name: kernel
+  - name: OS.sysctl./proc/sys/kernel/osrelease
     value: '>= 6.8'
-  - name: os
+  - name: OS.release.ID
     value: ubuntu
-  - name: os-version
+  - name: OS.release.VERSION_ID
     value: "24.04"
 componentRefs:
   - name: cert-manager
