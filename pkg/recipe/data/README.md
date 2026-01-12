@@ -124,6 +124,7 @@ Overrides (highest precedence)
 - Only specified fields in overrides are replaced
 - Unspecified fields are preserved from base/ValuesFile
 - New fields in overrides are added to the final configuration
+- Arrays are replaced entirely (not merged element-by-element)
   
 > Note: user has the last word, can override final recipe state with `--set` flags on `eidos bundle`.
 
