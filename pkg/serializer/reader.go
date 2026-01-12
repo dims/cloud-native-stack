@@ -135,7 +135,7 @@ func NewFileReader(format Format, filePath string) (*Reader, error) {
 	var err error
 
 	if strings.HasPrefix(filePath, "http://") || strings.HasPrefix(filePath, "https://") {
-		name := fmt.Sprintf("eidos-%d.tmp", time.Now().UnixNano())
+		name := fmt.Sprintf("cns-%d.tmp", time.Now().UnixNano())
 		tempFilePath := filepath.Join(os.TempDir(), name)
 		httpReader := NewHttpReader()
 		if err = httpReader.Download(filePath, tempFilePath); err != nil {
@@ -305,7 +305,7 @@ func (r *Reader) Close() error {
 //
 // Example:
 //
-//	snap, err := FromFile[Snapshot]("cm://gpu-operator/eidos-snapshot")
+//	snap, err := FromFile[Snapshot]("cm://gpu-operator/cns-snapshot")
 func FromFile[T any](path string) (*T, error) {
 	return FromFileWithKubeconfig[T](path, "")
 }
@@ -321,7 +321,7 @@ func FromFile[T any](path string) (*T, error) {
 //
 // Example:
 //
-//	snap, err := FromFileWithKubeconfig[Snapshot]("cm://gpu-operator/eidos-snapshot", "/custom/kubeconfig")
+//	snap, err := FromFileWithKubeconfig[Snapshot]("cm://gpu-operator/cns-snapshot", "/custom/kubeconfig")
 func FromFileWithKubeconfig[T any](path, kubeconfig string) (*T, error) {
 	// Check for ConfigMap URI
 	if strings.HasPrefix(path, ConfigMapURIScheme) {

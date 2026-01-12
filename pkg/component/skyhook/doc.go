@@ -28,7 +28,7 @@
 //
 // Or through the bundler framework:
 //
-//	eidos bundle --recipe recipe.yaml --bundlers skyhook --output ./bundles
+//	cnsctl bundle --recipe recipe.yaml --bundlers skyhook --output ./bundles
 //
 // # Configuration Extraction
 //

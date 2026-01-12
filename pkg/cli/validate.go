@@ -53,16 +53,16 @@ Constraint values can use comparison operators:
 # Examples
 
 Validate a snapshot against a recipe:
-  eidos validate --recipe recipe.yaml --snapshot snapshot.yaml
+  cnsctl validate --recipe recipe.yaml --snapshot snapshot.yaml
 
 Load snapshot from ConfigMap (results to stdout):
-  eidos validate --recipe recipe.yaml --snapshot cm://gpu-operator/eidos-snapshot
+  cnsctl validate --recipe recipe.yaml --snapshot cm://gpu-operator/cns-snapshot
 
 Output validation result to a file:
-  eidos validate -f recipe.yaml -s snapshot.yaml -o result.yaml
+  cnsctl validate -f recipe.yaml -s snapshot.yaml -o result.yaml
 
 Fail the command if any constraint fails (useful for CI/CD):
-  eidos validate -f recipe.yaml -s snapshot.yaml --fail-on-error`,
+  cnsctl validate -f recipe.yaml -s snapshot.yaml --fail-on-error`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "recipe",

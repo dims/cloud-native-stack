@@ -18,8 +18,8 @@ Related: <!-- #123 -->
 - [ ] Build/CI
 
 ## Component(s) Affected
-- [ ] CLI (`cmd/eidos`, `pkg/cli`)
-- [ ] API server (`cmd/eidos-api-server`, `pkg/api`, `pkg/server`)
+- [ ] CLI (`cmd/cnsctl`, `pkg/cli`)
+- [ ] API server (`cmd/cns-api-server`, `pkg/api`, `pkg/server`)
 - [ ] Recipe engine / data (`pkg/recipe`)
 - [ ] Bundlers (`pkg/bundler`)
 - [ ] Collectors / snapshotter (`pkg/collector`, `pkg/snapshotter`)

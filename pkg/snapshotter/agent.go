@@ -142,7 +142,7 @@ func (n *NodeSnapshotter) measureWithAgent(ctx context.Context) error {
 	// Default output to ConfigMap if not specified
 	output := n.AgentConfig.Output
 	if output == "" {
-		output = fmt.Sprintf("%s%s/eidos-snapshot", serializer.ConfigMapURIScheme, n.AgentConfig.Namespace)
+		output = fmt.Sprintf("%s%s/cns-snapshot", serializer.ConfigMapURIScheme, n.AgentConfig.Namespace)
 	}
 
 	// Build agent configuration

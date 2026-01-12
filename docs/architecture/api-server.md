@@ -1,6 +1,6 @@
 # API Server Architecture
 
-The `eidos-api-server` provides HTTP REST API access to Cloud Native Stack configuration recipe generation and bundle creation capabilities.
+The `cns-api-server` provides HTTP REST API access to Cloud Native Stack configuration recipe generation and bundle creation capabilities.
 
 ## Overview
 
@@ -24,9 +24,9 @@ The API server provides HTTP REST access to **Steps 2 and 4 of the Cloud Native 
 - Supply chain security with SLSA Build Level 3 attestations
 
 **API Server Limitations:**
-- **No snapshot capture** – Use CLI `eidos snapshot` or Kubernetes Agent
+- **No snapshot capture** – Use CLI `cnsctl snapshot` or Kubernetes Agent
 - **No snapshot mode** – Cannot analyze captured snapshots (query mode only)
-- **No validation** – Use CLI `eidos validate` to check constraints against snapshots
+- **No validation** – Use CLI `cnsctl validate` to check constraints against snapshots
 - **No ConfigMap integration** – API server doesn't read/write ConfigMaps
 - **No value overrides** – Use CLI for `--set` and node selector flags
 
@@ -40,7 +40,7 @@ The API server provides HTTP REST access to **Steps 2 and 4 of the Cloud Native 
 
 ```mermaid
 flowchart TD
-    A["eidos-api-server<br/>cmd/eidos-api-server/main.go"] --> B["pkg/api/server.go<br/>Serve()"]
+    A["cns-api-server<br/>cmd/cns-api-server/main.go"] --> B["pkg/api/server.go<br/>Serve()"]
     
     B --> B1["• Initialize logging<br/>• Create recipe.Builder<br/>• Create bundler.DefaultBundler<br/>• Setup routes: /v1/recipe, /v1/bundle<br/>• Create server with middleware<br/>• Graceful shutdown"]
     
@@ -91,7 +91,7 @@ flowchart TD
 
 ## Component Details
 
-### Entry Point: `cmd/eidos-api-server/main.go`
+### Entry Point: `cmd/cns-api-server/main.go`
 
 Minimal entry point:
 
@@ -162,11 +162,11 @@ Production-ready HTTP server implementation with 10 files:
 
 **metrics.go** (90 lines)
 - Prometheus metrics:
-  - `eidos_http_requests_total` - Counter by method, path, status
-  - `eidos_http_request_duration_seconds` - Histogram by method, path
-  - `eidos_http_requests_in_flight` - Gauge
-  - `eidos_rate_limit_rejects_total` - Counter
-  - `eidos_panic_recoveries_total` - Counter
+  - `cns_http_requests_total` - Counter by method, path, status
+  - `cns_http_request_duration_seconds` - Histogram by method, path
+  - `cns_http_requests_in_flight` - Gauge
+  - `cns_rate_limit_rejects_total` - Counter
+  - `cns_panic_recoveries_total` - Counter
 
 **context.go** (8 lines)
 - Context key type for request ID storage
@@ -360,27 +360,27 @@ Shared with CLI - same logic as described in CLI architecture.
 **Response**: Prometheus text format
 
 ```
-# HELP eidos_http_requests_total Total number of HTTP requests
-# TYPE eidos_http_requests_total counter
-eidos_http_requests_total{method="GET",path="/v1/recipe",status="200"} 1234
+# HELP cns_http_requests_total Total number of HTTP requests
+# TYPE cns_http_requests_total counter
+cns_http_requests_total{method="GET",path="/v1/recipe",status="200"} 1234
 
-# HELP eidos_http_request_duration_seconds HTTP request latency in seconds
-# TYPE eidos_http_request_duration_seconds histogram
-eidos_http_request_duration_seconds_bucket{method="GET",path="/v1/recipe",le="0.005"} 1000
-eidos_http_request_duration_seconds_sum{method="GET",path="/v1/recipe"} 12.34
-eidos_http_request_duration_seconds_count{method="GET",path="/v1/recipe"} 1234
+# HELP cns_http_request_duration_seconds HTTP request latency in seconds
+# TYPE cns_http_request_duration_seconds histogram
+cns_http_request_duration_seconds_bucket{method="GET",path="/v1/recipe",le="0.005"} 1000
+cns_http_request_duration_seconds_sum{method="GET",path="/v1/recipe"} 12.34
+cns_http_request_duration_seconds_count{method="GET",path="/v1/recipe"} 1234
 
-# HELP eidos_http_requests_in_flight Current number of HTTP requests being processed
-# TYPE eidos_http_requests_in_flight gauge
-eidos_http_requests_in_flight 5
+# HELP cns_http_requests_in_flight Current number of HTTP requests being processed
+# TYPE cns_http_requests_in_flight gauge
+cns_http_requests_in_flight 5
 
-# HELP eidos_rate_limit_rejects_total Total number of requests rejected due to rate limiting
-# TYPE eidos_rate_limit_rejects_total counter
-eidos_rate_limit_rejects_total 42
+# HELP cns_rate_limit_rejects_total Total number of requests rejected due to rate limiting
+# TYPE cns_rate_limit_rejects_total counter
+cns_rate_limit_rejects_total 42
 
-# HELP eidos_panic_recoveries_total Total number of panics recovered in HTTP handlers
-# TYPE eidos_panic_recoveries_total counter
-eidos_panic_recoveries_total 0
+# HELP cns_panic_recoveries_total Total number of panics recovered in HTTP handlers
+# TYPE cns_panic_recoveries_total counter
+cns_panic_recoveries_total 0
 ```
 
 ### Root
@@ -391,7 +391,7 @@ eidos_panic_recoveries_total 0
 
 ```json
 {
-  "service": "eidos-api-server",
+  "service": "cns-api-server",
   "version": "v1.0.0",
   "routes": [
     "/v1/recipe"
@@ -445,7 +445,7 @@ flowchart LR
     C --> D["Build Image<br/>(ko + goreleaser)"]
     D --> E["Generate SBOM<br/>(Syft)"]  
     E --> F["Sign Attestations<br/>(Cosign keyless)"]
-    F --> G["Push to GHCR<br/>ghcr.io/nvidia/eidos-api-server"]
+    F --> G["Push to GHCR<br/>ghcr.io/nvidia/cns-api-server"]
     G --> H["Deploy to Cloud Run<br/>(WIF auth)"]
     H --> I["Health Check<br/>Verification"]
 ```
@@ -454,7 +454,7 @@ flowchart LR
 - **SLSA Build Level 3** compliance
 - **Signed SBOMs** in SPDX format
 - **Attestations** logged in Rekor transparency log  
-- **Verification**: `gh attestation verify oci://ghcr.io/nvidia/eidos-api-server:TAG --owner nvidia`
+- **Verification**: `gh attestation verify oci://ghcr.io/nvidia/cns-api-server:TAG --owner nvidia`
 
 **Monitoring:**
 - Health endpoint: `/health`
@@ -541,21 +541,21 @@ print(f"Matched {len(recipe['matchedRuleId'])} rules")
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: eidos-api-server
+  name: cns-api-server
   namespace: cns-system
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: eidos-api-server
+      app: cns-api-server
   template:
     metadata:
       labels:
-        app: eidos-api-server
+        app: cns-api-server
     spec:
       containers:
       - name: server
-        image: ghcr.io/nvidia/eidos-api-server:v1.0.0
+        image: ghcr.io/nvidia/cns-api-server:v1.0.0
         ports:
         - containerPort: 8080
           name: http
@@ -585,11 +585,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: eidos-api-server
+  name: cns-api-server
   namespace: cns-system
 spec:
   selector:
-    app: eidos-api-server
+    app: cns-api-server
   ports:
   - port: 80
     targetPort: http
@@ -598,12 +598,12 @@ spec:
 apiVersion: v1
 kind: ServiceMonitor
 metadata:
-  name: eidos-api-server
+  name: cns-api-server
   namespace: cns-system
 spec:
   selector:
     matchLabels:
-      app: eidos-api-server
+      app: cns-api-server
   endpoints:
   - port: http
     path: /metrics
@@ -616,24 +616,24 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: eidos-api-server
+  name: cns-api-server
   namespace: cns-system
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   tls:
   - hosts:
-    - api.eidos.nvidia.com
-    secretName: eidos-api-tls
+    - api.cns.nvidia.com
+    secretName: cns-api-tls
   rules:
-  - host: api.eidos.nvidia.com
+  - host: api.cns.nvidia.com
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: eidos-api-server
+            name: cns-api-server
             port:
               number: 80
 ```
@@ -644,13 +644,13 @@ spec:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: eidos-api-server
+  name: cns-api-server
   namespace: cns-system
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: eidos-api-server
+    name: cns-api-server
   minReplicas: 3
   maxReplicas: 10
   metrics:
@@ -663,7 +663,7 @@ spec:
   - type: Pods
     pods:
       metric:
-        name: eidos_http_requests_in_flight
+        name: cns_http_requests_in_flight
       target:
         type: AverageValue
         averageValue: "50"
@@ -775,13 +775,13 @@ All errors follow a consistent JSON structure:
 ### Prometheus Metrics
 
 **Request Metrics**:
-- `eidos_http_requests_total` - Total requests by method, path, status
-- `eidos_http_request_duration_seconds` - Request latency histogram
-- `eidos_http_requests_in_flight` - Current active requests
+- `cns_http_requests_total` - Total requests by method, path, status
+- `cns_http_request_duration_seconds` - Request latency histogram
+- `cns_http_requests_in_flight` - Current active requests
 
 **Error Metrics**:
-- `eidos_rate_limit_rejects_total` - Rate limit rejections
-- `eidos_panic_recoveries_total` - Panic recoveries
+- `cns_rate_limit_rejects_total` - Rate limit rejections
+- `cns_panic_recoveries_total` - Panic recoveries
 
 ### Grafana Dashboard
 
@@ -789,38 +789,38 @@ Example queries:
 
 ```promql
 # Request rate
-rate(eidos_http_requests_total[5m])
+rate(cns_http_requests_total[5m])
 
 # Error rate
-rate(eidos_http_requests_total{status=~"5.."}[5m])
+rate(cns_http_requests_total{status=~"5.."}[5m])
 
 # Latency percentiles
-histogram_quantile(0.99, rate(eidos_http_request_duration_seconds_bucket[5m]))
+histogram_quantile(0.99, rate(cns_http_request_duration_seconds_bucket[5m]))
 
 # Rate limit rejections
-rate(eidos_rate_limit_rejects_total[5m])
+rate(cns_rate_limit_rejects_total[5m])
 ```
 
 ### Alerting Rules
 
 ```yaml
 groups:
-- name: eidos-api-server
+- name: cns-api-server
   rules:
   - alert: HighErrorRate
-    expr: rate(eidos_http_requests_total{status=~"5.."}[5m]) > 0.05
+    expr: rate(cns_http_requests_total{status=~"5.."}[5m]) > 0.05
     for: 5m
     annotations:
-      summary: High error rate on eidos-api-server
+      summary: High error rate on cns-api-server
   
   - alert: HighLatency
-    expr: histogram_quantile(0.99, rate(eidos_http_request_duration_seconds_bucket[5m])) > 0.1
+    expr: histogram_quantile(0.99, rate(cns_http_request_duration_seconds_bucket[5m])) > 0.1
     for: 5m
     annotations:
-      summary: High latency on eidos-api-server
+      summary: High latency on cns-api-server
   
   - alert: HighRateLimitRejects
-    expr: rate(eidos_rate_limit_rejects_total[5m]) > 10
+    expr: rate(cns_rate_limit_rejects_total[5m]) > 10
     for: 5m
     annotations:
       summary: High rate limit rejections
@@ -928,7 +928,7 @@ func TestRecipeHandler(t *testing.T) {
 export TAG=$(curl -s https://api.github.com/repos/NVIDIA/cloud-native-stack/releases/latest | jq -r '.tag_name')
 
 # Verify attestations
-gh attestation verify oci://ghcr.io/nvidia/eidos-api-server:${TAG} --owner nvidia
+gh attestation verify oci://ghcr.io/nvidia/cns-api-server:${TAG} --owner nvidia
 ```
 
 For detailed CI/CD architecture, see [../CONTRIBUTING.md#github-actions--cicd](../../CONTRIBUTING.md#github-actions--cicd) and [README.md](README.md#cicd-architecture).
@@ -946,7 +946,7 @@ LDFLAGS := -X github.com/NVIDIA/cloud-native-stack/pkg/api.version=$(VERSION)
 LDFLAGS += -X github.com/NVIDIA/cloud-native-stack/pkg/api.commit=$(COMMIT)
 LDFLAGS += -X github.com/NVIDIA/cloud-native-stack/pkg/api.date=$(DATE)
 
-go build -ldflags="$(LDFLAGS)" -o bin/eidos-api-server ./cmd/eidos-api-server
+go build -ldflags="$(LDFLAGS)" -o bin/cns-api-server ./cmd/cns-api-server
 ```
 
 ### Container Image
@@ -958,13 +958,13 @@ FROM golang:1.25-alpine AS builder
 WORKDIR /app
 COPY . .
 RUN go build -ldflags="-X github.com/NVIDIA/cloud-native-stack/pkg/api.version=v1.0.0" \
-    -o /bin/eidos-api-server ./cmd/eidos-api-server
+    -o /bin/cns-api-server ./cmd/cns-api-server
 
 FROM alpine:3.19
 RUN apk --no-cache add ca-certificates
-COPY --from=builder /bin/eidos-api-server /usr/local/bin/
+COPY --from=builder /bin/cns-api-server /usr/local/bin/
 EXPOSE 8080
-ENTRYPOINT ["eidos-api-server"]
+ENTRYPOINT ["cns-api-server"]
 ```
 
 **Note**: Production images use distroless base (gcr.io/distroless/static) for minimal attack surface.
@@ -1034,7 +1034,7 @@ ENTRYPOINT ["eidos-api-server"]
    
    m := &autocert.Manager{
        Prompt:      autocert.AcceptTOS,
-       Cache:       autocert.DirCache("/var/cache/eidos"),
+       Cache:       autocert.DirCache("/var/cache/cns"),
        HostPolicy:  autocert.HostWhitelist("api.example.com"),
    }
    
@@ -1235,30 +1235,30 @@ ENTRYPOINT ["eidos-api-server"]
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: eidos-api-server
-  namespace: eidos
+  name: cns-api-server
+  namespace: cns
 spec:
   replicas: 3  # Initial replicas
   selector:
     matchLabels:
-      app: eidos-api-server
+      app: cns-api-server
   template:
     metadata:
       labels:
-        app: eidos-api-server
+        app: cns-api-server
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8080"
         prometheus.io/path: "/metrics"
     spec:
-      serviceAccountName: eidos-api-server
+      serviceAccountName: cns-api-server
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
         fsGroup: 1000
       containers:
       - name: api-server
-        image: ghcr.io/nvidia/eidos-api-server:latest  # Or use specific tag like v0.8.12
+        image: ghcr.io/nvidia/cns-api-server:latest  # Or use specific tag like v0.8.12
         ports:
         - name: http
           containerPort: 8080
@@ -1272,7 +1272,7 @@ spec:
         - name: LOG_LEVEL
           value: "info"
         - name: RECIPE_STORE_PATH
-          value: "/etc/eidos/recipes"
+          value: "/etc/cns/recipes"
         resources:
           requests:
             cpu: 100m
@@ -1304,22 +1304,22 @@ spec:
             - ALL
         volumeMounts:
         - name: recipes
-          mountPath: /etc/eidos/recipes
+          mountPath: /etc/cns/recipes
           readOnly: true
         - name: tmp
           mountPath: /tmp
       volumes:
       - name: recipes
         configMap:
-          name: eidos-recipes
+          name: cns-recipes
       - name: tmp
         emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: eidos-api-server
-  namespace: eidos
+  name: cns-api-server
+  namespace: cns
 spec:
   type: ClusterIP
   ports:
@@ -1328,18 +1328,18 @@ spec:
     targetPort: http
     protocol: TCP
   selector:
-    app: eidos-api-server
+    app: cns-api-server
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: eidos-api-server-hpa
-  namespace: eidos
+  name: cns-api-server-hpa
+  namespace: cns
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: eidos-api-server
+    name: cns-api-server
   minReplicas: 3
   maxReplicas: 20
   metrics:
@@ -1380,8 +1380,8 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: eidos-api-server
-  namespace: eidos
+  name: cns-api-server
+  namespace: cns
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
     nginx.ingress.kubernetes.io/rate-limit: "100"
@@ -1391,17 +1391,17 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - api.eidos.example.com
-    secretName: eidos-api-tls
+    - api.cns.example.com
+    secretName: cns-api-tls
   rules:
-  - host: api.eidos.example.com
+  - host: api.cns.example.com
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: eidos-api-server
+            name: cns-api-server
             port:
               name: http
 ```
@@ -1415,21 +1415,21 @@ spec:
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: eidos-api-server
-  namespace: eidos
+  name: cns-api-server
+  namespace: cns
 spec:
   hosts:
-  - eidos-api-server.eidos.svc.cluster.local
-  - api.eidos.example.com
+  - cns-api-server.cns.svc.cluster.local
+  - api.cns.example.com
   gateways:
-  - eidos-gateway
+  - cns-gateway
   http:
   - match:
     - uri:
         prefix: /v1/recipe
     route:
     - destination:
-        host: eidos-api-server
+        host: cns-api-server
         port:
           number: 80
     timeout: 10s
@@ -1447,10 +1447,10 @@ spec:
 apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
-  name: eidos-api-server
-  namespace: eidos
+  name: cns-api-server
+  namespace: cns
 spec:
-  host: eidos-api-server
+  host: cns-api-server
   trafficPolicy:
     tls:
       mode: ISTIO_MUTUAL  # mTLS between services
@@ -1470,29 +1470,29 @@ spec:
 apiVersion: security.istio.io/v1beta1
 kind: PeerAuthentication
 metadata:
-  name: eidos-api-server
-  namespace: eidos
+  name: cns-api-server
+  namespace: cns
 spec:
   selector:
     matchLabels:
-      app: eidos-api-server
+      app: cns-api-server
   mtls:
     mode: STRICT  # Require mTLS
 ---
 apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
-  name: eidos-api-server
-  namespace: eidos
+  name: cns-api-server
+  namespace: cns
 spec:
   selector:
     matchLabels:
-      app: eidos-api-server
+      app: cns-api-server
   action: ALLOW
   rules:
   - from:
     - source:
-        namespaces: ["eidos", "monitoring"]
+        namespaces: ["cns", "monitoring"]
     to:
     - operation:
         methods: ["GET", "POST"]
@@ -1523,8 +1523,8 @@ defaults
     retries 3
     option  redispatch
 
-frontend eidos_api_frontend
-    bind *:443 ssl crt /etc/ssl/certs/eidos-api.pem
+frontend cns_api_frontend
+    bind *:443 ssl crt /etc/ssl/certs/cns-api.pem
     bind *:80
     redirect scheme https if !{ ssl_fc }
     
@@ -1537,9 +1537,9 @@ frontend eidos_api_frontend
     http-response set-header Strict-Transport-Security "max-age=31536000"
     http-response set-header X-Content-Type-Options "nosniff"
     
-    default_backend eidos_api_backend
+    default_backend cns_api_backend
 
-backend eidos_api_backend
+backend cns_api_backend
     balance roundrobin
     option httpchk GET /health
     http-check expect status 200
@@ -1560,8 +1560,8 @@ backend eidos_api_backend
 
 set -euo pipefail
 
-NAMESPACE=eidos
-APP=eidos-api-server
+NAMESPACE=cns
+APP=cns-api-server
 NEW_VERSION=$1
 
 # Deploy green version
@@ -2052,7 +2052,7 @@ import "github.com/prometheus/client_golang/prometheus"
 var (
     recipeBuildDuration = prometheus.NewHistogramVec(
         prometheus.HistogramOpts{
-            Name:    "eidos_recipe_build_duration_seconds",
+            Name:    "cns_recipe_build_duration_seconds",
             Help:    "Time to build recipe",
             Buckets: prometheus.ExponentialBuckets(0.001, 2, 12), // 1ms to 4s
         },
@@ -2061,7 +2061,7 @@ var (
     
     recipeCacheHits = prometheus.NewCounterVec(
         prometheus.CounterOpts{
-            Name: "eidos_recipe_cache_hits_total",
+            Name: "cns_recipe_cache_hits_total",
             Help: "Number of recipe cache hits",
         },
         []string{"cache_type"},
@@ -2069,7 +2069,7 @@ var (
     
     activeConnections = prometheus.NewGauge(
         prometheus.GaugeOpts{
-            Name: "eidos_active_connections",
+            Name: "cns_active_connections",
             Help: "Number of active HTTP connections",
         },
     )
@@ -2153,7 +2153,7 @@ import (
 
 func handleRecipe(w http.ResponseWriter, r *http.Request) {
     ctx := r.Context()
-    tracer := otel.Tracer("eidos-api-server")
+    tracer := otel.Tracer("cns-api-server")
     
     ctx, span := tracer.Start(ctx, "handleRecipe",
         trace.WithAttributes(
@@ -2180,7 +2180,7 @@ func handleRecipe(w http.ResponseWriter, r *http.Request) {
 }
 
 func buildRecipeWithTrace(ctx context.Context, params Params) (*recipe.Recipe, error) {
-    tracer := otel.Tracer("eidos-api-server")
+    tracer := otel.Tracer("cns-api-server")
     ctx, span := tracer.Start(ctx, "buildRecipe")
     defer span.End()
     

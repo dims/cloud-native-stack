@@ -4,7 +4,7 @@ This directory contains architecture documentation for the Cloud Native Stack (C
 
 ## Components
 
-- **[CLI Architecture](cli.md)**: Command-line tool (`eidos`) implementing all four workflow stages
+- **[CLI Architecture](cli.md)**: Command-line tool (`cnsctl`) implementing all four workflow stages
   - Commands: `snapshot`, `recipe`, `validate`, `bundle`
   - Recipe generation modes: Query mode (direct parameters) and snapshot mode (analyze captured state)
   - Validation: Check recipe constraints against cluster snapshots
@@ -35,14 +35,14 @@ Cloud Native Stack provides a four-step workflow for optimizing GPU infrastructu
 
 ### Step 1: Snapshot – Capture System Configuration
 Captures comprehensive system state including OS, kernel, GPU, Kubernetes, and SystemD configurations.
-- **CLI**: `eidos snapshot` command
+- **CLI**: `cnsctl snapshot` command
 - **Agent**: Kubernetes Job for automated cluster snapshots (writes to ConfigMap)
 - **Output**: YAML/JSON snapshot with all system measurements
 - **Storage**: File, stdout, or **Kubernetes ConfigMap** (`cm://namespace/name` URI)
 
 ### Step 2: Recipe – Generate Configuration Recommendations
 Produces optimized configuration recipes based on environment criteria or captured snapshots.
-- **CLI**: `eidos recipe` command (supports query mode and snapshot mode)
+- **CLI**: `cnsctl recipe` command (supports query mode and snapshot mode)
   - **Query Mode**: Direct recipe generation from criteria (service, accelerator, intent, OS, nodes)
   - **Snapshot Mode**: Analyzes captured snapshots and generates tailored recipes based on workload intent
   - **ConfigMap Input**: Can read snapshots from ConfigMap URIs (`cm://namespace/name`)
@@ -52,7 +52,7 @@ Produces optimized configuration recipes based on environment criteria or captur
 
 ### Step 3: Validate – Check Cluster Compatibility
 Validates recipe constraints against actual system measurements from a snapshot.
-- **CLI**: `eidos validate` command
+- **CLI**: `cnsctl validate` command
 - **Input Sources**: File paths, HTTP/HTTPS URLs, or ConfigMap URIs for both recipe and snapshot
 - **Constraint Format**: Fully qualified paths (`K8s.server.version`, `OS.release.ID`)
 - **Operators**: Version comparisons (`>=`, `<=`, `>`, `<`), equality (`==`, `!=`), exact match
@@ -61,7 +61,7 @@ Validates recipe constraints against actual system measurements from a snapshot.
 
 ### Step 4: Bundle – Create Deployment Artifacts
 Generates deployment-ready bundles (Helm values, Kubernetes manifests, installation scripts) from recipes.
-- **CLI**: `eidos bundle` command
+- **CLI**: `cnsctl bundle` command
 - **API Server**: `POST /v1/bundle` endpoint (returns zip archive)
 - **ConfigMap Input**: Can read recipes from ConfigMap URIs (CLI only)
 - **Parallel execution** of multiple bundlers by default
@@ -165,7 +165,7 @@ clientset, config, err := client.GetKubeClient()
 
 ```mermaid
 flowchart TD
-    A["Developer"] --> B["eidos CLI"]
+    A["Developer"] --> B["cnsctl CLI"]
     B --> C["Local Node<br/>(K8s/GPU)"]
 ```
 
@@ -203,17 +203,17 @@ flowchart TD
         direction LR
         
         subgraph NODE["GPU Node"]
-            JOB["Eidos Agent Job"] 
+            JOB["CNS Agent Job"] 
         end
         
-        JOB -->|"Write snapshot"| CM["ConfigMap<br/>eidos-snapshot<br/>(Kubernetes API)"]
+        JOB -->|"Write snapshot"| CM["ConfigMap<br/>cns-snapshot<br/>(Kubernetes API)"]
         
-        CLI["eidos CLI<br/>(External)"] -->|"Read cm://ns/name"| CM
-        CLI -->|"Generate recipe"| RECIPE["ConfigMap<br/>eidos-recipe"]
+        CLI["cnsctl CLI<br/>(External)"] -->|"Read cm://ns/name"| CM
+        CLI -->|"Generate recipe"| RECIPE["ConfigMap<br/>cns-recipe"]
         CLI -->|"Create bundle"| BUNDLE["Bundle Files"]
         
         subgraph RBAC["RBAC"]
-            SA["ServiceAccount: eidos"]
+            SA["ServiceAccount: cns"]
             ROLE["Role: ConfigMap RW"]
             BIND["RoleBinding"]
         end
@@ -230,8 +230,8 @@ flowchart TD
 ```mermaid
 flowchart LR
     subgraph MESH["Kubernetes Cluster (Service Mesh)"]
-        subgraph POD["eidos-api-server Pod"]
-            PROXY["Envoy Proxy<br/>(mTLS/L7)"] <--> API["eidos<br/>API Server"]
+        subgraph POD["cns-api-server Pod"]
+            PROXY["Envoy Proxy<br/>(mTLS/L7)"] <--> API["cnsctl<br/>API Server"]
         end
         
         OBS["Observability:<br/>Grafana, Jaeger"]
@@ -293,9 +293,9 @@ flowchart LR
 ```mermaid
 flowchart LR
     A[User/Agent] --> B[Step 1: Snapshot]
-    B --> C["ConfigMap<br/>eidos-snapshot<br/>cm://ns/name"]
+    B --> C["ConfigMap<br/>cns-snapshot<br/>cm://ns/name"]
     C --> D[Step 2: Recipe]
-    D --> E["ConfigMap<br/>eidos-recipe<br/>cm://ns/name"]
+    D --> E["ConfigMap<br/>cns-recipe<br/>cm://ns/name"]
     E --> F[Step 3: Validate]
     F --> G[Step 4: Bundle]
     G --> H["Local Bundle<br/>deployment/"]
@@ -411,10 +411,10 @@ retry.OnError(retry.DefaultBackoff, func(err error) bool {
 ```bash
 # Verify RBAC configuration
 kubectl get role,rolebinding -n gpu-operator
-kubectl auth can-i create configmaps --as=system:serviceaccount:gpu-operator:eidos -n gpu-operator
+kubectl auth can-i create configmaps --as=system:serviceaccount:gpu-operator:cns -n gpu-operator
 
 # Check agent logs
-kubectl logs job/eidos -n gpu-operator
+kubectl logs job/cns -n gpu-operator
 ```
 
 ### Rate Limit Exceeded (API Server)
@@ -1030,7 +1030,7 @@ Checkout → Validate (Go CI) → Build & Release → Attest Images → Deploy
 - Install tools: ko (container images), syft (SBOMs), crane (digest resolution), goreleaser (binaries)
 - Execute `make release`:
   - Build multi-platform binaries (darwin/linux, amd64/arm64)
-  - Build container images (eidos, eidos-api-server) with ko
+  - Build container images (cnsctl, cns-api-server) with ko
   - Generate binary SBOMs (SPDX v2.3 format)
   - Generate container SBOMs (SPDX JSON format)
 - Publish to GitHub Releases and ghcr.io
@@ -1044,7 +1044,7 @@ Checkout → Validate (Go CI) → Build & Release → Attest Images → Deploy
 
 **Deployment** (`cloud-run-deploy` action):
 - Authenticate with Workload Identity Federation (keyless)
-- Deploy eidos-api-server to Google Cloud Run
+- Deploy cns-api-server to Google Cloud Run
 - Update service with new image version
 
 **Permissions**: `attestations: write`, `contents: write`, `id-token: write`, `packages: write`
@@ -1107,14 +1107,14 @@ Checkout → Validate (Go CI) → Build & Release → Attest Images → Deploy
 export TAG=$(curl -s https://api.github.com/repos/NVIDIA/cloud-native-stack/releases/latest | jq -r '.tag_name')
 
 # Verify image attestations
-gh attestation verify oci://ghcr.io/nvidia/eidos:${TAG} --owner nvidia
+gh attestation verify oci://ghcr.io/nvidia/cns:${TAG} --owner nvidia
 
 # Verify with Cosign
 cosign verify-attestation \
   --type spdxjson \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   --certificate-identity-regexp 'https://github.com/NVIDIA/cloud-native-stack/.github/workflows/.*' \
-  ghcr.io/nvidia/eidos:${TAG}
+  ghcr.io/nvidia/cns:${TAG}
 ```
 
 **Transparency**:
@@ -1169,8 +1169,8 @@ flowchart TD
 **Validation Steps**:
 1. **Agent Deployment**: Apply RBAC manifests and Job
 2. **Job Completion**: Wait for Job success with timeout
-3. **ConfigMap Verification**: Check `eidos-snapshot` exists with data
-4. **Recipe Generation**: Use ConfigMap URI input (`cm://gpu-operator/eidos-snapshot`)
+3. **ConfigMap Verification**: Check `cns-snapshot` exists with data
+4. **Recipe Generation**: Use ConfigMap URI input (`cm://gpu-operator/cns-snapshot`)
 5. **Bundle Generation**: Create deployment artifacts from recipe
 6. **Artifact Verification**: Validate file creation and structure
 

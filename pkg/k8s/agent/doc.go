@@ -1,7 +1,7 @@
 /*
 Package agent provides Kubernetes Job deployment for automated snapshot capture.
 
-The agent package deploys a Kubernetes Job that runs eidos snapshot on GPU nodes
+The agent package deploys a Kubernetes Job that runs cnsctl snapshot on GPU nodes
 and writes output to ConfigMap storage. It handles RBAC setup, Job lifecycle
 management, and snapshot retrieval.
 
@@ -35,8 +35,8 @@ recreated for each snapshot to ensure clean state.
 		// Configure deployer
 		config := agent.Config{
 			Namespace: "gpu-operator",
-			Image:     "ghcr.io/nvidia/eidos:latest",
-			Output:    "cm://gpu-operator/eidos-snapshot",
+			Image:     "ghcr.io/nvidia/cns:latest",
+			Output:    "cm://gpu-operator/cns-snapshot",
 			NodeSelector: map[string]string{
 				"nodeGroup": "customer-gpu",
 			},

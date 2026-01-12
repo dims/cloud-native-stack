@@ -166,7 +166,7 @@
 //
 // The snapshotter is invoked by:
 //   - pkg/cli - snapshot command
-//   - Kubernetes Job - eidos-agent deployment
+//   - Kubernetes Job - cns-agent deployment
 //
 // It depends on:
 //   - pkg/collector - Data collection implementations

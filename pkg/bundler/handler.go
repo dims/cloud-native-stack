@@ -102,7 +102,7 @@ func (b *DefaultBundler) HandleBundles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create temporary directory for bundle output
-	tempDir, err := os.MkdirTemp("", "eidos-bundle-*")
+	tempDir, err := os.MkdirTemp("", "cns-bundle-*")
 	if err != nil {
 		server.WriteError(w, r, http.StatusInternalServerError, cnserrors.ErrCodeInternal,
 			"Failed to create temporary directory", true, nil)

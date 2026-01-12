@@ -30,7 +30,7 @@ echo "Using tag: $TAG"
 Resolve tag to immutable digest:
 
 ```shell
-export IMAGE="ghcr.io/nvidia/eidos"
+export IMAGE="ghcr.io/nvidia/cns"
 export DIGEST=$(crane digest "${IMAGE}:${TAG}")
 echo "Resolved digest: $DIGEST"
 export IMAGE_DIGEST="${IMAGE}@${DIGEST}"
@@ -46,10 +46,10 @@ Verify using digest:
 gh attestation verify oci://${IMAGE_DIGEST} --owner nvidia
 ```
 
-Verify the eidos-api-server image:
+Verify the cns-api-server image:
 
 ```shell
-export IMAGE_API="ghcr.io/nvidia/eidos-api-server"
+export IMAGE_API="ghcr.io/nvidia/cns-api-server"
 export DIGEST_API=$(crane digest "${IMAGE_API}:${TAG}")
 gh attestation verify oci://${IMAGE_API}@${DIGEST_API} --owner nvidia
 ```
@@ -92,18 +92,18 @@ export ARCH=$(uname -m | sed 's/x86_64/amd64/; s/aarch64/arm64/')
 
 Download binary from GitHub releases:
 ```shell
-curl -LO https://github.com/NVIDIA/cloud-native-stack/releases/download/${TAG}/eidos_${TAG}_${OS}_${ARCH}
-chmod +x eidos_${TAG}_${OS}_${ARCH}
+curl -LO https://github.com/NVIDIA/cloud-native-stack/releases/download/${TAG}/cns_${TAG}_${OS}_${ARCH}
+chmod +x cns_${TAG}_${OS}_${ARCH}
 ```
 
 Download SBOM (separate file):
 ```shell
-curl -LO https://github.com/NVIDIA/cloud-native-stack/releases/download/${TAG}/eidos_${VERSION}_${OS}_${ARCH}.sbom.json
+curl -LO https://github.com/NVIDIA/cloud-native-stack/releases/download/${TAG}/cns_${VERSION}_${OS}_${ARCH}.sbom.json
 ```
 
 View SBOM
 ```shell
-cat eidos_${VERSION}_${OS}_${ARCH}.sbom.json
+cat cns_${VERSION}_${OS}_${ARCH}.sbom.json
 ```
 
 ### Container Image SBOMs (API Server & Agent)
@@ -112,7 +112,7 @@ Get latest release tag and resolve digest:
 
 ```shell
 export TAG=$(curl -s https://api.github.com/repos/NVIDIA/cloud-native-stack/releases/latest | jq -r '.tag_name')
-export IMAGE="ghcr.io/nvidia/eidos-api-server"
+export IMAGE="ghcr.io/nvidia/cns-api-server"
 export DIGEST=$(crane digest "${IMAGE}:${TAG}")
 export IMAGE_DIGEST="${IMAGE}@${DIGEST}"
 ```
@@ -177,7 +177,7 @@ metadata:
   name: cns-images-require-attestation
 spec:
   images:
-  - glob: "ghcr.io/nvidia/eidos*"
+  - glob: "ghcr.io/nvidia/cns*"
   authorities:
   - keyless:
       url: https://fulcio.sigstore.dev
@@ -212,7 +212,7 @@ spec:
           - Pod
     verifyImages:
     - imageReferences:
-      - "ghcr.io/nvidia/eidos*"
+      - "ghcr.io/nvidia/cns*"
       attestations:
       - predicateType: https://slsa.dev/provenance/v1
         attestors:
@@ -233,7 +233,7 @@ export TAG=$(curl -s https://api.github.com/repos/NVIDIA/cloud-native-stack/rele
 This should succeed (image with valid attestation):
 
 ```shell
-kubectl run test-valid --image=ghcr.io/nvidia/eidos:${TAG}
+kubectl run test-valid --image=ghcr.io/nvidia/cns:${TAG}
 ```
 This should fail (unsigned image):
 
@@ -274,7 +274,7 @@ gh run view 20642050863 --repo NVIDIA/cloud-native-stack --log
 Search Rekor for attestations:
 
 ```shell
-rekor-cli search --artifact ghcr.io/nvidia/eidos:v0.8.12
+rekor-cli search --artifact ghcr.io/nvidia/cns:v0.8.12
 ```
 
 Get entry details:

@@ -14,7 +14,7 @@ func (d *Deployer) Deploy(ctx context.Context) error {
 	// Step 0: Check permissions before attempting deployment
 	_, err := d.CheckPermissions(ctx)
 	if err != nil {
-		return fmt.Errorf("insufficient permissions to deploy agent: %w\n\nTo deploy the agent, you need cluster admin privileges or ask your cluster admin to run:\n  kubectl apply -f deployments/eidos-agent/1-deps.yaml\n  kubectl apply -f deployments/eidos-agent/2-job.yaml", err)
+		return fmt.Errorf("insufficient permissions to deploy agent: %w\n\nTo deploy the agent, you need cluster admin privileges or ask your cluster admin to run:\n  kubectl apply -f deployments/cns-agent/1-deps.yaml\n  kubectl apply -f deployments/cns-agent/2-job.yaml", err)
 	}
 
 	// Step 1: Ensure RBAC resources (idempotent - reuses if already exists)

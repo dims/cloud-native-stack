@@ -1,6 +1,6 @@
 # API Reference
 
-Complete reference for the Eidos API Server REST API.
+Complete reference for the CNS API Server REST API.
 
 ## Overview
 
@@ -19,7 +19,7 @@ The API server provides HTTP REST access to recipe generation and bundle creatio
 
 **Limitations:**
 
-- Does not capture snapshots (use CLI `eidos snapshot` or Kubernetes agent Job)
+- Does not capture snapshots (use CLI `cnsctl snapshot` or Kubernetes agent Job)
 - Does not analyze snapshots (query mode only; snapshot mode requires CLI)
 - Does not interact with Kubernetes ConfigMaps (use CLI for `cm://` URIs)
 
@@ -27,13 +27,13 @@ The API server provides HTTP REST access to recipe generation and bundle creatio
 
 ```bash
 # Capture snapshot to ConfigMap
-eidos snapshot -o cm://namespace/name
+cnsctl snapshot -o cm://namespace/name
 
 # Generate recipe from ConfigMap
-eidos recipe -f cm://namespace/name -o recipe.yaml
+cnsctl recipe -f cm://namespace/name -o recipe.yaml
 
 # Create deployment bundle
-eidos bundle -f recipe.yaml -o ./bundles
+cnsctl bundle -f recipe.yaml -o ./bundles
 ```
 
 See [CLI Reference](../user-guide/cli-reference.md) and [Agent Deployment](../user-guide/agent-deployment.md).
@@ -64,7 +64,7 @@ Service information and available routes.
 **Response:**
 ```json
 {
-  "service": "eidos-api-server",
+  "service": "cns-api-server",
   "version": "v0.7.6",
   "routes": ["/v1/recipe", "/v1/bundle"]
 }
@@ -364,22 +364,22 @@ Prometheus metrics endpoint.
 
 **Response (200 OK):**
 ```
-# HELP eidos_http_requests_total Total HTTP requests
-# TYPE eidos_http_requests_total counter
-eidos_http_requests_total{method="GET",path="/v1/recipe",status="200"} 42
+# HELP cns_http_requests_total Total HTTP requests
+# TYPE cns_http_requests_total counter
+cns_http_requests_total{method="GET",path="/v1/recipe",status="200"} 42
 
-# HELP eidos_http_request_duration_seconds HTTP request duration
-# TYPE eidos_http_request_duration_seconds histogram
-eidos_http_request_duration_seconds_bucket{method="GET",path="/v1/recipe",le="0.1"} 40
-eidos_http_request_duration_seconds_bucket{method="GET",path="/v1/recipe",le="0.5"} 42
+# HELP cns_http_request_duration_seconds HTTP request duration
+# TYPE cns_http_request_duration_seconds histogram
+cns_http_request_duration_seconds_bucket{method="GET",path="/v1/recipe",le="0.1"} 40
+cns_http_request_duration_seconds_bucket{method="GET",path="/v1/recipe",le="0.5"} 42
 
-# HELP eidos_http_requests_in_flight Current HTTP requests in flight
-# TYPE eidos_http_requests_in_flight gauge
-eidos_http_requests_in_flight 3
+# HELP cns_http_requests_in_flight Current HTTP requests in flight
+# TYPE cns_http_requests_in_flight gauge
+cns_http_requests_in_flight 3
 
-# HELP eidos_rate_limit_rejects_total Total rate limit rejections
-# TYPE eidos_rate_limit_rejects_total counter
-eidos_rate_limit_rejects_total 5
+# HELP cns_rate_limit_rejects_total Total rate limit rejections
+# TYPE cns_rate_limit_rejects_total counter
+cns_rate_limit_rejects_total 5
 ```
 
 ## Usage Examples
@@ -639,12 +639,12 @@ done
 
 ## OpenAPI Specification
 
-Full OpenAPI 3.1 specification: [api/eidos/v1/api-server-v1.yaml](../../../api/eidos/v1/api-server-v1.yaml)
+Full OpenAPI 3.1 specification: [api/cns/v1/api-server-v1.yaml](../../../api/cns/v1/api-server-v1.yaml)
 
 **Generate client SDKs:**
 ```shell
 # Download spec
-curl https://raw.githubusercontent.com/NVIDIA/cloud-native-stack/main/api/eidos/v1/api-server-v1.yaml -o spec.yaml
+curl https://raw.githubusercontent.com/NVIDIA/cloud-native-stack/main/api/cns/v1/api-server-v1.yaml -o spec.yaml
 
 # Generate Python client
 openapi-generator-cli generate -i spec.yaml -g python -o ./python-client
@@ -674,10 +674,10 @@ curl https://cns.dgxc.io/metrics
 ```
 
 **Key metrics:**
-- `eidos_http_requests_total` - Total requests by method, path, status
-- `eidos_http_request_duration_seconds` - Request latency histogram
-- `eidos_http_requests_in_flight` - Current concurrent requests
-- `eidos_rate_limit_rejects_total` - Rate limit rejections
+- `cns_http_requests_total` - Total requests by method, path, status
+- `cns_http_request_duration_seconds` - Request latency histogram
+- `cns_http_requests_in_flight` - Current concurrent requests
+- `cns_rate_limit_rejects_total` - Rate limit rejections
 
 ## See Also
 

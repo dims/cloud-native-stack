@@ -1616,7 +1616,7 @@ measurements:
             dcgm-exporter: 4.1.1-4.0.4-ubuntu22.04
             dgxc-admission-controller: 1.865.0
             driver: 570.133.20-ubuntu22.04
-            eidos: latest
+            cns: latest
             engine-admission: v3.36.8
             engine-operator: v3.36.8
             envoy-for-knative-kourier: v1.15.0-2

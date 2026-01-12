@@ -1,6 +1,6 @@
 # Agent Deployment
 
-Deploy Eidos as a Kubernetes Job to automatically capture cluster configuration snapshots.
+Deploy CNS as a Kubernetes Job to automatically capture cluster configuration snapshots.
 
 ## Overview
 
@@ -8,19 +8,19 @@ The agent is a Kubernetes Job that captures system configuration and writes outp
 
 **Deployment options:**
 
-1. **CLI-based deployment** (recommended): Use `eidos snapshot --deploy-agent` to deploy and manage Job programmatically
+1. **CLI-based deployment** (recommended): Use `cnsctl snapshot --deploy-agent` to deploy and manage Job programmatically
 2. **kubectl deployment**: Manually apply YAML manifests with `kubectl apply`
 
 **What it does:**
 
-- Runs `eidos snapshot --output cm://gpu-operator/eidos-snapshot` on a GPU node
+- Runs `cnsctl snapshot --output cm://gpu-operator/cns-snapshot` on a GPU node
 - Writes snapshot to ConfigMap via Kubernetes API (no PersistentVolume required)
 - Exits after snapshot capture
 
 **What it does not do:**
 
-- Recipe generation (use `eidos recipe` CLI or API server)
-- Bundle generation (use `eidos bundle` CLI)
+- Recipe generation (use `cnsctl recipe` CLI or API server)
+- Bundle generation (use `cnsctl bundle` CLI)
 - Continuous monitoring (use CronJob for periodic snapshots)
 
 **Use cases:**
@@ -34,7 +34,7 @@ The agent is a Kubernetes Job that captures system configuration and writes outp
 
 Agent uses ConfigMap URI scheme (`cm://namespace/name`) to write snapshots:
 ```bash
-eidos snapshot --output cm://gpu-operator/eidos-snapshot
+cnsctl snapshot --output cm://gpu-operator/cns-snapshot
 ```
 
 This creates:
@@ -42,10 +42,10 @@ This creates:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: eidos-snapshot
+  name: cns-snapshot
   namespace: gpu-operator
   labels:
-    app.kubernetes.io/name: eidos
+    app.kubernetes.io/name: cns
     app.kubernetes.io/component: snapshot
 data:
   snapshot.yaml: |  # Complete snapshot YAML
@@ -59,7 +59,7 @@ data:
 ## Prerequisites
 
 - Kubernetes cluster with GPU nodes
-- `kubectl` configured with cluster access (for manual deployment) OR Eidos CLI installed (for CLI-based deployment)
+- `kubectl` configured with cluster access (for manual deployment) OR cnsctl CLI installed (for CLI-based deployment)
 - GPU Operator installed (agent runs in `gpu-operator` namespace)
 - Cluster admin permissions (for RBAC setup)
 
@@ -70,7 +70,7 @@ data:
 ### 1. Deploy Agent with Single Command
 
 ```shell
-eidos snapshot --deploy-agent
+cnsctl snapshot --deploy-agent
 ```
 
 This single command:
@@ -87,16 +87,16 @@ Snapshot is written to specified output:
 
 ```shell
 # Output to stdout (default)
-eidos snapshot --deploy-agent
+cnsctl snapshot --deploy-agent
 
 # Save to file
-eidos snapshot --deploy-agent --output snapshot.yaml
+cnsctl snapshot --deploy-agent --output snapshot.yaml
 
 # Keep in ConfigMap for later use
-eidos snapshot --deploy-agent --output cm://gpu-operator/eidos-snapshot
+cnsctl snapshot --deploy-agent --output cm://gpu-operator/cns-snapshot
 
 # Retrieve from ConfigMap later
-kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}'
+kubectl get configmap cns-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}'
 ```
 
 ### 3. Customize Deployment
@@ -105,31 +105,31 @@ Target specific nodes and configure scheduling:
 
 ```shell
 # Target GPU nodes with specific label
-eidos snapshot --deploy-agent \
+cnsctl snapshot --deploy-agent \
   --node-selector accelerator=nvidia-h100
 
 # Handle tainted nodes (by default all taints are tolerated)
 # Only needed if you want to restrict which taints are tolerated
-eidos snapshot --deploy-agent \
+cnsctl snapshot --deploy-agent \
   --toleration nvidia.com/gpu=present:NoSchedule
 
 # Full customization
-eidos snapshot --deploy-agent \
+cnsctl snapshot --deploy-agent \
   --namespace gpu-operator \
-  --image ghcr.io/nvidia/eidos:v0.8.0 \
+  --image ghcr.io/nvidia/cns:v0.8.0 \
   --node-selector accelerator=nvidia-h100 \
   --toleration nvidia.com/gpu:NoSchedule \
   --timeout 10m \
-  --output cm://gpu-operator/eidos-snapshot
+  --output cm://gpu-operator/cns-snapshot
 ```
 
 **Available flags:**
 - `--deploy-agent`: Enable agent deployment mode
 - `--kubeconfig`: Custom kubeconfig path (default: `~/.kube/config` or `$KUBECONFIG`)
 - `--namespace`: Deployment namespace (default: `gpu-operator`)
-- `--image`: Container image (default: `ghcr.io/nvidia/eidos:latest`)
-- `--job-name`: Job name (default: `eidos`)
-- `--service-account-name`: ServiceAccount name (default: `eidos`)
+- `--image`: Container image (default: `ghcr.io/nvidia/cns:latest`)
+- `--job-name`: Job name (default: `cnsctl`)
+- `--service-account-name`: ServiceAccount name (default: `cnsctl`)
 - `--node-selector`: Node selector (format: `key=value`, repeatable)
 - `--toleration`: Toleration (format: `key=value:effect`, repeatable). **Default: all taints are tolerated** (uses `operator: Exists` without key). Only specify this flag if you want to restrict which taints the Job can tolerate.
 - `--timeout`: Wait timeout (default: `5m`)
@@ -144,10 +144,10 @@ If something goes wrong, check Job logs:
 kubectl get jobs -n gpu-operator
 
 # View logs
-kubectl logs -n gpu-operator job/eidos
+kubectl logs -n gpu-operator job/cns
 
 # Describe Job for events
-kubectl describe job eidos -n gpu-operator
+kubectl describe job cns -n gpu-operator
 ```
 
 ## Manual Deployment (kubectl)
@@ -159,12 +159,12 @@ Alternative approach using kubectl with YAML manifests.
 The agent requires permissions to read Kubernetes resources and write to ConfigMaps:
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/nvidia/cloud-native-stack/main/deployments/eidos-agent/1-deps.yaml
+kubectl apply -f https://raw.githubusercontent.com/nvidia/cloud-native-stack/main/deployments/cns-agent/1-deps.yaml
 ```
 
 **What this creates:**
 - **Namespace**: `gpu-operator` (if not exists)
-- **ServiceAccount**: `eidos` in `gpu-operator` namespace
+- **ServiceAccount**: `cnsctl` in `gpu-operator` namespace
 - **Role**: Permissions to create/update ConfigMaps in `gpu-operator` namespace
 - **RoleBinding**: Binds Role to ServiceAccount in `gpu-operator` namespace
 - **ClusterRole**: Permissions to read nodes, pods, ClusterPolicy
@@ -173,12 +173,12 @@ kubectl apply -f https://raw.githubusercontent.com/nvidia/cloud-native-stack/mai
 ### 2. Deploy the Agent Job
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/nvidia/cloud-native-stack/main/deployments/eidos-agent/2-job.yaml
+kubectl apply -f https://raw.githubusercontent.com/nvidia/cloud-native-stack/main/deployments/cns-agent/2-job.yaml
 ```
 
 **What this creates:**
-- **Job**: `eidos` in the `gpu-operator` namespace
-- Job runs `eidos snapshot --output cm://gpu-operator/eidos-snapshot`
+- **Job**: `cnsctl` in the `gpu-operator` namespace
+- Job runs `cnsctl snapshot --output cm://gpu-operator/cns-snapshot`
 - Snapshot is written directly to ConfigMap via Kubernetes API
 
 ### 3. View Snapshot Output
@@ -190,17 +190,17 @@ kubectl get jobs -n gpu-operator
 
 Check job logs (for errors/debugging):
 ```shell
-kubectl logs -n gpu-operator job/eidos
+kubectl logs -n gpu-operator job/cns
 ```
 
 Retrieve snapshot from ConfigMap:
 ```shell
-kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}'
+kubectl get configmap cns-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}'
 ```
 
 Save snapshot to file:
 ```shell
-kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > snapshot.yaml
+kubectl get configmap cns-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > snapshot.yaml
 ```
 
 ## Customization
@@ -211,7 +211,7 @@ Before deploying, you may need to customize the Job manifest for your environmen
 
 ```shell
 # Download job manifest
-curl -O https://raw.githubusercontent.com/nvidia/cloud-native-stack/main/deployments/eidos-agent/2-job.yaml
+curl -O https://raw.githubusercontent.com/nvidia/cloud-native-stack/main/deployments/cns-agent/2-job.yaml
 
 # Edit with your preferred editor
 vim 2-job.yaml
@@ -280,13 +280,13 @@ spec:
   template:
     spec:
       containers:
-        - name: eidos
-          image: ghcr.io/nvidia/eidos:v0.8.0  # Pin to version
+        - name: cns
+          image: ghcr.io/nvidia/cns:v0.8.0  # Pin to version
 ```
 
 **Finding versions:**
 - [GitHub Releases](https://github.com/nvidia/cloud-native-stack/releases)
-- Container registry: [ghcr.io/nvidia/eidos](https://github.com/nvidia/cloud-native-stack/pkgs/container/eidos)
+- Container registry: [ghcr.io/nvidia/cns](https://github.com/nvidia/cloud-native-stack/pkgs/container/cns)
 
 ### Resource Limits
 
@@ -297,7 +297,7 @@ spec:
   template:
     spec:
       containers:
-        - name: eidos
+        - name: cns
           resources:
             requests:
               cpu: 100m
@@ -316,7 +316,7 @@ spec:
   template:
     spec:
       containers:
-        - name: eidos
+        - name: cns
           args:
             - snapshot
             - --format
@@ -331,12 +331,12 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: eidos
+  name: cns
   namespace: gpu-operator
 spec:
   template:
     spec:
-      serviceAccountName: eidos
+      serviceAccountName: cns
       restartPolicy: Never
       nodeSelector:
         nodeGroup: gpu-nodes  # Your EKS node group
@@ -345,10 +345,10 @@ spec:
           operator: Exists
           effect: NoSchedule
       containers:
-        - name: eidos
-          image: ghcr.io/nvidia/eidos:latest
-          command: ["eidos"]
-          args: ["snapshot", "--output", "cm://gpu-operator/eidos-snapshot"]
+        - name: cns
+          image: ghcr.io/nvidia/cns:latest
+          command: ["cns"]
+          args: ["snapshot", "--output", "cm://gpu-operator/cns-snapshot"]
 ```
 
 ### Example 2: GKE with H100 GPUs
@@ -357,20 +357,20 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: eidos
+  name: cns
   namespace: gpu-operator
 spec:
   template:
     spec:
-      serviceAccountName: eidos
+      serviceAccountName: cns
       restartPolicy: Never
       nodeSelector:
         cloud.google.com/gke-accelerator: nvidia-tesla-h100
       containers:
-        - name: eidos
-          image: ghcr.io/nvidia/eidos:latest
-          command: ["eidos"]
-          args: ["snapshot", "--output", "cm://gpu-operator/eidos-snapshot"]
+        - name: cns
+          image: ghcr.io/nvidia/cns:latest
+          command: ["cns"]
+          args: ["snapshot", "--output", "cm://gpu-operator/cns-snapshot"]
 ```
 
 ### Example 3: Periodic Snapshots (CronJob)
@@ -381,7 +381,7 @@ Automatic snapshots for drift detection:
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: eidos-snapshot
+  name: cns-snapshot
   namespace: gpu-operator
 spec:
   schedule: "0 */6 * * *"  # Every 6 hours
@@ -389,33 +389,33 @@ spec:
     spec:
       template:
         spec:
-          serviceAccountName: eidos
+          serviceAccountName: cns
           restartPolicy: Never
           nodeSelector:
             nvidia.com/gpu.present: "true"
           containers:
-            - name: eidos
-              image: ghcr.io/nvidia/eidos:latest
-              command: ["eidos"]
-              args: ["snapshot", "--output", "cm://gpu-operator/eidos-snapshot"]
+            - name: cns
+              image: ghcr.io/nvidia/cns:latest
+              command: ["cns"]
+              args: ["snapshot", "--output", "cm://gpu-operator/cns-snapshot"]
 ```
 
 Retrieve historical snapshots:
 ```shell
 # List completed jobs
-kubectl get jobs -n gpu-operator -l job-name=eidos-snapshot
+kubectl get jobs -n gpu-operator -l job-name=cns-snapshot
 
 # Get latest snapshot from ConfigMap (updated by most recent job)
-kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > latest-snapshot.yaml
+kubectl get configmap cns-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > latest-snapshot.yaml
 
 # Check ConfigMap update timestamp
-kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.metadata.creationTimestamp}'
+kubectl get configmap cns-snapshot -n gpu-operator -o jsonpath='{.metadata.creationTimestamp}'
 
 # View job logs for debugging (if needed)
-kubectl logs -n gpu-operator job/eidos-snapshot-28405680
+kubectl logs -n gpu-operator job/cns-snapshot-28405680
 ```
 
-**Note**: The ConfigMap `eidos-snapshot` is updated by each CronJob run. For historical tracking, save snapshots to external storage (S3, Git, etc.) using a post-job step.
+**Note**: The ConfigMap `cns-snapshot` is updated by each CronJob run. For historical tracking, save snapshots to external storage (S3, Git, etc.) using a post-job step.
 
 ## Post-Deployment
 
@@ -426,50 +426,50 @@ kubectl logs -n gpu-operator job/eidos-snapshot-28405680
 kubectl get jobs -n gpu-operator
 
 # Describe job for events
-kubectl describe job eidos -n gpu-operator
+kubectl describe job cns -n gpu-operator
 
 # Check pod status
-kubectl get pods -n gpu-operator -l job-name=eidos
+kubectl get pods -n gpu-operator -l job-name=cns
 ```
 
 ### Retrieve Snapshot
 
 ```shell
 # View snapshot from ConfigMap
-kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}'
+kubectl get configmap cns-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}'
 
 # Save to file
-kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > snapshot-$(date +%Y%m%d).yaml
+kubectl get configmap cns-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > snapshot-$(date +%Y%m%d).yaml
 
 # View job logs (for debugging)
-kubectl logs -n gpu-operator job/eidos
+kubectl logs -n gpu-operator job/cns
 
 # Check ConfigMap metadata
-kubectl get configmap eidos-snapshot -n gpu-operator -o yaml
+kubectl get configmap cns-snapshot -n gpu-operator -o yaml
 ```
 
 ### Generate Recipe from Snapshot
 
 ```shell
 # Option 1: Use ConfigMap directly (no file needed)
-eidos recipe --snapshot cm://gpu-operator/eidos-snapshot --intent training --output recipe.yaml
+cnsctl recipe --snapshot cm://gpu-operator/cns-snapshot --intent training --output recipe.yaml
 
 # Option 2: Save snapshot to file first
-kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > snapshot.yaml
-eidos recipe --snapshot snapshot.yaml --intent training --output recipe.yaml
+kubectl get configmap cns-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > snapshot.yaml
+cnsctl recipe --snapshot snapshot.yaml --intent training --output recipe.yaml
 
 # Generate bundle
-eidos bundle --recipe recipe.yaml --output ./bundles
+cnsctl bundle --recipe recipe.yaml --output ./bundles
 ```
 
 ### Clean Up
 
 ```shell
 # Delete job
-kubectl delete job eidos -n gpu-operator
+kubectl delete job cns -n gpu-operator
 
 # Delete RBAC (if no longer needed)
-kubectl delete -f https://raw.githubusercontent.com/NVIDIA/cloud-native-stack/main/deployments/eidos-agent/1-deps.yaml
+kubectl delete -f https://raw.githubusercontent.com/NVIDIA/cloud-native-stack/main/deployments/cns-agent/1-deps.yaml
 ```
 
 ## Complete Workflow Examples
@@ -478,17 +478,17 @@ kubectl delete -f https://raw.githubusercontent.com/NVIDIA/cloud-native-stack/ma
 
 ```shell
 # Step 1: Deploy agent and capture snapshot to ConfigMap
-eidos snapshot --deploy-agent --output cm://gpu-operator/eidos-snapshot
+cnsctl snapshot --deploy-agent --output cm://gpu-operator/cns-snapshot
 
 # Step 2: Generate recipe from ConfigMap (with kubeconfig if needed)
-eidos recipe \
-  --snapshot cm://gpu-operator/eidos-snapshot \
+cnsctl recipe \
+  --snapshot cm://gpu-operator/cns-snapshot \
   --kubeconfig ~/.kube/config \
   --intent training \
   --output recipe.yaml
 
 # Step 3: Create deployment bundle
-eidos bundle \
+cnsctl bundle \
   --recipe recipe.yaml \
   --bundlers gpu-operator \
   --output ./bundles
@@ -508,20 +508,20 @@ kubectl logs -n gpu-operator -l app=nvidia-operator-validator
 
 ```shell
 # Step 1: Deploy RBAC and Job using kubectl
-kubectl apply -f deployments/eidos-agent/1-deps.yaml
-kubectl apply -f deployments/eidos-agent/2-job.yaml
+kubectl apply -f deployments/cns-agent/1-deps.yaml
+kubectl apply -f deployments/cns-agent/2-job.yaml
 
 # Step 2: Wait for completion
-kubectl wait --for=condition=complete job/eidos -n gpu-operator --timeout=5m
+kubectl wait --for=condition=complete job/cns -n gpu-operator --timeout=5m
 
 # Step 3: Generate recipe from ConfigMap
-eidos recipe \
-  --snapshot cm://gpu-operator/eidos-snapshot \
+cnsctl recipe \
+  --snapshot cm://gpu-operator/cns-snapshot \
   --intent training \
   --output recipe.yaml
 
 # Step 4: Create bundle
-eidos bundle \
+cnsctl bundle \
   --recipe recipe.yaml \
   --bundlers gpu-operator \
   --output ./bundles
@@ -540,23 +540,23 @@ kubectl get pods -n gpu-operator
 # GitHub Actions example with CLI
 - name: Capture snapshot using agent
   run: |
-    eidos snapshot --deploy-agent \
+    cnsctl snapshot --deploy-agent \
       --kubeconfig ${{ secrets.KUBECONFIG }} \
       --namespace gpu-operator \
-      --output cm://gpu-operator/eidos-snapshot \
+      --output cm://gpu-operator/cns-snapshot \
       --timeout 10m
     
 - name: Generate recipe from ConfigMap
   run: |
-    eidos recipe \
-      --snapshot cm://gpu-operator/eidos-snapshot \
+    cnsctl recipe \
+      --snapshot cm://gpu-operator/cns-snapshot \
       --kubeconfig ${{ secrets.KUBECONFIG }} \
       --intent training \
       --output recipe.yaml
     
 - name: Generate bundle
   run: |
-    eidos bundle -f recipe.yaml -b gpu-operator -o ./bundles
+    cnsctl bundle -f recipe.yaml -b gpu-operator -o ./bundles
     
 - name: Upload artifacts
   uses: actions/upload-artifact@v3
@@ -573,24 +573,24 @@ kubectl get pods -n gpu-operator
 # GitHub Actions example with kubectl
 - name: Deploy agent to capture snapshot
   run: |
-    kubectl apply -f deployments/eidos-agent/1-deps.yaml
-    kubectl apply -f deployments/eidos-agent/2-job.yaml
-    kubectl wait --for=condition=complete --timeout=300s job/eidos -n gpu-operator
+    kubectl apply -f deployments/cns-agent/1-deps.yaml
+    kubectl apply -f deployments/cns-agent/2-job.yaml
+    kubectl wait --for=condition=complete --timeout=300s job/cns -n gpu-operator
     
 - name: Generate recipe from ConfigMap
   run: |
     # Option 1: Use ConfigMap directly (no file needed)
-    eidos recipe -f cm://gpu-operator/eidos-snapshot -i training -o recipe.yaml
+    cnsctl recipe -f cm://gpu-operator/cns-snapshot -i training -o recipe.yaml
     
     # Option 2: Write recipe to ConfigMap as well
-    eidos recipe -f cm://gpu-operator/eidos-snapshot -i training -o cm://gpu-operator/eidos-recipe
+    cnsctl recipe -f cm://gpu-operator/cns-snapshot -i training -o cm://gpu-operator/cns-recipe
     
     # Option 3: Export snapshot to file for archival
-    kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > snapshot.yaml
+    kubectl get configmap cns-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > snapshot.yaml
     
 - name: Generate bundle
   run: |
-    eidos bundle -f recipe.yaml -b gpu-operator -o ./bundles
+    cnsctl bundle -f recipe.yaml -b gpu-operator -o ./bundles
     
 - name: Upload artifacts
   uses: actions/upload-artifact@v3
@@ -617,7 +617,7 @@ for cluster in "${clusters[@]}"; do
   kubectl config use-context $cluster
   
   # Deploy agent and capture snapshot
-  eidos snapshot --deploy-agent \
+  cnsctl snapshot --deploy-agent \
     --namespace gpu-operator \
     --output snapshot-${cluster}.yaml \
     --timeout 10m
@@ -639,16 +639,16 @@ for cluster in "${clusters[@]}"; do
   kubectl config use-context $cluster
   
   # Deploy agent
-  kubectl apply -f deployments/eidos-agent/2-job.yaml
+  kubectl apply -f deployments/cns-agent/2-job.yaml
   
   # Wait for completion
-  kubectl wait --for=condition=complete --timeout=300s job/eidos -n gpu-operator
+  kubectl wait --for=condition=complete --timeout=300s job/cns -n gpu-operator
   
   # Save snapshot from ConfigMap
-  kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > snapshot-${cluster}.yaml
+  kubectl get configmap cns-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > snapshot-${cluster}.yaml
   
   # Clean up
-  kubectl delete job eidos -n gpu-operator
+  kubectl delete job cns -n gpu-operator
 done
 ```
 
@@ -659,10 +659,10 @@ done
 # Compare current snapshot with baseline
 
 # Baseline (first snapshot) - using CLI
-eidos snapshot --deploy-agent --output baseline.yaml
+cnsctl snapshot --deploy-agent --output baseline.yaml
 
 # Current (later snapshot)
-eidos snapshot --deploy-agent --output current.yaml
+cnsctl snapshot --deploy-agent --output current.yaml
 
 # Compare
 diff baseline.yaml current.yaml || echo "Configuration drift detected!"
@@ -676,8 +676,8 @@ diff baseline.yaml current.yaml || echo "Configuration drift detected!"
 
 Check RBAC permissions:
 ```shell
-kubectl auth can-i get nodes --as=system:serviceaccount:gpu-operator:eidos
-kubectl auth can-i get pods --as=system:serviceaccount:gpu-operator:eidos
+kubectl auth can-i get nodes --as=system:serviceaccount:gpu-operator:cns
+kubectl auth can-i get pods --as=system:serviceaccount:gpu-operator:cns
 ```
 
 ### Job Pending
@@ -685,7 +685,7 @@ kubectl auth can-i get pods --as=system:serviceaccount:gpu-operator:eidos
 Check node selectors and tolerations:
 ```shell
 # View pod events
-kubectl describe pod -n gpu-operator -l job-name=eidos
+kubectl describe pod -n gpu-operator -l job-name=cns
 
 # Check node labels
 kubectl get nodes --show-labels
@@ -699,16 +699,16 @@ kubectl get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints
 Check ConfigMap and container logs:
 ```shell
 # Check if ConfigMap was created
-kubectl get configmap eidos-snapshot -n gpu-operator
+kubectl get configmap cns-snapshot -n gpu-operator
 
 # View ConfigMap contents
-kubectl get configmap eidos-snapshot -n gpu-operator -o yaml
+kubectl get configmap cns-snapshot -n gpu-operator -o yaml
 
 # View pod logs for errors
-kubectl logs -n gpu-operator -l job-name=eidos
+kubectl logs -n gpu-operator -l job-name=cns
 
 # Check for previous pod errors
-kubectl logs -n gpu-operator -l job-name=eidos --previous
+kubectl logs -n gpu-operator -l job-name=cns --previous
 ```
 
 ### Permission Denied
@@ -716,13 +716,13 @@ kubectl logs -n gpu-operator -l job-name=eidos --previous
 Ensure RBAC is correctly deployed:
 ```shell
 # Verify ClusterRole
-kubectl get clusterrole eidos
+kubectl get clusterrole cns
 
 # Verify ClusterRoleBinding
-kubectl get clusterrolebinding eidos
+kubectl get clusterrolebinding cns
 
 # Verify ServiceAccount
-kubectl get serviceaccount eidos -n gpu-operator
+kubectl get serviceaccount cns -n gpu-operator
 ```
 
 ### Image Pull Errors
@@ -730,7 +730,7 @@ kubectl get serviceaccount eidos -n gpu-operator
 Check image access:
 ```shell
 # Describe pod
-kubectl describe pod -n gpu-operator -l job-name=eidos
+kubectl describe pod -n gpu-operator -l job-name=cns
 
 # For private registries, create image pull secret:
 kubectl create secret docker-registry regcred \
@@ -761,12 +761,12 @@ Restrict agent network access:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: eidos-agent
+  name: cns-agent
   namespace: gpu-operator
 spec:
   podSelector:
     matchLabels:
-      job-name: eidos
+      job-name: cns
   policyTypes:
     - Egress
   egress:
@@ -790,7 +790,7 @@ spec:
         runAsUser: 65532
         fsGroup: 65532
       containers:
-        - name: eidos
+        - name: cns
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -800,8 +800,8 @@ spec:
 
 ## See Also
 
-- [CLI Reference](cli-reference.md) - Eidos CLI commands
+- [CLI Reference](cli-reference.md) - cnsctl CLI commands
 - [Installation Guide](installation.md) - Install CLI locally
 - [API Reference](../integration/api-reference.md) - API server deployment
-- [RBAC Manifest](../../deployments/eidos-agent/1-deps.yaml) - Full RBAC configuration
-- [Job Manifest](../../deployments/eidos-agent/2-job.yaml) - Full Job configuration
+- [RBAC Manifest](../../deployments/cns-agent/1-deps.yaml) - Full RBAC configuration
+- [Job Manifest](../../deployments/cns-agent/2-job.yaml) - Full Job configuration

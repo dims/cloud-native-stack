@@ -104,7 +104,7 @@ func (w *ConfigMapWriter) Serialize(ctx context.Context, snapshot any) error {
 			Name:      w.name,
 			Namespace: w.namespace,
 			Labels: map[string]string{
-				"app.kubernetes.io/name":      "eidos",
+				"app.kubernetes.io/name":      "cns",
 				"app.kubernetes.io/component": "snapshot",
 			},
 		},

@@ -19,9 +19,9 @@ vendor/
 # Binaries
 bin
 dist
-/eidos-api-server
-/eidos
-/eidos-test
+/cns-api-server
+/cnsctl
+/cns-test
 
 # Keys 
 cosign.*

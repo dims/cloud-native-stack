@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	name           = "eidos"
+	name           = "cnsctl"
 	versionDefault = "dev"
 )
 
@@ -65,12 +65,12 @@ func Execute() {
 			&cli.BoolFlag{
 				Name:    "debug",
 				Usage:   "enable debug logging",
-				Sources: cli.EnvVars("EIDOS_DEBUG"),
+				Sources: cli.EnvVars("CNS_DEBUG"),
 			},
 			&cli.BoolFlag{
 				Name:    "log-json",
 				Usage:   "enable structured logging",
-				Sources: cli.EnvVars("EIDOS_LOG_JSON"),
+				Sources: cli.EnvVars("CNS_LOG_JSON"),
 			},
 		},
 		Before: func(ctx context.Context, c *cli.Command) (context.Context, error) {

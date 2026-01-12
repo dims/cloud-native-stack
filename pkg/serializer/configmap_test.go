@@ -14,16 +14,16 @@ func TestParseConfigMapURI(t *testing.T) {
 	}{
 		{
 			name:          "valid URI",
-			uri:           "cm://gpu-operator/eidos-snapshot",
+			uri:           "cm://gpu-operator/cns-snapshot",
 			wantNamespace: "gpu-operator",
-			wantName:      "eidos-snapshot",
+			wantName:      "cns-snapshot",
 			wantErr:       false,
 		},
 		{
 			name:          "valid URI with spaces",
-			uri:           "cm://gpu-operator / eidos-snapshot ",
+			uri:           "cm://gpu-operator / cns-snapshot ",
 			wantNamespace: "gpu-operator",
-			wantName:      "eidos-snapshot",
+			wantName:      "cns-snapshot",
 			wantErr:       false,
 		},
 		{
@@ -35,12 +35,12 @@ func TestParseConfigMapURI(t *testing.T) {
 		},
 		{
 			name:    "missing scheme",
-			uri:     "gpu-operator/eidos-snapshot",
+			uri:     "gpu-operator/cns-snapshot",
 			wantErr: true,
 		},
 		{
 			name:    "wrong scheme",
-			uri:     "http://gpu-operator/eidos-snapshot",
+			uri:     "http://gpu-operator/cns-snapshot",
 			wantErr: true,
 		},
 		{
@@ -50,7 +50,7 @@ func TestParseConfigMapURI(t *testing.T) {
 		},
 		{
 			name:    "missing namespace",
-			uri:     "cm:///eidos-snapshot",
+			uri:     "cm:///cns-snapshot",
 			wantErr: true,
 		},
 		{

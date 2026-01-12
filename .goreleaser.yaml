@@ -1,12 +1,12 @@
 version: 2
 
-project_name: eidos
+project_name: cns
 
 builds:
-  - id: eidos
-    binary: eidos
+  - id: cnsctl
+    binary: cnsctl
     mod_timestamp: &build-timestamp '{{ .CommitTimestamp }}'
-    dir: cmd/eidos
+    dir: cmd/cnsctl
     env:
       - CGO_ENABLED=0
       - GO111MODULE=on
@@ -26,10 +26,10 @@ builds:
       - amd64
       - arm64
 
-  - id: eidos-api-server
-    binary: eidos-api-server
+  - id: cns-api-server
+    binary: cns-api-server
     mod_timestamp: &build-timestamp '{{ .CommitTimestamp }}'
-    dir: cmd/eidos-api-server
+    dir: cmd/cns-api-server
     env:
       - CGO_ENABLED=0
       - GO111MODULE=on
@@ -49,7 +49,7 @@ builds:
       - arm64
 
 universal_binaries:
-  - name_template: "eidos"
+  - name_template: "cnsctl"
     replace: false  # keep platform-specific binaries too
 
 gomod:
@@ -77,10 +77,10 @@ release:
   prerelease: auto
 
 kos:
-  - id: eidos
-    build: eidos
+  - id: cnsctl
+    build: cnsctl
     repositories:
-      - ghcr.io/mchmarny/eidos  # NVIDIA
+      - ghcr.io/nvidia/cns
     base_image: nvcr.io/nvidia/cuda:13.1.0-runtime-ubuntu24.04
     platforms:
       - linux/amd64
@@ -91,10 +91,10 @@ kos:
     preserve_import_paths: false
     bare: true
 
-  - id: eidos-api-server
-    build: eidos-api-server
+  - id: cns-api-server
+    build: cns-api-server
     repositories:
-      - ghcr.io/mchmarny/eidos-api-server
+      - ghcr.io/nvidia/cns-api-server
     platforms:
       - linux/amd64
       - linux/arm64
@@ -105,9 +105,9 @@ kos:
     bare: true
 
 archives:
-  - id: eidos
+  - id: cnsctl
     ids:
-      - eidos
+      - cnsctl
     formats:
       - binary
     name_template: "{{ .Binary }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}"

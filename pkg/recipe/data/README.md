@@ -126,7 +126,7 @@ Overrides (highest precedence)
 - New fields in overrides are added to the final configuration
 - Arrays are replaced entirely (not merged element-by-element)
   
-> Note: user has the last word, can override final recipe state with `--set` flags on `eidos bundle`.
+> Note: user has the last word, can override final recipe state with `--set` flags on `cnsctl bundle`.
 
 **Example:**
 
@@ -180,7 +180,7 @@ Test your recipes with inline overrides:
 
 ```bash
 # Generate bundle from recipe with overrides
-eidos bundle -f pkg/recipe/data/your-recipe.yaml -o ./test-bundles
+cnsctl bundle -f pkg/recipe/data/your-recipe.yaml -o ./test-bundles
 
 # Verify merged values
 cat test-bundles/gpu-operator/values.yaml | grep -A5 "driver:"

@@ -9,7 +9,7 @@ INSTALL_DIR="${1:-/usr/local/bin}"
 OWNER="mchmarny"  # NVIDIA
 PROJECT="cloud-native-stack"
 REPO="$OWNER/$PROJECT"
-BIN_NAME="eidos"
+BIN_NAME="cnsctl"
 REQUIRED_TOOLS=(curl)
 COLOR_RED='\033[0;31m'
 COLOR_RESET='\033[0m' # No color
@@ -143,7 +143,7 @@ fi
 # Validate the binary
 msg "Validating the binary"
 chmod +x "${TEMP_BIN_DIR}/${FULL_BIN_NAME}"
-CHECKSUM_URL="https://github.com/${REPO}/releases/download/${VERSION}/eidos_checksums.txt"
+CHECKSUM_URL="https://github.com/${REPO}/releases/download/${VERSION}/cnsctl_checksums.txt"
 msg "Downloading checksums: $CHECKSUM_URL"
 HTTP_CODE=$(curl -w "%{http_code}" -Lo ${TEMP_BIN_DIR}/checksums.txt $CHECKSUM_URL)
 if [[ $HTTP_CODE != "200" ]]; then

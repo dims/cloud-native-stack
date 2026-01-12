@@ -112,7 +112,7 @@
 //	apiVersion: rbac.authorization.k8s.io/v1
 //	kind: ClusterRole
 //	metadata:
-//	  name: eidos-collector
+//	  name: cns-collector
 //	rules:
 //	- apiGroups: [""]
 //	  resources: ["nodes", "pods"]

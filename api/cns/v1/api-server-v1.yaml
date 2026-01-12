@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Eidos API Server - CNS Recipe API
+  title: CNS API Server - CNS Recipe API
   version: 1.0.0
   description: >
     Returns optimized system configuration recipes (component references and deployment constraints)
@@ -10,7 +10,7 @@ info:
     with environment-specific overlays based on criteria matching.
 
 servers:
-  - url: https://api.eidos.dev/v1
+  - url: https://cns.dgxc.io/v1
     description: Production server
   - url: http://localhost:8080
     description: Local development server
@@ -41,7 +41,7 @@ paths:
                 properties:
                   service:
                     type: string
-                    example: eidos-api-server
+                    example: cns-api-server
                   version:
                     type: string
                     example: v1.0.0
@@ -492,9 +492,9 @@ paths:
               schema:
                 type: string
                 example: |
-                  # HELP eidos_http_requests_total Total number of HTTP requests
-                  # TYPE eidos_http_requests_total counter
-                  eidos_http_requests_total{method="GET",path="/v1/recipe",status="200"} 42
+                  # HELP cns_http_requests_total Total number of HTTP requests
+                  # TYPE cns_http_requests_total counter
+                  cns_http_requests_total{method="GET",path="/v1/recipe",status="200"} 42
 components:
   headers:
     RequestIdResponse:

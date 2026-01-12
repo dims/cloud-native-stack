@@ -41,13 +41,13 @@
 //
 // 2. **Text Mode (--debug flag)**: Human-readable with metadata
 //
-//	logging.SetDefaultLoggerWithLevel("eidos", "v1.0.0", "debug")
-//	// Output: time=2025-01-06T10:30:00.123Z level=INFO module=eidos version=v1.0.0 msg="server started"
+//	logging.SetDefaultLoggerWithLevel("cnsctl", "v1.0.0", "debug")
+//	// Output: time=2025-01-06T10:30:00.123Z level=INFO module=cnsctl version=v1.0.0 msg="server started"
 //
 // 3. **JSON Mode (--log-json flag)**: Machine-readable structured logs
 //
-//	logging.SetDefaultStructuredLogger("eidos", "v1.0.0")
-//	// Output: {"time":"2025-01-06T10:30:00.123Z","level":"INFO","module":"eidos","version":"v1.0.0","msg":"server started"}
+//	logging.SetDefaultStructuredLogger("cnsctl", "v1.0.0")
+//	// Output: {"time":"2025-01-06T10:30:00.123Z","level":"INFO","module":"cnsctl","version":"v1.0.0","msg":"server started"}
 //
 // Setting the default logger (CLI mode for user-facing tools):
 //
@@ -79,8 +79,8 @@
 //
 // The LOG_LEVEL environment variable controls logging verbosity:
 //
-//	LOG_LEVEL=debug eidos snapshot
-//	LOG_LEVEL=error eidos-api-server
+//	LOG_LEVEL=debug cnsctl snapshot
+//	LOG_LEVEL=error cns-api-server
 //
 // If LOG_LEVEL is not set, defaults to INFO level.
 //
@@ -95,7 +95,7 @@
 //
 // **Text Mode (--debug)**: Key=value format with metadata
 //
-//	time=2025-01-06T10:30:00.123Z level=INFO module=eidos version=v1.0.0 msg="server started" port=8080
+//	time=2025-01-06T10:30:00.123Z level=INFO module=cnsctl version=v1.0.0 msg="server started" port=8080
 //
 // **JSON Mode (--log-json)**: Structured JSON to stderr
 //

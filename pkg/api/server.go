@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	name           = "eidos-api-server"
+	name           = "cns-api-server"
 	versionDefault = "dev"
 )
 

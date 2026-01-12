@@ -29,7 +29,7 @@
 //
 // Or through the bundler framework:
 //
-//	eidos bundle --recipe recipe.yaml --bundlers gpu-operator --output ./bundles
+//	cnsctl bundle --recipe recipe.yaml --bundlers gpu-operator --output ./bundles
 //
 // # Configuration Extraction
 //

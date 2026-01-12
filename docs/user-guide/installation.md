@@ -1,6 +1,6 @@
 # Installation Guide
 
-This guide describes how to install Cloud Native Stack (CNS) CLI tool (`eidos`) on Linux, macOS, or Windows.
+This guide describes how to install Cloud Native Stack (CNS) CLI tool (`cnsctl`) on Linux, macOS, or Windows.
 
 **What is Cloud Native Stack**: CNS generates validated configurations for GPU-accelerated Kubernetes deployments. See [README](../../README.md) for project overview.
 
@@ -11,7 +11,7 @@ This guide describes how to install Cloud Native Stack (CNS) CLI tool (`eidos`) 
 - **GPU Hardware** (optional): NVIDIA GPUs for full system snapshot capabilities
 - **kubectl** (optional): For Kubernetes agent deployment
 
-## Install Eidos CLI
+## Install cnsctl CLI
 
 ### Option 1: Automated Installation (Recommended)
 
@@ -24,7 +24,7 @@ curl -sfL https://raw.githubusercontent.com/nvidia/cloud-native-stack/refs/heads
 This script:
 - Detects your OS and architecture automatically
 - Downloads the appropriate binary from GitHub releases
-- Installs to `/usr/local/bin/eidos` (requires sudo)
+- Installs to `/usr/local/bin/cnsctl` (requires sudo)
 - Verifies the installation
 
 > **Supply Chain Security**: CNS includes SLSA Build Level 3 compliance with signed SBOMs and verifiable attestations. See [SECURITY](../SECURITY.md#supply-chain-security) for verification instructions.
@@ -35,24 +35,24 @@ This script:
 
 Visit the [releases page](https://github.com/nvidia/cloud-native-stack/releases/latest) and download the appropriate binary for your platform:
 
-- **macOS ARM64** (M1/M2/M3): `eidos_darwin_arm64.tar.gz`
-- **macOS Intel**: `eidos_darwin_amd64.tar.gz`
-- **Linux ARM64**: `eidos_linux_arm64.tar.gz`
-- **Linux x86_64**: `eidos_linux_amd64.tar.gz`
+- **macOS ARM64** (M1/M2/M3): `cns_darwin_arm64.tar.gz`
+- **macOS Intel**: `cns_darwin_amd64.tar.gz`
+- **Linux ARM64**: `cns_linux_arm64.tar.gz`
+- **Linux x86_64**: `cns_linux_amd64.tar.gz`
 
 2. **Extract and install**
 
 ```shell
 # Example for Linux x86_64
-tar -xzf eidos_linux_amd64.tar.gz
-sudo mv eidos /usr/local/bin/
-sudo chmod +x /usr/local/bin/eidos
+tar -xzf cns_linux_amd64.tar.gz
+sudo mv cnsctl /usr/local/bin/
+sudo chmod +x /usr/local/bin/cnsctl
 ```
 
 3. **Verify installation**
 
 ```shell
-eidos --version
+cnsctl --version
 ```
 
 ### Option 3: Build from Source
@@ -70,22 +70,22 @@ cd cloud-native-stack
 make build
 
 # Binary location
-./dist/eidos_<platform>/eidos
+./dist/cns_<platform>/cnsctl
 ```
 
 ## Verify Installation
 
-Check that Eidos is correctly installed:
+Check that cnsctl is correctly installed:
 
 ```shell
 # Check version
-eidos --version
+cnsctl --version
 
 # View available commands
-eidos --help
+cnsctl --help
 
 # Test snapshot (requires GPU)
-eidos snapshot --format json | jq '.measurements | length'
+cnsctl snapshot --format json | jq '.measurements | length'
 ```
 
 Expected output shows version information and available commands.
@@ -99,19 +99,19 @@ Enable shell auto-completion for command and flag names:
 **Bash:**
 ```shell
 # Add to ~/.bashrc
-source <(eidos completion bash)
+source <(cnsctl completion bash)
 ```
 
 **Zsh:**
 ```shell
 # Add to ~/.zshrc
-source <(eidos completion zsh)
+source <(cnsctl completion zsh)
 ```
 
 **Fish:**
 ```shell
 # Add to ~/.config/fish/config.fish
-eidos completion fish | source
+cnsctl completion fish | source
 ```
 
 ### Kubernetes Access (Optional)
@@ -128,18 +128,18 @@ kubectl get nodes -l nvidia.com/gpu.present=true
 
 ## Container Images
 
-Eidos is also available as container images for integration into automated pipelines:
+CNS is also available as container images for integration into automated pipelines:
 
 ### CLI Image
 ```shell
-docker pull ghcr.io/nvidia/eidos:latest
-docker run ghcr.io/nvidia/eidos:latest --version
+docker pull ghcr.io/nvidia/cns:latest
+docker run ghcr.io/nvidia/cns:latest --version
 ```
 
 ### API Server Image
 ```shell
-docker pull ghcr.io/nvidia/eidos-api-server:latest
-docker run -p 8080:8080 ghcr.io/nvidia/eidos-api-server:latest
+docker pull ghcr.io/nvidia/cns-api-server:latest
+docker run -p 8080:8080 ghcr.io/nvidia/cns-api-server:latest
 ```
 
 **Production API Server**: The API server is deployed at https://cns.dgxc.io with auto-scaling and SLSA Build Level 3 attestations.
@@ -182,7 +182,7 @@ The e2e script:
 
 ### Command Not Found
 
-If `eidos` is not found after installation:
+If `cnsctl` is not found after installation:
 
 ```shell
 # Check if binary is in PATH
@@ -197,7 +197,7 @@ source ~/.bashrc
 
 ```shell
 # Make binary executable
-sudo chmod +x /usr/local/bin/eidos
+sudo chmod +x /usr/local/bin/cnsctl
 ```
 
 ### GPU Detection Issues
@@ -225,7 +225,7 @@ kubectl get nodes
 
 ```shell
 # Remove binary
-sudo rm /usr/local/bin/eidos
+sudo rm /usr/local/bin/cnsctl
 
 # Remove shell completion (if configured)
 # Remove the source line from your shell RC file

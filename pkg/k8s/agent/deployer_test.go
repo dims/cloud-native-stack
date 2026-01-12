@@ -12,7 +12,7 @@ import (
 	k8stesting "k8s.io/client-go/testing"
 )
 
-const testName = "eidos"
+const testName = "cns"
 
 func TestDeployer_EnsureRBAC(t *testing.T) {
 	clientset := fake.NewClientset()
@@ -20,8 +20,8 @@ func TestDeployer_EnsureRBAC(t *testing.T) {
 		Namespace:          "test-namespace",
 		ServiceAccountName: testName,
 		JobName:            testName,
-		Image:              "ghcr.io/nvidia/eidos:latest",
-		Output:             "cm://test-namespace/eidos-snapshot",
+		Image:              "ghcr.io/nvidia/cns:latest",
+		Output:             "cm://test-namespace/cns-snapshot",
 	}
 	deployer := NewDeployer(clientset, config)
 	ctx := context.Background()
@@ -86,12 +86,12 @@ func TestDeployer_EnsureRBAC(t *testing.T) {
 			t.Errorf("expected 1 subject, got %d", len(rb.Subjects))
 		}
 		if rb.Subjects[0].Name != testName {
-			t.Errorf("expected subject name 'eidos', got %q", rb.Subjects[0].Name)
+			t.Errorf("expected subject name 'cns', got %q", rb.Subjects[0].Name)
 		}
 
 		// Verify roleRef
 		if rb.RoleRef.Name != testName {
-			t.Errorf("expected roleRef name 'eidos', got %q", rb.RoleRef.Name)
+			t.Errorf("expected roleRef name 'cns', got %q", rb.RoleRef.Name)
 		}
 	})
 
@@ -102,7 +102,7 @@ func TestDeployer_EnsureRBAC(t *testing.T) {
 		}
 
 		cr, err := clientset.RbacV1().ClusterRoles().
-			Get(ctx, "eidos-node-reader", metav1.GetOptions{})
+			Get(ctx, "cns-node-reader", metav1.GetOptions{})
 		if err != nil {
 			t.Fatalf("ClusterRole not found: %v", err)
 		}
@@ -120,7 +120,7 @@ func TestDeployer_EnsureRBAC(t *testing.T) {
 		}
 
 		crb, err := clientset.RbacV1().ClusterRoleBindings().
-			Get(ctx, "eidos-node-reader", metav1.GetOptions{})
+			Get(ctx, "cns-node-reader", metav1.GetOptions{})
 		if err != nil {
 			t.Fatalf("ClusterRoleBinding not found: %v", err)
 		}
@@ -131,8 +131,8 @@ func TestDeployer_EnsureRBAC(t *testing.T) {
 		}
 
 		// Verify roleRef
-		if crb.RoleRef.Name != "eidos-node-reader" {
-			t.Errorf("expected roleRef name 'eidos-node-reader', got %q", crb.RoleRef.Name)
+		if crb.RoleRef.Name != "cns-node-reader" {
+			t.Errorf("expected roleRef name 'cns-node-reader', got %q", crb.RoleRef.Name)
 		}
 	})
 }
@@ -143,8 +143,8 @@ func TestDeployer_EnsureRBAC_Idempotent(t *testing.T) {
 		Namespace:          "test-namespace",
 		ServiceAccountName: testName,
 		JobName:            testName,
-		Image:              "ghcr.io/nvidia/eidos:latest",
-		Output:             "cm://test-namespace/eidos-snapshot",
+		Image:              "ghcr.io/nvidia/cns:latest",
+		Output:             "cm://test-namespace/cns-snapshot",
 	}
 	deployer := NewDeployer(clientset, config)
 	ctx := context.Background()
@@ -175,8 +175,8 @@ func TestDeployer_EnsureJob(t *testing.T) {
 		Namespace:          "test-namespace",
 		ServiceAccountName: testName,
 		JobName:            testName,
-		Image:              "ghcr.io/nvidia/eidos:latest",
-		Output:             "cm://test-namespace/eidos-snapshot",
+		Image:              "ghcr.io/nvidia/cns:latest",
+		Output:             "cm://test-namespace/cns-snapshot",
 		NodeSelector: map[string]string{
 			"nodeGroup": "customer-gpu",
 		},
@@ -283,8 +283,8 @@ func TestDeployer_Deploy(t *testing.T) {
 		Namespace:          "test-namespace",
 		ServiceAccountName: testName,
 		JobName:            testName,
-		Image:              "ghcr.io/nvidia/eidos:latest",
-		Output:             "cm://test-namespace/eidos-snapshot",
+		Image:              "ghcr.io/nvidia/cns:latest",
+		Output:             "cm://test-namespace/cns-snapshot",
 	}
 	deployer := NewDeployer(clientset, config)
 	ctx := context.Background()
@@ -317,14 +317,14 @@ func TestDeployer_Deploy(t *testing.T) {
 
 	// Verify ClusterRole
 	_, err = clientset.RbacV1().ClusterRoles().
-		Get(ctx, "eidos-node-reader", metav1.GetOptions{})
+		Get(ctx, "cns-node-reader", metav1.GetOptions{})
 	if err != nil {
 		t.Errorf("ClusterRole not created: %v", err)
 	}
 
 	// Verify ClusterRoleBinding
 	_, err = clientset.RbacV1().ClusterRoleBindings().
-		Get(ctx, "eidos-node-reader", metav1.GetOptions{})
+		Get(ctx, "cns-node-reader", metav1.GetOptions{})
 	if err != nil {
 		t.Errorf("ClusterRoleBinding not created: %v", err)
 	}
@@ -354,8 +354,8 @@ func TestDeployer_Cleanup(t *testing.T) {
 		Namespace:          "test-namespace",
 		ServiceAccountName: testName,
 		JobName:            testName,
-		Image:              "ghcr.io/nvidia/eidos:latest",
-		Output:             "cm://test-namespace/eidos-snapshot",
+		Image:              "ghcr.io/nvidia/cns:latest",
+		Output:             "cm://test-namespace/cns-snapshot",
 	}
 	deployer := NewDeployer(clientset, config)
 	ctx := context.Background()
@@ -407,9 +407,9 @@ func TestParseConfigMapName(t *testing.T) {
 	}{
 		{
 			name:          "valid URI",
-			uri:           "cm://gpu-operator/eidos-snapshot",
+			uri:           "cm://gpu-operator/cns-snapshot",
 			wantNamespace: "gpu-operator",
-			wantName:      "eidos-snapshot",
+			wantName:      "cns-snapshot",
 			wantErr:       false,
 		},
 		{
@@ -482,7 +482,7 @@ measurements:
 `
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "eidos-snapshot",
+			Name:      "cns-snapshot",
 			Namespace: "test-namespace",
 		},
 		Data: map[string]string{
@@ -494,7 +494,7 @@ measurements:
 	config := Config{
 		Namespace: "test-namespace",
 		JobName:   testName,
-		Output:    "cm://test-namespace/eidos-snapshot",
+		Output:    "cm://test-namespace/cns-snapshot",
 	}
 	deployer := NewDeployer(clientset, config)
 	ctx := context.Background()
@@ -515,7 +515,7 @@ func TestDeployer_GetSnapshot_NotFound(t *testing.T) {
 	config := Config{
 		Namespace: "test-namespace",
 		JobName:   testName,
-		Output:    "cm://test-namespace/eidos-snapshot",
+		Output:    "cm://test-namespace/cns-snapshot",
 	}
 	deployer := NewDeployer(clientset, config)
 	ctx := context.Background()
@@ -531,7 +531,7 @@ func TestDeployer_GetSnapshot_MissingKey(t *testing.T) {
 	// Create ConfigMap without snapshot.yaml key
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "eidos-snapshot",
+			Name:      "cns-snapshot",
 			Namespace: "test-namespace",
 		},
 		Data: map[string]string{
@@ -543,7 +543,7 @@ func TestDeployer_GetSnapshot_MissingKey(t *testing.T) {
 	config := Config{
 		Namespace: "test-namespace",
 		JobName:   testName,
-		Output:    "cm://test-namespace/eidos-snapshot",
+		Output:    "cm://test-namespace/cns-snapshot",
 	}
 	deployer := NewDeployer(clientset, config)
 	ctx := context.Background()

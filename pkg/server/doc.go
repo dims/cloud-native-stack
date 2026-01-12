@@ -1,5 +1,5 @@
 // Package server implements the CNS System Configuration Recommendation API
-// as defined in api/eidos/eidos-v1.yaml
+// as defined in api/cns/cns-v1.yaml
 //
 // This implementation follows production-grade distributed systems best practices:
 //
@@ -168,7 +168,7 @@
 //
 // # References
 //
-//   - OpenAPI spec: api/eidos/eidos-v1.yaml
+//   - OpenAPI spec: api/cns/cns-v1.yaml
 //   - Rate limiting: https://pkg.go.dev/golang.org/x/time/rate
 //   - UUID generation: https://pkg.go.dev/github.com/google/uuid
 //   - Error groups: https://pkg.go.dev/golang.org/x/sync/errgroup

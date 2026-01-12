@@ -27,7 +27,7 @@
 //
 // Or through the bundler framework:
 //
-//	eidos bundle --recipe recipe.yaml --bundlers cert-manager --output ./bundles
+//	cnsctl bundle --recipe recipe.yaml --bundlers cert-manager --output ./bundles
 //
 // # Configuration Extraction
 //

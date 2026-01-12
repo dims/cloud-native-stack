@@ -24,7 +24,7 @@ CNS replaces manual interpretation of documentation with a **automated approach*
 
 ## How CNS Works
 
-CNS simplifies operations through a logical four-stage workflow handled by the `eidos` command-line tool. This workflow transforms a raw system state into a deployable package.
+CNS simplifies operations through a logical four-stage workflow handled by the `cnsctl` command-line tool. This workflow transforms a raw system state into a deployable package.
 
 ### Step 1: Snapshot (Capture Reality)
 
@@ -62,7 +62,7 @@ CNS is designed to work natively within Kubernetes.
 *   **No Persistent Volumes:** The automated Agent writes data directly to the Kubernetes API, simplifying deployment in restricted environments.
 
 ### Integration & Automation
-*   **CI/CD Ready:** The `eidos` CLI and API server are built for pipelines. Teams can use CNS to detect "Configuration Drift" by periodically taking snapshots and comparing them to a baseline.
+*   **CI/CD Ready:** The `cnsctl` CLI and API server are built for pipelines. Teams can use CNS to detect "Configuration Drift" by periodically taking snapshots and comparing them to a baseline.
 *   **API Server:** For programmatic access, CNS provides a production-ready HTTP REST API to generate recipes dynamically.
 
 ### Security

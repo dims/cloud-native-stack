@@ -1,10 +1,10 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: eidos
+  name: cns
   namespace: gpu-operator
   labels:
-    app.kubernetes.io/name: eidos
+    app.kubernetes.io/name: cns
 spec:
   completions: 1                 # total number of one-time Pods to run
   parallelism: 1                 # how many run concurrently (concurrency=1)
@@ -15,9 +15,9 @@ spec:
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: eidos
+        app.kubernetes.io/name: cns
     spec:
-      serviceAccountName: eidos
+      serviceAccountName: cns
       restartPolicy: Never
       hostPID: true
       hostNetwork: true
@@ -41,8 +41,8 @@ spec:
         fsGroup: 0
         fsGroupChangePolicy: "OnRootMismatch"
       containers:
-        - name: eidos
-          image: ghcr.io/mchmarny/eidos:latest
+        - name: cns
+          image: ghcr.io/nvidia/cns:latest
           command: ["/bin/sh", "-c"]
           env:
             - name: NODE_NAME
@@ -52,7 +52,7 @@ spec:
           args:
             - |
               set -e
-              /ko-app/eidos --debug --log-json snapshot -o cm://gpu-operator/eidos-snapshot
+              /ko-app/cnsctl --debug --log-json snapshot -o cm://gpu-operator/cns-snapshot
           resources:
             requests:
               cpu: "1"

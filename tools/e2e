@@ -8,7 +8,7 @@ ROOT=$(dirname "${DIR}")
 
 # Default values
 OUTPUT_DIR=""
-EIDOS_BIN=""
+CNSCTL_BIN=""
 
 # Test configuration
 TOTAL_TESTS=0
@@ -24,7 +24,7 @@ usage() {
   echo "  -h, --help            Show this help message"
   echo ""
   echo "This script:"
-  echo "  1. Builds the eidos binary using 'make build'"
+  echo "  1. Builds the cnsctl binary using 'make build'"
   echo "  2. Generates a recipe for service=eks, accelerator=gb200, os=ubuntu, intent=training"
   echo "  3. Generates bundles from that recipe with various CLI flag combinations"
   echo "  4. Validates the generated bundles"
@@ -156,13 +156,13 @@ verify_pattern_in_values() {
 
 build_binary() {
   msg "=========================================="
-  msg "Building eidos binary"
+  msg "Building cnsctl binary"
   msg "=========================================="
   
   cd "${ROOT}"
   
   if ! make build 2>&1; then
-    err "Failed to build eidos binary"
+    err "Failed to build cnsctl binary"
   fi
   
   # Find the built binary (platform-specific)
@@ -179,24 +179,24 @@ build_binary() {
   # goreleaser uses different suffixes:
   # - _v1 for amd64 (x86_64 microarchitecture level 1)
   # - _v8.0 for arm64 (ARMv8.0 baseline)
-  EIDOS_BIN=""
+  CNSCTL_BIN=""
   for pattern in \
-    "${ROOT}/dist/eidos_${os_name}_${arch_name}/eidos" \
-    "${ROOT}/dist/eidos_${os_name}_${arch_name}_v1/eidos" \
-    "${ROOT}/dist/eidos_${os_name}_${arch_name}_v8.0/eidos" \
-    "${ROOT}/dist/eidos_${os_name}_all/eidos"; do
+    "${ROOT}/dist/cnsctl_${os_name}_${arch_name}/cnsctl" \
+    "${ROOT}/dist/cnsctl_${os_name}_${arch_name}_v1/cnsctl" \
+    "${ROOT}/dist/cnsctl_${os_name}_${arch_name}_v8.0/cnsctl" \
+    "${ROOT}/dist/cnsctl_${os_name}_all/cnsctl"; do
     if [ -x "$pattern" ]; then
-      EIDOS_BIN="$pattern"
+      CNSCTL_BIN="$pattern"
       break
     fi
   done
   
-  if [ -z "$EIDOS_BIN" ] || [ ! -x "$EIDOS_BIN" ]; then
+  if [ -z "$CNSCTL_BIN" ] || [ ! -x "$CNSCTL_BIN" ]; then
     err "Built binary not found in dist/"
   fi
   
-  test_pass "build/eidos-binary"
-  msg "Using binary: ${EIDOS_BIN}"
+  test_pass "build/cnsctl-binary"
+  msg "Using binary: ${CNSCTL_BIN}"
 }
 
 # ============================================================================
@@ -214,7 +214,7 @@ generate_recipe() {
   
   RECIPE_FILE="${OUTPUT_DIR}/recipe.yaml"
   
-  if ! "${EIDOS_BIN}" recipe \
+  if ! "${CNSCTL_BIN}" recipe \
     --service eks \
     --accelerator gb200 \
     --os ubuntu \
@@ -276,7 +276,7 @@ run_bundle_tests() {
   local basic_dir="${OUTPUT_DIR}/bundles/basic"
   mkdir -p "$basic_dir"
   
-  if ! "${EIDOS_BIN}" bundle -f "$recipe_file" -o "$basic_dir" 2>&1; then
+  if ! "${CNSCTL_BIN}" bundle -f "$recipe_file" -o "$basic_dir" 2>&1; then
     test_fail "bundle/basic/generation" "Bundle generation failed"
   else
     test_pass "bundle/basic/generation"
@@ -295,7 +295,7 @@ run_bundle_tests() {
   local sys_selector_dir="${OUTPUT_DIR}/bundles/system-selector"
   mkdir -p "$sys_selector_dir"
   
-  if ! "${EIDOS_BIN}" bundle -f "$recipe_file" -o "$sys_selector_dir" \
+  if ! "${CNSCTL_BIN}" bundle -f "$recipe_file" -o "$sys_selector_dir" \
     --system-node-selector nodeGroup=system-pool \
     --system-node-selector workload=control-plane 2>&1; then
     test_fail "bundle/system-selector/generation" "Bundle generation failed"
@@ -318,7 +318,7 @@ run_bundle_tests() {
   local accel_selector_dir="${OUTPUT_DIR}/bundles/accel-selector"
   mkdir -p "$accel_selector_dir"
   
-  if ! "${EIDOS_BIN}" bundle -f "$recipe_file" -o "$accel_selector_dir" \
+  if ! "${CNSCTL_BIN}" bundle -f "$recipe_file" -o "$accel_selector_dir" \
     --accelerated-node-selector accelerator=nvidia-gpu \
     --accelerated-node-selector gpu-type=gb200 2>&1; then
     test_fail "bundle/accel-selector/generation" "Bundle generation failed"
@@ -341,7 +341,7 @@ run_bundle_tests() {
   local sys_toleration_dir="${OUTPUT_DIR}/bundles/system-toleration"
   mkdir -p "$sys_toleration_dir"
   
-  if ! "${EIDOS_BIN}" bundle -f "$recipe_file" -o "$sys_toleration_dir" \
+  if ! "${CNSCTL_BIN}" bundle -f "$recipe_file" -o "$sys_toleration_dir" \
     --system-node-toleration dedicated=system-workload:NoSchedule 2>&1; then
     test_fail "bundle/system-toleration/generation" "Bundle generation failed"
   else
@@ -363,7 +363,7 @@ run_bundle_tests() {
   local accel_toleration_dir="${OUTPUT_DIR}/bundles/accel-toleration"
   mkdir -p "$accel_toleration_dir"
   
-  if ! "${EIDOS_BIN}" bundle -f "$recipe_file" -o "$accel_toleration_dir" \
+  if ! "${CNSCTL_BIN}" bundle -f "$recipe_file" -o "$accel_toleration_dir" \
     --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule 2>&1; then
     test_fail "bundle/accel-toleration/generation" "Bundle generation failed"
   else
@@ -389,7 +389,7 @@ run_bundle_tests() {
   
   # Note: Only test gpu-operator overrides. Skyhook validates customization names
   # and only accepts 'ubuntu' as a valid customization, not arbitrary test values.
-  if ! "${EIDOS_BIN}" bundle -f "$recipe_file" -o "$override_dir" \
+  if ! "${CNSCTL_BIN}" bundle -f "$recipe_file" -o "$override_dir" \
     --set gpu-operator:driver.version=999.99.99 \
     --set gpu-operator:cdi.enabled=true \
     --set cert-manager:installCRDs=true 2>&1; then
@@ -413,7 +413,7 @@ run_bundle_tests() {
   local combined_dir="${OUTPUT_DIR}/bundles/combined"
   mkdir -p "$combined_dir"
   
-  if ! "${EIDOS_BIN}" bundle -f "$recipe_file" -o "$combined_dir" \
+  if ! "${CNSCTL_BIN}" bundle -f "$recipe_file" -o "$combined_dir" \
     --system-node-selector nodeGroup=system-pool \
     --system-node-toleration dedicated=system:NoSchedule \
     --accelerated-node-selector accelerator=nvidia-gpu \

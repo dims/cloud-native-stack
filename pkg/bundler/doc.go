@@ -230,22 +230,22 @@ Log levels:
 
 Automatically exported metrics:
 
-  - eidos_bundles_generated_total{bundler_type, status}
+  - cns_bundles_generated_total{bundler_type, status}
     Counter of bundle generations by type and status
 
-  - eidos_bundle_duration_seconds{bundler_type}
+  - cns_bundle_duration_seconds{bundler_type}
     Histogram of bundle generation duration
 
-  - eidos_bundle_size_bytes{bundler_type}
+  - cns_bundle_size_bytes{bundler_type}
     Gauge of generated bundle size
 
-  - eidos_bundle_files_total{bundler_type}
+  - cns_bundle_files_total{bundler_type}
     Gauge of files generated per bundle
 
-  - eidos_bundle_errors_total{bundler_type, error_type}
+  - cns_bundle_errors_total{bundler_type, error_type}
     Counter of errors during generation
 
-  - eidos_bundle_validation_failures_total{bundler_type}
+  - cns_bundle_validation_failures_total{bundler_type}
     Counter of validation failures
 
 Metrics are automatically recorded during Make() execution.

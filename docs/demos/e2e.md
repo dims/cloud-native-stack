@@ -1,4 +1,4 @@
-# Eidos End-to-End Demo
+# CNS End-to-End Demo
 
 Four-stage workflow: **Snapshot → Recipe → Validate → Bundle**
 
@@ -13,7 +13,7 @@ curl -sfL https://raw.githubusercontent.com/mchmarny/cloud-native-stack/main/ins
 Quick test: 
 
 ```shell
-eidos -v
+cnsctl -v
 ```
 
 ## 1. Snapshot 
@@ -21,10 +21,10 @@ eidos -v
 Deploy a Kubernetes Job to capture GPU node configuration:
 
 ```shell
-eidos snapshot \
+cnsctl snapshot \
     --deploy-agent \
     --namespace gpu-operator \
-    --image ghcr.io/mchmarny/eidos:latest \
+    --image ghcr.io/nvidia/cns:latest \
     --node-selector nodeGroup=customer-gpu \
     --cleanup
 ```
@@ -36,13 +36,13 @@ Output:
 ```shell
 deploying agent: namespace=gpu-operator
 job completed successfully
-snapshot saved to ConfigMap: uri=cm://gpu-operator/eidos-snapshot
+snapshot saved to ConfigMap: uri=cm://gpu-operator/cns-snapshot
 ```
 
 View the snapshot:
 
 ```shell
-kubectl -n gpu-operator get cm eidos-snapshot -o jsonpath='{.data.snapshot\.yaml}' | yq .
+kubectl -n gpu-operator get cm cns-snapshot -o jsonpath='{.data.snapshot\.yaml}' | yq .
 ```
 
 ## 2. Recipe
@@ -50,8 +50,8 @@ kubectl -n gpu-operator get cm eidos-snapshot -o jsonpath='{.data.snapshot\.yaml
 Generate optimized configuration from the snapshot:
 
 ```shell
-eidos recipe \
-    --snapshot cm://gpu-operator/eidos-snapshot \
+cnsctl recipe \
+    --snapshot cm://gpu-operator/cns-snapshot \
     --intent training \
     --output recipe.yaml
 ```
@@ -68,7 +68,7 @@ yq eval '.measurements[]
 **Alternative**: Generate recipe directly from parameters (no snapshot needed):
 
 ```shell
-eidos recipe \
+cnsctl recipe \
     --service eks \
     --accelerator h100 \
     --os ubuntu \
@@ -88,17 +88,17 @@ curl -s "https://cns.dgxc.io/v1/recipe?service=eks&accelerator=h100&intent=train
 Validate a target cluster against the recipe: 
 
 ```shell
-eidos validate \
+cnsctl validate \
     --recipe recipe.yaml \
-    --snapshot cm://gpu-operator/eidos-snapshot
+    --snapshot cm://gpu-operator/cns-snapshot
 ```
 
 Save results to a file:
 
 ```shell
-eidos validate \
+cnsctl validate \
     --recipe recipe.yaml \
-    --snapshot cm://gpu-operator/eidos-snapshot \
+    --snapshot cm://gpu-operator/cns-snapshot \
     --output validation-results.yaml
 ```
 
@@ -107,7 +107,7 @@ eidos validate \
 Generate deployment artifacts with node scheduling:
 
 ```shell
-eidos bundle \
+cnsctl bundle \
     --recipe recipe.yaml \
     --output ./bundles \
     --system-node-selector nodeGroup=system-pool \

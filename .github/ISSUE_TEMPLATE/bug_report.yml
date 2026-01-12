@@ -82,7 +82,7 @@ body:
     attributes:
       label: Environment
       placeholder: |
-        - Eidos version (CLI `eidos version`, API image tag, or commit SHA):
+        - CNS version (CLI `cnsctl version`, API image tag, or commit SHA):
         - Install method (release binary / build from source / container image):
         - Platform (eks/gke/aks/self-managed):
         - Kubernetes version:
@@ -91,7 +91,7 @@ body:
         - GPU type (h100/gb200/a100/l40/other):
         - Workload intent (training/inference):
       value: |
-        - Eidos version (CLI `eidos version`, API image tag, or commit SHA):
+        - CNS version (CLI `cnsctl version`, API image tag, or commit SHA):
         - Install method (release binary / build from source / container image):
         - Platform (eks/gke/aks/self-managed):
         - Kubernetes version:
@@ -109,7 +109,7 @@ body:
       description: Paste the exact CLI command(s) or API request(s) that triggered the issue.
       placeholder: |
         ```bash
-        eidos recipe --snapshot ... --intent training
+        cnsctl recipe --snapshot ... --intent training
         ```
 
         ```bash

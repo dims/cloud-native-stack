@@ -46,8 +46,8 @@ func TestCheckPermissions(t *testing.T) {
 
 			deployer := NewDeployer(clientset, Config{
 				Namespace:          "gpu-operator",
-				ServiceAccountName: "eidos",
-				JobName:            "eidos",
+				ServiceAccountName: "cns",
+				JobName:            "cns",
 			})
 
 			ctx := context.Background()

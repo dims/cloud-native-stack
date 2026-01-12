@@ -64,7 +64,7 @@ These use cases reflect common ways teams interact with Cloud Native Stack.
 <summary><strong>Platform and Infrastructure Operators</strong></summary>
 
 You are responsible for deploying and operating GPU-accelerated Kubernetes clusters. 
-- **[Installation Guide](docs/user-guide/installation.md)** – Install the eidos CLI (automated script, manual, or build from source)
+- **[Installation Guide](docs/user-guide/installation.md)** – Install the cnsctl CLI (automated script, manual, or build from source)
 - **[CLI Reference](docs/user-guide/cli-reference.md)** – Complete command reference with examples
 - **[API Reference](docs/user-guide/api-reference.md)** – Complete API reference with examples
 - **[Agent Deployment](docs/user-guide/agent-deployment.md)** – Deploy the Kubernetes agent to get automated configuration snapshots
@@ -95,7 +95,7 @@ You are integrating CNS into CI/CD pipelines, GitOps workflows, or a larger prod
 ## Project Structure
 
 - `api/` — OpenAPI specifications for the REST API
-- `cmd/` — Entry points for CLI (`eidos`) and API server (`eidos-api-server`)
+- `cmd/` — Entry points for CLI (`cnsctl`) and API server (`cns-api-server`)
 - `deployments/` — Kubernetes manifests for agent deployment
 - `docs/` — User-facing documentation, guides, and architecture docs
 - `examples/` — Example snapshots, recipes, and comparisons

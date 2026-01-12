@@ -71,7 +71,7 @@ Validate existing bundlers against known-good deployments to ensure they reliabl
 As a CI/CD pipeline developer, I want to validate snapshots against versioned schemas so malformed data is caught before downstream processing.
 
 **Acceptance Criteria**
-- [ ] `eidos validate --schema v1 snapshot.yaml` command
+- [ ] `cnsctl validate --schema v1 snapshot.yaml` command
 - [ ] JSON Schema embedded via `go:embed`
 - [ ] Validation using `github.com/santhosh-tekuri/jsonschema/v5`
 - [ ] Clear validation errors with paths and line numbers
@@ -86,7 +86,7 @@ As a CI/CD pipeline developer, I want to validate snapshots against versioned sc
 As a compliance or platform operator, I want to detect configuration drift between clusters to ensure consistency and catch unauthorized changes.
 
 **Acceptance Criteria**
-- [ ] `eidos diff baseline.yaml current.yaml` command
+- [ ] `cnsctl diff baseline.yaml current.yaml` command
 - [ ] Output formats:
   - [ ] Human-readable
   - [ ] JSON Patch (RFC 6902)
@@ -123,8 +123,8 @@ As a CI/CD pipeline operator, I want snapshot caching to avoid redundant collect
 As a developer, I want to capture only specific measurement types to reduce snapshot size and collection time.
 
 **Acceptance Criteria**
-- [ ] `eidos snapshot --filter gpu,os`
-- [ ] `eidos snapshot --exclude k8s`
+- [ ] `cnsctl snapshot --filter gpu,os`
+- [ ] `cnsctl snapshot --exclude k8s`
 - [ ] Validation errors on unknown measurement types
 - [ ] Excluded collectors are skipped entirely
 - [ ] Documentation of common filter patterns
@@ -135,11 +135,11 @@ As a developer, I want to capture only specific measurement types to reduce snap
 As a power user, I want persistent configuration so I do not need to repeat common flags on every command.
 
 **Acceptance Criteria**
-- [ ] Config file at `~/.config/eidos/config.yaml` (XDG-compliant)
+- [ ] Config file at `~/.config/cnsctl/config.yaml` (XDG-compliant)
 - [ ] Defaults for common flags
 - [ ] API server URL configuration
 - [ ] CLI flags override config file values
-- [ ] `eidos config init` command
+- [ ] `cnsctl config init` command
 - [ ] Validation on config load
 
 #### Watch Mode
@@ -148,7 +148,7 @@ As a power user, I want persistent configuration so I do not need to repeat comm
 As a monitoring system, I want continuous snapshot monitoring with change detection.
 
 **Acceptance Criteria**
-- [ ] `eidos snapshot --watch --interval 30s --on-change ./alert.sh`
+- [ ] `cnsctl snapshot --watch --interval 30s --on-change ./alert.sh`
 - [ ] Stream JSON diffs to stdout
 - [ ] Configurable polling interval
 - [ ] Hook execution on change

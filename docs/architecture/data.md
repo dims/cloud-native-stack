@@ -1,6 +1,6 @@
 # Data Architecture
 
-This document describes the data system used by the Eidos CLI and API to generate optimized system configuration recommendations (i.e. recipes) based on environment parameters.
+This document describes the data system used by the cnsctl CLI and API to generate optimized system configuration recommendations (i.e. recipes) based on environment parameters.
 
 ## Table of Contents
 
@@ -30,22 +30,22 @@ The entire recipe data is defined in a single YAML file: [`pkg/recipe/data/data-
 
 1. **CLI Query Mode** - Direct recipe generation from parameters:
    ```bash
-   eidos recipe --os ubuntu --gpu h100 --intent training
+   cnsctl recipe --os ubuntu --gpu h100 --intent training
    ```
 
 2. **CLI Snapshot Mode** - Analyze captured system state:
    ```bash
-   eidos snapshot --output system.yaml
-   eidos recipe --snapshot system.yaml --intent training
+   cnsctl snapshot --output system.yaml
+   cnsctl recipe --snapshot system.yaml --intent training
    ```
 
 3. **ConfigMap Integration** - Kubernetes-native storage:
    ```bash
    # Agent writes snapshot to ConfigMap
-   eidos snapshot --output cm://gpu-operator/eidos-snapshot
+   cnsctl snapshot --output cm://gpu-operator/cns-snapshot
    
    # CLI reads from ConfigMap to generate recipe
-   eidos recipe --snapshot cm://gpu-operator/eidos-snapshot --intent training
+   cnsctl recipe --snapshot cm://gpu-operator/cns-snapshot --intent training
    ```
 
 4. **API Server** - HTTP endpoint (query mode only):
@@ -633,16 +633,16 @@ flowchart TD
 **Basic recipe generation:**
 ```bash
 # Query mode - Direct parameters
-eidos recipe --os ubuntu --service eks --gpu h100
+cnsctl recipe --os ubuntu --service eks --gpu h100
 
 # Snapshot mode - From captured system state
-eidos snapshot --output snapshot.yaml
-eidos recipe --snapshot snapshot.yaml --intent training
+cnsctl snapshot --output snapshot.yaml
+cnsctl recipe --snapshot snapshot.yaml --intent training
 ```
 
 **Full specification:**
 ```bash
-eidos recipe \
+cnsctl recipe \
   --os ubuntu \
   --service eks \
   --accelerator gb200 \
@@ -847,16 +847,16 @@ overlays:
 5. **Testing Changes**
    ```bash
    # Test base only (broad query)
-   eidos recipe --os any --gpu any
+   cnsctl recipe --os any --gpu any
    
    # Test specific overlay
-   eidos recipe --service eks --gpu gb200
+   cnsctl recipe --service eks --gpu gb200
    
    # Test multiple matches
-   eidos recipe --os ubuntu --service eks --gpu gb200 --intent training
+   cnsctl recipe --os ubuntu --service eks --gpu gb200 --intent training
    
    # Verify context inclusion
-   eidos recipe --os ubuntu --gpu h100 --context | grep -A5 context
+   cnsctl recipe --os ubuntu --gpu h100 --context | grep -A5 context
    ```
 
 6. **Validation**
@@ -885,7 +885,7 @@ overlays:
 
 **See which overlays matched:**
 ```bash
-eidos recipe --os ubuntu --service eks --accelerator gb200 --format json | jq '.metadata.appliedOverlays'
+cnsctl recipe --os ubuntu --service eks --accelerator gb200 --format json | jq '.metadata.appliedOverlays'
 ```
 
 **Output:**
@@ -898,7 +898,7 @@ eidos recipe --os ubuntu --service eks --accelerator gb200 --format json | jq '.
 **Extract component versions:**
 ```bash
 # Check GPU Operator version for EKS + GB200
-eidos recipe --service eks --accelerator gb200 --format json | \
+cnsctl recipe --service eks --accelerator gb200 --format json | \
   jq '.componentRefs[] | select(.name=="gpu-operator") | .version'
 ```
 
@@ -922,5 +922,5 @@ eidos recipe --service eks --accelerator gb200 --format json | \
 
 - [CLI Architecture](cli.md) - How the CLI uses recipe data
 - [API Server Architecture](api-server.md) - How the API serves recipes
-- [OpenAPI Specification](../../api/eidos/v1/api-server-v1.yaml) - Recipe API contract
+- [OpenAPI Specification](../../api/cns/v1/api-server-v1.yaml) - Recipe API contract
 - [Recipe Package Documentation](../../pkg/recipe/) - Go implementation details

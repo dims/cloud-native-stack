@@ -35,7 +35,7 @@ Snapshot captured from a GB200 NVL72 system. Contents:
 **Usage**: Generate recipe for GB200 training workloads
 
 ```bash
-eidos recipe --snapshot examples/snapshots/gb200.yaml --intent training
+cnsctl recipe --snapshot examples/snapshots/gb200.yaml --intent training
 ```
 
 ### H100 System ([h100.yaml](snapshots/h100.yaml))
@@ -49,7 +49,7 @@ Snapshot from an H100 GPU cluster with:
 **Use case:** Generate recipes optimized for H100 inference workloads
 
 ```bash
-eidos recipe --snapshot examples/snapshots/h100.yaml --intent inference
+cnsctl recipe --snapshot examples/snapshots/h100.yaml --intent inference
 ```
 
 ## Recipes
@@ -73,7 +73,7 @@ Recipe for H100 training workloads on Amazon EKS:
 **Generate recipe from query:**
 
 ```bash
-eidos recipe \
+cnsctl recipe \
   --service eks \
   --accelerator gb200 \
   --os ubuntu \
@@ -84,7 +84,7 @@ eidos recipe \
 **Generate bundle from recipe:**
 
 ```bash
-eidos bundle --recipe examples/recipes/eks-gb200-training.yaml --output ./my-bundles
+cnsctl bundle --recipe examples/recipes/eks-gb200-training.yaml --output ./my-bundles
 ```
 
 ## Component Bundles
@@ -151,7 +151,7 @@ End-to-end example using the provided files:
 cat examples/snapshots/gb200.yaml
 
 # 2. Generate optimized recipe for training
-eidos recipe \
+cnsctl recipe \
   --snapshot examples/snapshots/gb200.yaml \
   --intent training \
   --output my-recipe.yaml
@@ -160,7 +160,7 @@ eidos recipe \
 diff my-recipe.yaml examples/recipes/eks-gb200-training.yaml
 
 # 4. Generate deployment bundle
-eidos bundle \
+cnsctl bundle \
   --recipe my-recipe.yaml \
   --output ./my-deployment
 
@@ -184,12 +184,12 @@ From your GPU cluster:
 
 ```bash
 # Capture snapshot to file
-eidos snapshot --output my-snapshot.yaml
+cnsctl snapshot --output my-snapshot.yaml
 
 # Or deploy agent to Kubernetes
-kubectl apply -f https://raw.githubusercontent.com/NVIDIA/cloud-native-stack/main/deployments/eidos-agent/1-deps.yaml
-kubectl apply -f https://raw.githubusercontent.com/NVIDIA/cloud-native-stack/main/deployments/eidos-agent/2-job.yaml
-kubectl logs -n gpu-operator job/eidos > my-snapshot.yaml
+kubectl apply -f https://raw.githubusercontent.com/NVIDIA/cloud-native-stack/main/deployments/cns-agent/1-deps.yaml
+kubectl apply -f https://raw.githubusercontent.com/NVIDIA/cloud-native-stack/main/deployments/cns-agent/2-job.yaml
+kubectl logs -n gpu-operator job/cns > my-snapshot.yaml
 ```
 
 ### Generate Recipe
@@ -198,10 +198,10 @@ From snapshot or query:
 
 ```bash
 # From snapshot
-eidos recipe --snapshot my-snapshot.yaml --intent training --output my-recipe.yaml
+cnsctl recipe --snapshot my-snapshot.yaml --intent training --output my-recipe.yaml
 
 # From query parameters
-eidos recipe \
+cnsctl recipe \
   --service eks \
   --accelerator gb200 \
   --os ubuntu \
@@ -217,10 +217,10 @@ From recipe:
 
 ```bash
 # Generate all bundlers
-eidos bundle --recipe my-recipe.yaml --output ./bundles
+cnsctl bundle --recipe my-recipe.yaml --output ./bundles
 
 # Generate specific bundler with overrides
-eidos bundle \
+cnsctl bundle \
   --recipe my-recipe.yaml \
   --bundlers gpu-operator \
   --system-node-selector nodeGroup=system-pool \

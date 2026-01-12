@@ -1,6 +1,6 @@
 # Kubernetes Deployment
 
-Deploy the Eidos API Server in your Kubernetes cluster for self-hosted recipe generation.
+Deploy the CNS API Server in your Kubernetes cluster for self-hosted recipe generation.
 
 ## Overview
 
@@ -39,14 +39,14 @@ Deploy the Eidos API Server in your Kubernetes cluster for self-hosted recipe ge
 
 ```shell
 # Create namespace
-kubectl create namespace eidos
+kubectl create namespace cns
 
 # Deploy API server
-kubectl apply -k https://github.com/NVIDIA/cloud-native-stack/deployments/eidos-api-server
+kubectl apply -k https://github.com/NVIDIA/cloud-native-stack/deployments/cns-api-server
 
 # Check deployment
-kubectl get pods -n eidos
-kubectl get svc -n eidos
+kubectl get pods -n cns
+kubectl get svc -n cns
 ```
 
 ### Deploy with Helm
@@ -55,8 +55,8 @@ kubectl get svc -n eidos
 
 <!-- Uncomment when Helm chart is published
 ```shell
-helm repo add eidos https://nvidia.github.io/cloud-native-stack
-helm install eidos-api-server eidos/eidos-api-server -n eidos --create-namespace
+helm repo add cns https://nvidia.github.io/cloud-native-stack
+helm install cns-api-server cns/cns-api-server -n cns --create-namespace
 ```
 -->
 
@@ -69,9 +69,9 @@ helm install eidos-api-server eidos/eidos-api-server -n eidos --create-namespace
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: eidos
+  name: cns
   labels:
-    app: eidos-api-server
+    app: cns-api-server
 ```
 
 ```shell
@@ -85,19 +85,19 @@ kubectl apply -f namespace.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: eidos-api-server
-  namespace: eidos
+  name: cns-api-server
+  namespace: cns
   labels:
-    app: eidos-api-server
+    app: cns-api-server
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: eidos-api-server
+      app: cns-api-server
   template:
     metadata:
       labels:
-        app: eidos-api-server
+        app: cns-api-server
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8080"
@@ -110,7 +110,7 @@ spec:
       
       containers:
         - name: api-server
-          image: ghcr.io/nvidia/eidos-api-server:latest
+          image: ghcr.io/nvidia/cns-api-server:latest
           imagePullPolicy: IfNotPresent
           
           ports:
@@ -168,14 +168,14 @@ kubectl apply -f deployment.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: eidos-api-server
-  namespace: eidos
+  name: cns-api-server
+  namespace: cns
   labels:
-    app: eidos-api-server
+    app: cns-api-server
 spec:
   type: ClusterIP
   selector:
-    app: eidos-api-server
+    app: cns-api-server
   ports:
     - name: http
       port: 80
@@ -194,8 +194,8 @@ kubectl apply -f service.yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: eidos-api-server
-  namespace: eidos
+  name: cns-api-server
+  namespace: cns
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/rate-limit: "100"
@@ -203,17 +203,17 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - eidos.yourdomain.com
-      secretName: eidos-tls
+        - cns.yourdomain.com
+      secretName: cns-tls
   rules:
-    - host: eidos.yourdomain.com
+    - host: cns.yourdomain.com
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: eidos-api-server
+                name: cns-api-server
                 port:
                   number: 80
 ```
@@ -224,7 +224,7 @@ kubectl apply -f ingress.yaml
 
 ## Agent Deployment
 
-Deploy the Eidos Agent as a Kubernetes Job to automatically capture cluster configuration.
+Deploy the CNS Agent as a Kubernetes Job to automatically capture cluster configuration.
 
 ### 1. Create RBAC Resources
 
@@ -233,13 +233,13 @@ Deploy the Eidos Agent as a Kubernetes Job to automatically capture cluster conf
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: eidos
+  name: cns
   namespace: gpu-operator
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: eidos
+  name: cns
   namespace: gpu-operator
 rules:
 - apiGroups: [""]
@@ -249,21 +249,21 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: eidos
+  name: cns
   namespace: gpu-operator
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: eidos
+  name: cns
 subjects:
 - kind: ServiceAccount
-  name: eidos
+  name: cns
   namespace: gpu-operator  # Must match ServiceAccount namespace
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: eidos
+  name: cns
 rules:
 - apiGroups: [""]
   resources: ["nodes", "pods"]
@@ -275,14 +275,14 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: eidos
+  name: cns
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: eidos
+  name: cns
 subjects:
 - kind: ServiceAccount
-  name: eidos
+  name: cns
   namespace: gpu-operator
 ```
 
@@ -297,29 +297,29 @@ kubectl apply -f agent-rbac.yaml
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: eidos
+  name: cns
   namespace: gpu-operator
   labels:
-    app: eidos-agent
+    app: cns-agent
 spec:
   template:
     metadata:
       labels:
-        app: eidos-agent
+        app: cns-agent
     spec:
-      serviceAccountName: eidos
+      serviceAccountName: cns
       restartPolicy: Never
       
       containers:
-      - name: eidos
-        image: ghcr.io/nvidia/eidos:latest
+      - name: cns
+        image: ghcr.io/nvidia/cns:latest
         imagePullPolicy: IfNotPresent
         
         command:
-        - eidos
+        - cns
         - snapshot
         - --output
-        - cm://gpu-operator/eidos-snapshot
+        - cm://gpu-operator/cns-snapshot
         
         securityContext:
           allowPrivilegeEscalation: false
@@ -334,37 +334,37 @@ spec:
 kubectl apply -f agent-job.yaml
 
 # Wait for completion
-kubectl wait --for=condition=complete job/eidos -n gpu-operator --timeout=5m
+kubectl wait --for=condition=complete job/cns -n gpu-operator --timeout=5m
 
 # Verify ConfigMap was created
-kubectl get configmap eidos-snapshot -n gpu-operator
+kubectl get configmap cns-snapshot -n gpu-operator
 
 # View snapshot data
-kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}'
+kubectl get configmap cns-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}'
 ```
 
 ### 3. Generate Recipe from ConfigMap
 
 ```bash
 # Using CLI (local or in another Job)
-eidos recipe --snapshot cm://gpu-operator/eidos-snapshot \
+cnsctl recipe --snapshot cm://gpu-operator/cns-snapshot \
              --intent training \
              --output recipe.yaml
 
 # Or write recipe back to ConfigMap
-eidos recipe --snapshot cm://gpu-operator/eidos-snapshot \
+cnsctl recipe --snapshot cm://gpu-operator/cns-snapshot \
              --intent training \
-             --output cm://gpu-operator/eidos-recipe
+             --output cm://gpu-operator/cns-recipe
 ```
 
 ### 4. Generate Bundle
 
 ```bash
 # From file
-eidos bundle --recipe recipe.yaml --output ./bundles
+cnsctl bundle --recipe recipe.yaml --output ./bundles
 
 # From ConfigMap
-eidos bundle --recipe cm://gpu-operator/eidos-recipe --output ./bundles
+cnsctl bundle --recipe cm://gpu-operator/cns-recipe --output ./bundles
 ```
 
 ### E2E Testing
@@ -414,8 +414,8 @@ The e2e script:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: eidos-recipe-data
-  namespace: eidos
+  name: cns-recipe-data
+  namespace: cns
 data:
   data-v1.yaml: |
     # Your custom recipe data
@@ -433,7 +433,7 @@ spec:
       volumes:
         - name: recipe-data
           configMap:
-            name: eidos-recipe-data
+            name: cns-recipe-data
       containers:
         - name: api-server
           volumeMounts:
@@ -453,13 +453,13 @@ spec:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: eidos-api-server
-  namespace: eidos
+  name: cns-api-server
+  namespace: cns
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: eidos-api-server
+    name: cns-api-server
   minReplicas: 3
   maxReplicas: 10
   metrics:
@@ -501,13 +501,13 @@ kubectl apply -f hpa.yaml
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: eidos-api-server
-  namespace: eidos
+  name: cns-api-server
+  namespace: cns
 spec:
   minAvailable: 2
   selector:
     matchLabels:
-      app: eidos-api-server
+      app: cns-api-server
 ```
 
 ```shell
@@ -523,14 +523,14 @@ kubectl apply -f pdb.yaml
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: eidos-api-server
-  namespace: eidos
+  name: cns-api-server
+  namespace: cns
   labels:
-    app: eidos-api-server
+    app: cns-api-server
 spec:
   selector:
     matchLabels:
-      app: eidos-api-server
+      app: cns-api-server
   endpoints:
     - port: http
       path: /metrics
@@ -562,12 +562,12 @@ Import dashboard JSON from `docs/monitoring/grafana-dashboard.json`:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: eidos-api-server
-  namespace: eidos
+  name: cns-api-server
+  namespace: cns
 spec:
   podSelector:
     matchLabels:
-      app: eidos-api-server
+      app: cns-api-server
   policyTypes:
     - Ingress
     - Egress
@@ -599,7 +599,7 @@ spec:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: eidos
+  name: cns
   labels:
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/audit: restricted
@@ -613,15 +613,15 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: eidos-api-server
-  namespace: eidos
+  name: cns-api-server
+  namespace: cns
 
 ---
 # role.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: eidos-api-server
+  name: cns-api-server
 rules:
   - apiGroups: [""]
     resources: ["nodes", "pods"]
@@ -632,15 +632,15 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: eidos-api-server
+  name: cns-api-server
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: eidos-api-server
+  name: cns-api-server
 subjects:
   - kind: ServiceAccount
-    name: eidos-api-server
-    namespace: eidos
+    name: cns-api-server
+    namespace: cns
 ```
 
 ## Troubleshooting
@@ -649,71 +649,71 @@ subjects:
 
 ```shell
 # Pod status
-kubectl get pods -n eidos
+kubectl get pods -n cns
 
 # Describe pod
-kubectl describe pod -n eidos -l app=eidos-api-server
+kubectl describe pod -n cns -l app=cns-api-server
 
 # View logs
-kubectl logs -n eidos -l app=eidos-api-server
+kubectl logs -n cns -l app=cns-api-server
 
 # Follow logs
-kubectl logs -n eidos -l app=eidos-api-server -f
+kubectl logs -n cns -l app=cns-api-server -f
 ```
 
 ### Check Service
 
 ```shell
 # Service status
-kubectl get svc -n eidos
+kubectl get svc -n cns
 
 # Endpoints
-kubectl get endpoints -n eidos
+kubectl get endpoints -n cns
 
 # Test from within cluster
 kubectl run -it --rm debug --image=curlimages/curl --restart=Never -- \
-  curl http://eidos-api-server.eidos.svc.cluster.local/health
+  curl http://cns-api-server.cns.svc.cluster.local/health
 ```
 
 ### Check Ingress
 
 ```shell
 # Ingress status
-kubectl get ingress -n eidos
+kubectl get ingress -n cns
 
 # Describe ingress
-kubectl describe ingress eidos-api-server -n eidos
+kubectl describe ingress cns-api-server -n cns
 
 # Check cert-manager certificate
-kubectl get certificate -n eidos
+kubectl get certificate -n cns
 ```
 
 ### Performance Issues
 
 ```shell
 # Check resource usage
-kubectl top pods -n eidos
+kubectl top pods -n cns
 
 # Check HPA status
-kubectl get hpa -n eidos
+kubectl get hpa -n cns
 
 # Check metrics
-kubectl exec -n eidos -it deploy/eidos-api-server -- \
+kubectl exec -n cns -it deploy/cns-api-server -- \
   wget -qO- http://localhost:8080/metrics
 ```
 
 ### Connection Refused
 
-1. Check service exists: `kubectl get svc -n eidos`
-2. Check endpoints: `kubectl get endpoints -n eidos`
-3. Check pod is ready: `kubectl get pods -n eidos`
-4. Check readiness probe: `kubectl describe pod -n eidos <pod-name>`
+1. Check service exists: `kubectl get svc -n cns`
+2. Check endpoints: `kubectl get endpoints -n cns`
+3. Check pod is ready: `kubectl get pods -n cns`
+4. Check readiness probe: `kubectl describe pod -n cns <pod-name>`
 
 ### Rate Limiting
 
 Check rate limit settings:
 ```shell
-kubectl exec -n eidos deploy/eidos-api-server -- env | grep RATE
+kubectl exec -n cns deploy/cns-api-server -- env | grep RATE
 ```
 
 Adjust via deployment:
@@ -731,15 +731,15 @@ env:
 
 ```shell
 # Update image
-kubectl set image deployment/eidos-api-server \
-  api-server=ghcr.io/nvidia/eidos-api-server:v0.8.0 \
-  -n eidos
+kubectl set image deployment/cns-api-server \
+  api-server=ghcr.io/nvidia/cns-api-server:v0.8.0 \
+  -n cns
 
 # Watch rollout
-kubectl rollout status deployment/eidos-api-server -n eidos
+kubectl rollout status deployment/cns-api-server -n cns
 
 # Rollback if needed
-kubectl rollout undo deployment/eidos-api-server -n eidos
+kubectl rollout undo deployment/cns-api-server -n cns
 ```
 
 ### Blue-Green Deployment
@@ -749,11 +749,11 @@ kubectl rollout undo deployment/eidos-api-server -n eidos
 kubectl apply -f deployment-v2.yaml
 
 # Switch service
-kubectl patch service eidos-api-server -n eidos \
+kubectl patch service cns-api-server -n cns \
   -p '{"spec":{"selector":{"version":"v2"}}}'
 
 # Delete old deployment
-kubectl delete deployment eidos-api-server-v1 -n eidos
+kubectl delete deployment cns-api-server-v1 -n cns
 ```
 
 ## Backup and Disaster Recovery
@@ -762,17 +762,17 @@ kubectl delete deployment eidos-api-server-v1 -n eidos
 
 ```shell
 # Export all resources
-kubectl get all -n eidos -o yaml > eidos-backup.yaml
+kubectl get all -n cns -o yaml > cns-backup.yaml
 
 # Export specific resources
-kubectl get deployment,service,ingress -n eidos -o yaml > eidos-config.yaml
+kubectl get deployment,service,ingress -n cns -o yaml > cns-config.yaml
 ```
 
 ### Restore from Backup
 
 ```shell
 # Restore namespace and resources
-kubectl apply -f eidos-backup.yaml
+kubectl apply -f cns-backup.yaml
 ```
 
 ## Cost Optimization
@@ -799,13 +799,13 @@ Monitor and adjust based on usage.
 apiVersion: autoscaling.k8s.io/v1
 kind: VerticalPodAutoscaler
 metadata:
-  name: eidos-api-server
-  namespace: eidos
+  name: cns-api-server
+  namespace: cns
 spec:
   targetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: eidos-api-server
+    name: cns-api-server
   updatePolicy:
     updateMode: "Auto"
 ```

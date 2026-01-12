@@ -101,8 +101,8 @@ goreleaser:     2.5.1
 ```
 cloud-native-stack/
 ├── cmd/                      # Entry points
-│   ├── eidos/               # CLI binary
-│   └── eidos-api-server/    # API server binary
+│   ├── cnsctl/               # CLI binary
+│   └── cns-api-server/    # API server binary
 ├── pkg/                      # Core packages
 │   ├── api/                 # HTTP API layer and handlers
 │   ├── bundler/             # Bundle generation framework
@@ -123,9 +123,9 @@ cloud-native-stack/
 │   ├── server/              # HTTP server implementation
 │   └── snapshotter/         # Snapshot orchestration
 ├── api/                      # API specifications
-│   └── eidos/               # OpenAPI/Swagger definitions
+│   └── cns/               # OpenAPI/Swagger definitions
 ├── deployments/             # Kubernetes manifests
-│   └── eidos-agent/         # Agent Job and RBAC
+│   └── cns-agent/         # Agent Job and RBAC
 ├── docs/                    # Documentation
 │   ├── install-guides/      # Platform-specific guides
 │   ├── playbooks/           # Ansible automation
@@ -142,15 +142,15 @@ cloud-native-stack/
 
 ### Key Components
 
-#### CLI (`eidos`)
-- **Location**: `cmd/eidos/main.go` → `pkg/cli/`
+#### CLI (`cnsctl`)
+- **Location**: `cmd/cnsctl/main.go` → `pkg/cli/`
 - **Framework**: [urfave/cli v3](https://github.com/urfave/cli)
 - **Commands**: `snapshot`, `recipe`
 - **Purpose**: User-facing tool for system snapshots and recipe generation (supports both query and snapshot modes)
 - **Output**: Supports JSON, YAML, and table formats
 
 #### API Server
-- **Location**: `cmd/eidos-api-server/main.go` → `pkg/server/`, `pkg/api/`
+- **Location**: `cmd/cns-api-server/main.go` → `pkg/server/`, `pkg/api/`
 - **Endpoints**: 
   - `GET /v1/recipe` - Generate configuration recipes
   - `GET /health` - Liveness probe
@@ -529,24 +529,24 @@ Common linting issues and fixes:
 make build
 
 # Test CLI commands
-./dist/eidos_*/eidos snapshot
-./dist/eidos_*/eidos recipe --os ubuntu --service eks
+./dist/cns_*/cnsctl snapshot
+./dist/cns_*/cnsctl recipe --os ubuntu --service eks
 
 # Test snapshot with ConfigMap output (requires cluster access)
-./dist/eidos_*/eidos snapshot --output cm://gpu-operator/test-snapshot
+./dist/cns_*/cnsctl snapshot --output cm://gpu-operator/test-snapshot
 
 # Test agent deployment mode
-./dist/eidos_*/eidos snapshot --deploy-agent \
+./dist/cns_*/cnsctl snapshot --deploy-agent \
   --namespace gpu-operator \
   --node-selector nvidia.com/gpu.present=true
 
 # Test recipe with ConfigMap input
-./dist/eidos_*/eidos recipe \
+./dist/cns_*/cnsctl recipe \
   --snapshot cm://gpu-operator/test-snapshot \
   --intent training
 
 # Test recipe with custom kubeconfig
-./dist/eidos_*/eidos recipe \
+./dist/cns_*/cnsctl recipe \
   --snapshot cm://gpu-operator/test-snapshot \
   --kubeconfig ~/.kube/dev-cluster \
   --intent training
@@ -598,31 +598,31 @@ ls -lh dist/
 
 # Example output:
 # dist/
-#   eidos_darwin_arm64/
-#     eidos
-#   eidos-api-server_darwin_arm64/
-#     eidos-api-server
+#   cns_darwin_arm64/
+#     cnsctl
+#   cns-api-server_darwin_arm64/
+#     cns-api-server
 ```
 
 ### Running the CLI
 
 ```bash
 # Help
-./dist/eidos_*/eidos --help
+./dist/cns_*/cnsctl --help
 
 # STEP 1: Snapshot - Capture system configuration
-eidos snapshot --format yaml
-eidos snapshot --output system.yaml --format json
-eidos snapshot --output cm://gpu-operator/eidos-snapshot --format yaml  # ConfigMap output
+cnsctl snapshot --format yaml
+cnsctl snapshot --output system.yaml --format json
+cnsctl snapshot --output cm://gpu-operator/cns-snapshot --format yaml  # ConfigMap output
 
 # Agent deployment mode (Kubernetes Job on cluster nodes)
-eidos snapshot --deploy-agent
-eidos snapshot --deploy-agent --output cm://gpu-operator/eidos-snapshot
-eidos snapshot --deploy-agent --kubeconfig ~/.kube/prod-cluster
+cnsctl snapshot --deploy-agent
+cnsctl snapshot --deploy-agent --output cm://gpu-operator/cns-snapshot
+cnsctl snapshot --deploy-agent --kubeconfig ~/.kube/prod-cluster
 
 # Agent deployment with node targeting
 # Note: All taints are tolerated by default, only specify --toleration to restrict
-eidos snapshot --deploy-agent \
+cnsctl snapshot --deploy-agent \
   --namespace gpu-operator \
   --node-selector accelerator=nvidia-h100 \
   --toleration nvidia.com/gpu:NoSchedule \
@@ -630,8 +630,8 @@ eidos snapshot --deploy-agent \
 
 # STEP 2: Recipe - Generate optimized configuration
 # Query mode: Direct generation from parameters
-eidos recipe --os ubuntu --service eks --gpu h100
-eidos recipe \
+cnsctl recipe --os ubuntu --service eks --gpu h100
+cnsctl recipe \
   --os ubuntu \
   --osv 24.04 \
   --kernel 6.8 \
@@ -643,30 +643,30 @@ eidos recipe \
   --format yaml
 
 # Snapshot mode: Generate recipe from captured snapshot
-eidos recipe --snapshot system.yaml --intent training
-eidos recipe -f system.yaml -i inference -o recipe.yaml
-eidos recipe -f cm://gpu-operator/eidos-snapshot -i training -o cm://gpu-operator/eidos-recipe  # ConfigMap I/O
+cnsctl recipe --snapshot system.yaml --intent training
+cnsctl recipe -f system.yaml -i inference -o recipe.yaml
+cnsctl recipe -f cm://gpu-operator/cns-snapshot -i training -o cm://gpu-operator/cns-recipe  # ConfigMap I/O
 
 # With custom kubeconfig for ConfigMap access
-eidos recipe \
-  -f cm://gpu-operator/eidos-snapshot \
+cnsctl recipe \
+  -f cm://gpu-operator/cns-snapshot \
   --kubeconfig ~/.kube/prod-cluster \
   -i training \
   -o recipe.yaml
 
 # STEP 3: Bundle - Create deployment artifacts
-eidos bundle --recipe recipe.yaml --output ./bundles
-eidos bundle -f recipe.yaml -b gpu-operator -o ./deployment
-eidos bundle -f cm://gpu-operator/eidos-recipe -o ./bundles  # ConfigMap input
+cnsctl bundle --recipe recipe.yaml --output ./bundles
+cnsctl bundle -f recipe.yaml -b gpu-operator -o ./deployment
+cnsctl bundle -f cm://gpu-operator/cns-recipe -o ./bundles  # ConfigMap input
 
 # Override bundle values at generation time
-eidos bundle -f recipe.yaml -b gpu-operator \
+cnsctl bundle -f recipe.yaml -b gpu-operator \
   --set gpuoperator:gds.enabled=true \
   --set gpuoperator:driver.version=570.86.16 \
   -o ./bundles
 
 # Multiple bundlers with overrides
-eidos bundle -f recipe.yaml \
+cnsctl bundle -f recipe.yaml \
   -b gpu-operator \
   -b network-operator \
   --set gpuoperator:mig.strategy=mixed \
@@ -680,13 +680,13 @@ Here's a complete example showing all four steps:
 
 ```bash
 # 1. Capture system configuration
-eidos snapshot --output snapshot.yaml
+cnsctl snapshot --output snapshot.yaml
 
 echo "Snapshot captured:"
 ls -lh snapshot.yaml
 
 # 2. Generate optimized recipe for training workloads
-eidos recipe \
+cnsctl recipe \
   --snapshot snapshot.yaml \
   --intent training \
   --format yaml \
@@ -696,14 +696,14 @@ echo "Recipe generated:"
 cat recipe.yaml | grep "matchedRules" -A 5
 
 # 3. Validate recipe constraints against snapshot
-eidos validate \
+cnsctl validate \
   --recipe recipe.yaml \
   --snapshot snapshot.yaml
 
 echo "Validation complete"
 
 # 4. Create deployment bundle
-eidos bundle \
+cnsctl bundle \
   --recipe recipe.yaml \
   --bundlers gpu-operator \
   --output ./bundles
@@ -729,27 +729,27 @@ When running in Kubernetes, you can use ConfigMap URIs to avoid file dependencie
 
 ```bash
 # 1. Capture snapshot directly to ConfigMap (agent deployment mode)
-eidos snapshot --deploy-agent -o cm://gpu-operator/eidos-snapshot
+cnsctl snapshot --deploy-agent -o cm://gpu-operator/cns-snapshot
 
 # Alternative: Manual kubectl deployment
-eidos snapshot -o cm://gpu-operator/eidos-snapshot
+cnsctl snapshot -o cm://gpu-operator/cns-snapshot
 
 # 2. Generate recipe from ConfigMap snapshot to ConfigMap output
-eidos recipe -f cm://gpu-operator/eidos-snapshot --intent training -o cm://gpu-operator/eidos-recipe
+cnsctl recipe -f cm://gpu-operator/cns-snapshot --intent training -o cm://gpu-operator/cns-recipe
 
 # With custom kubeconfig
-eidos recipe \
-  -f cm://gpu-operator/eidos-snapshot \
+cnsctl recipe \
+  -f cm://gpu-operator/cns-snapshot \
   --kubeconfig ~/.kube/config \
   --intent training \
-  -o cm://gpu-operator/eidos-recipe
+  -o cm://gpu-operator/cns-recipe
 
 # 3. Create bundle from ConfigMap recipe
-eidos bundle -f cm://gpu-operator/eidos-recipe -b gpu-operator -o ./bundles
+cnsctl bundle -f cm://gpu-operator/cns-recipe -b gpu-operator -o ./bundles
 
 # 4. Verify ConfigMap data
-kubectl get configmap eidos-snapshot -n gpu-operator -o yaml
-kubectl get configmap eidos-recipe -n gpu-operator -o yaml
+kubectl get configmap cns-snapshot -n gpu-operator -o yaml
+kubectl get configmap cns-recipe -n gpu-operator -o yaml
 ```
 
 **Expected Bundle Structure:**
@@ -772,7 +772,7 @@ bundles/gpu-operator/
 make server
 
 # Custom configuration
-PORT=8080 LOG_LEVEL=debug go run cmd/eidos-api-server/main.go
+PORT=8080 LOG_LEVEL=debug go run cmd/cns-api-server/main.go
 
 # Test endpoints
 curl http://localhost:8080/health
@@ -791,27 +791,27 @@ Build and deploy the agent locally:
 
 ```bash
 # Build container image with ko
-ko build --local ./cmd/eidos-api-server
+ko build --local ./cmd/cns-api-server
 
 # Or build with Docker
-docker build -t eidos:dev -f Dockerfile .
+docker build -t cns:dev -f Dockerfile .
 
 # Deploy agent
-kubectl apply -f deployments/eidos-agent/1-deps.yaml
-kubectl apply -f deployments/eidos-agent/2-job.yaml
+kubectl apply -f deployments/cns-agent/1-deps.yaml
+kubectl apply -f deployments/cns-agent/2-job.yaml
 
 # Update job image for testing
-kubectl set image job/eidos -n gpu-operator eidos=<local-image>
+kubectl set image job/cns -n gpu-operator cns=<local-image>
 
 # Check status and logs
 kubectl get jobs -n gpu-operator
-kubectl logs -n gpu-operator job/eidos
+kubectl logs -n gpu-operator job/cns
 
 # Get snapshot from ConfigMap
-kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > snapshot.yaml
+kubectl get configmap cns-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > snapshot.yaml
 
 # Verify ConfigMap was created
-kubectl get configmap eidos-snapshot -n gpu-operator -o yaml
+kubectl get configmap cns-snapshot -n gpu-operator -o yaml
 ```
 
 ### End-to-End Testing
@@ -838,7 +838,7 @@ The e2e script:
 1. Deploys agent Job to cluster
 2. Waits for snapshot to be written to ConfigMap
 3. Optionally saves snapshot to file
-4. Optionally generates recipe using `cm://gpu-operator/eidos-snapshot`
+4. Optionally generates recipe using `cm://gpu-operator/cns-snapshot`
 5. Optionally generates bundle from recipe
 6. Validates each step completes successfully
 ```
@@ -1003,7 +1003,7 @@ pkg/component/networkoperator/templates/
 **Example template (`values.yaml.tmpl`):**
 ```yaml
 # Network Operator Helm Values
-# Generated by CNS Eidos
+# Generated by Cloud Native Stack
 
 # Direct access to values map
 version: {{ index . "version" }}
@@ -1104,7 +1104,7 @@ func createTestRecipeResult() *result.RecipeResult {
 make build
 
 # Test bundle generation (automatic registration via init())
-./dist/eidos_*/eidos bundle \
+./dist/cns_*/cnsctl bundle \
   --recipe examples/recipes/gb200-eks-ubuntu-training.yaml \
   --bundlers network-operator \
   --output ./test-bundles
@@ -1538,7 +1538,7 @@ Cloud Native Stack uses a comprehensive CI/CD pipeline powered by GitHub Actions
    - Achieves **SLSA Build Level 3** compliance
 5. **Deploy to Cloud Run** - Uses `.github/actions/cloud-run-deploy` composite action:
    - Authenticate using Workload Identity Federation (keyless)
-   - Deploy eidos-api-server to Google Cloud Run
+   - Deploy cns-api-server to Google Cloud Run
    - Update service with new image version
 
 **Permissions**:
@@ -1632,14 +1632,14 @@ All releases include comprehensive supply chain security artifacts:
 export TAG=$(curl -s https://api.github.com/repos/NVIDIA/cloud-native-stack/releases/latest | jq -r '.tag_name')
 
 # Verify image attestations (GitHub CLI - Recommended)
-gh attestation verify oci://ghcr.io/nvidia/eidos:${TAG} --owner nvidia
+gh attestation verify oci://ghcr.io/nvidia/cns:${TAG} --owner nvidia
 
 # Verify with Cosign
 cosign verify-attestation \
   --type spdxjson \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   --certificate-identity-regexp 'https://github.com/NVIDIA/cloud-native-stack/.github/workflows/.*' \
-  ghcr.io/nvidia/eidos:${TAG}
+  ghcr.io/nvidia/cns:${TAG}
 ```
 
 For complete verification instructions, see [SECURITY.md](SECURITY.md).
@@ -1786,7 +1786,7 @@ Signed-off-by: Your Name <your@email.com>
 
 ```bash
 # Enable debug logging
-./dist/eidos_*/eidos --debug snapshot
+./dist/cns_*/cnsctl --debug snapshot
 
 # Run specific test with verbose output
 go test -v ./pkg/collector/ -run TestGPUCollector

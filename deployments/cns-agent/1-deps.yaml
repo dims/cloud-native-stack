@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: eidos
+  name: cns
   namespace: gpu-operator
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: eidos
+  name: cns
   namespace: gpu-operator
 rules:
   - apiGroups: [""]
@@ -20,21 +20,21 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: eidos
+  name: cns
   namespace: gpu-operator
 subjects:
   - kind: ServiceAccount
-    name: eidos
+    name: cns
     namespace: gpu-operator
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: eidos
+  name: cns
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: eidos-node-reader
+  name: cns-node-reader
 rules:
   - apiGroups: [""]
     resources: ["nodes"]
@@ -52,12 +52,12 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: eidos-node-reader
+  name: cns-node-reader
 subjects:
   - kind: ServiceAccount
-    name: eidos
+    name: cns
     namespace: gpu-operator
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: eidos-node-reader
+  name: cns-node-reader

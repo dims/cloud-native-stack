@@ -37,8 +37,8 @@ import (
 
 // TestConstants verifies package constants are properly defined
 func TestConstants(t *testing.T) {
-	if name != "eidos-api-server" {
-		t.Errorf("name = %q, want %q", name, "eidos-api-server")
+	if name != "cns-api-server" {
+		t.Errorf("name = %q, want %q", name, "cns-api-server")
 	}
 
 	if versionDefault != "dev" {

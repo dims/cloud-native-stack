@@ -51,9 +51,9 @@ func (d *Deployer) ensureJob(ctx context.Context) error {
 // buildJob constructs the Job specification.
 func (d *Deployer) buildJob() *batchv1.Job {
 	// Build command arguments
-	args := fmt.Sprintf("/ko-app/eidos snapshot -o %s", d.config.Output)
+	args := fmt.Sprintf("/ko-app/cnsctl snapshot -o %s", d.config.Output)
 	if d.config.Debug {
-		args = fmt.Sprintf("/ko-app/eidos --debug --log-json snapshot -o %s", d.config.Output)
+		args = fmt.Sprintf("/ko-app/cnsctl --debug --log-json snapshot -o %s", d.config.Output)
 	}
 
 	return &batchv1.Job{
@@ -61,7 +61,7 @@ func (d *Deployer) buildJob() *batchv1.Job {
 			Name:      d.config.JobName,
 			Namespace: d.config.Namespace,
 			Labels: map[string]string{
-				"app.kubernetes.io/name": "eidos",
+				"app.kubernetes.io/name": "cns",
 			},
 		},
 		Spec: batchv1.JobSpec{
@@ -74,7 +74,7 @@ func (d *Deployer) buildJob() *batchv1.Job {
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app.kubernetes.io/name": "eidos",
+						"app.kubernetes.io/name": "cns",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -93,7 +93,7 @@ func (d *Deployer) buildJob() *batchv1.Job {
 					},
 					Containers: []corev1.Container{
 						{
-							Name:    "eidos",
+							Name:    "cns",
 							Image:   d.config.Image,
 							Command: []string{"/bin/sh", "-c"},
 							Args:    []string{args},

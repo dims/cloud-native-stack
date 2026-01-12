@@ -1,10 +1,10 @@
 # API Reference
 
-Complete reference for using the Eidos API Server.
+Complete reference for using the CNS API Server.
 
 ## Overview
 
-The Eidos API Server provides HTTP REST access to recipe generation and bundle creation for GPU-accelerated infrastructure. Use the API for programmatic access to configuration recommendations and deployment artifacts.
+The CNS API Server provides HTTP REST access to recipe generation and bundle creation for GPU-accelerated infrastructure. Use the API for programmatic access to configuration recommendations and deployment artifacts.
 
 ```
 ┌──────────────┐      ┌──────────────┐
@@ -23,9 +23,9 @@ The Eidos API Server provides HTTP REST access to recipe generation and bundle c
 
 | Feature | API | CLI |
 |---------|-----|-----|
-| Recipe generation | ✅ GET /v1/recipe | ✅ `eidos recipe` |
-| Bundle creation | ✅ POST /v1/bundle | ✅ `eidos bundle` |
-| Snapshot capture | ❌ Use CLI | ✅ `eidos snapshot` |
+| Recipe generation | ✅ GET /v1/recipe | ✅ `cnsctl recipe` |
+| Bundle creation | ✅ POST /v1/bundle | ✅ `cnsctl bundle` |
+| Snapshot capture | ❌ Use CLI | ✅ `cnsctl snapshot` |
 | ConfigMap I/O | ❌ Use CLI | ✅ `cm://` URIs |
 | Agent deployment | ❌ Use CLI | ✅ `--deploy-agent` |
 
@@ -300,10 +300,10 @@ curl "https://cns.dgxc.io/metrics"
 
 | Metric | Type | Description |
 |--------|------|-------------|
-| `eidos_http_requests_total` | counter | Total HTTP requests by method, path, status |
-| `eidos_http_request_duration_seconds` | histogram | Request latency distribution |
-| `eidos_http_requests_in_flight` | gauge | Current concurrent requests |
-| `eidos_rate_limit_rejects_total` | counter | Rate limit rejections |
+| `cns_http_requests_total` | counter | Total HTTP requests by method, path, status |
+| `cns_http_request_duration_seconds` | histogram | Request latency distribution |
+| `cns_http_requests_in_flight` | gauge | Current concurrent requests |
+| `cns_rate_limit_rejects_total` | counter | Rate limit rejections |
 
 ## Complete Workflow Example
 
@@ -519,13 +519,13 @@ main();
 ## OpenAPI Specification
 
 The full OpenAPI 3.1 specification is available at:
-[api/eidos/v1/api-server-v1.yaml](../../api/eidos/v1/api-server-v1.yaml)
+[api/cns/v1/api-server-v1.yaml](../../api/cns/v1/api-server-v1.yaml)
 
 Generate client SDKs:
 
 ```shell
 # Download spec
-curl https://raw.githubusercontent.com/NVIDIA/cloud-native-stack/main/api/eidos/v1/api-server-v1.yaml \
+curl https://raw.githubusercontent.com/NVIDIA/cloud-native-stack/main/api/cns/v1/api-server-v1.yaml \
   -o openapi.yaml
 
 # Generate Python client

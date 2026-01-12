@@ -35,7 +35,7 @@ The snapshot can be output in JSON, YAML, or table format.
 
 Use --deploy-agent to deploy a Kubernetes Job that captures the snapshot on GPU nodes:
 
-  eidos snapshot --deploy-agent --namespace gpu-operator --output cm://gpu-operator/eidos-snapshot
+  cnsctl snapshot --deploy-agent --namespace gpu-operator --output cm://gpu-operator/cns-snapshot
 
 The agent mode will:
   1. Deploy RBAC resources (ServiceAccount, Role, RoleBinding, ClusterRole, ClusterRoleBinding)
@@ -48,20 +48,20 @@ The agent mode will:
 # Examples
 
 Basic agent deployment:
-  eidos snapshot --deploy-agent
+  cnsctl snapshot --deploy-agent
 
 Target specific GPU nodes with node selector:
-  eidos snapshot --deploy-agent --node-selector nodeGroup=customer-gpu
+  cnsctl snapshot --deploy-agent --node-selector nodeGroup=customer-gpu
 
 Override default tolerations (by default, all taints are tolerated):
-  eidos snapshot --deploy-agent \
+  cnsctl snapshot --deploy-agent \
     --toleration dedicated=user-workload:NoSchedule
 
 Combined node selector and custom tolerations:
-  eidos snapshot --deploy-agent \
+  cnsctl snapshot --deploy-agent \
     --node-selector nodeGroup=customer-gpu \
     --toleration dedicated=user-workload:NoSchedule \
-    --output cm://gpu-operator/eidos-snapshot`,
+    --output cm://gpu-operator/cns-snapshot`,
 		Flags: []cli.Flag{
 			// Agent deployment flags
 			&cli.BoolFlag{
@@ -71,24 +71,24 @@ Combined node selector and custom tolerations:
 			&cli.StringFlag{
 				Name:    "namespace",
 				Usage:   "Kubernetes namespace for agent deployment",
-				Sources: cli.EnvVars("EIDOS_NAMESPACE"),
+				Sources: cli.EnvVars("CNS_NAMESPACE"),
 				Value:   "gpu-operator",
 			},
 			&cli.StringFlag{
 				Name:    "image",
 				Usage:   "Container image for agent Job",
-				Sources: cli.EnvVars("EIDOS_IMAGE"),
-				Value:   "ghcr.io/nvidia/eidos:latest",
+				Sources: cli.EnvVars("CNS_IMAGE"),
+				Value:   "ghcr.io/nvidia/cns:latest",
 			},
 			&cli.StringFlag{
 				Name:  "job-name",
 				Usage: "Override default Job name",
-				Value: "eidos",
+				Value: "cns",
 			},
 			&cli.StringFlag{
 				Name:  "service-account-name",
 				Usage: "Override default ServiceAccount name",
-				Value: "eidos",
+				Value: "cns",
 			},
 			&cli.StringSliceFlag{
 				Name:  "node-selector",

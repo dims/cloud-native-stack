@@ -42,7 +42,7 @@ body:
       description: Relevant details about your setup (redact credentials/secrets).
       placeholder: |
         - What you're trying to accomplish:
-        - Eidos version (CLI `eidos version`, API image tag, or commit SHA):
+        - CNS version (CLI `cnsctl version`, API image tag, or commit SHA):
         - Platform (eks/gke/aks/self-managed):
         - Kubernetes version:
         - OS + version, kernel:

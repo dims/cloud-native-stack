@@ -79,7 +79,7 @@ func (d *Deployer) ensureRoleBinding(ctx context.Context) error {
 func (d *Deployer) ensureClusterRole(ctx context.Context) error {
 	cr := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "eidos-node-reader",
+			Name: "cns-node-reader",
 		},
 		Rules: []rbacv1.PolicyRule{
 			{
@@ -114,7 +114,7 @@ func (d *Deployer) ensureClusterRole(ctx context.Context) error {
 func (d *Deployer) ensureClusterRoleBinding(ctx context.Context) error {
 	crb := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "eidos-node-reader",
+			Name: "cns-node-reader",
 		},
 		Subjects: []rbacv1.Subject{
 			{
@@ -126,7 +126,7 @@ func (d *Deployer) ensureClusterRoleBinding(ctx context.Context) error {
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "ClusterRole",
-			Name:     "eidos-node-reader",
+			Name:     "cns-node-reader",
 		},
 	}
 
@@ -162,7 +162,7 @@ func (d *Deployer) deleteRoleBinding(ctx context.Context) error {
 // If the ClusterRole doesn't exist, this is a no-op (idempotent).
 func (d *Deployer) deleteClusterRole(ctx context.Context) error {
 	err := d.clientset.RbacV1().ClusterRoles().
-		Delete(ctx, "eidos-node-reader", metav1.DeleteOptions{})
+		Delete(ctx, "cns-node-reader", metav1.DeleteOptions{})
 	return ignoreNotFound(err)
 }
 
@@ -170,6 +170,6 @@ func (d *Deployer) deleteClusterRole(ctx context.Context) error {
 // If the ClusterRoleBinding doesn't exist, this is a no-op (idempotent).
 func (d *Deployer) deleteClusterRoleBinding(ctx context.Context) error {
 	err := d.clientset.RbacV1().ClusterRoleBindings().
-		Delete(ctx, "eidos-node-reader", metav1.DeleteOptions{})
+		Delete(ctx, "cns-node-reader", metav1.DeleteOptions{})
 	return ignoreNotFound(err)
 }

@@ -51,7 +51,7 @@
 //	// Deploy snapshot agent
 //	config := agent.Config{
 //	    Namespace: "gpu-operator",
-//	    Image:     "ghcr.io/nvidia/eidos:latest",
+//	    Image:     "ghcr.io/nvidia/cns:latest",
 //	}
 //	deployer := agent.NewDeployer(clientset, config)
 //

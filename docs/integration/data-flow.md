@@ -74,16 +74,16 @@ Each stage transforms input data into a different format:
 ```
 
 **Output Destinations:**
-- **File**: `eidos snapshot --output system.yaml`
-- **Stdout**: `eidos snapshot` (default, pipe to other commands)
-- **ConfigMap**: `eidos snapshot --output cm://namespace/name` (Kubernetes-native)
+- **File**: `cnsctl snapshot --output system.yaml`
+- **Stdout**: `cnsctl snapshot` (default, pipe to other commands)
+- **ConfigMap**: `cnsctl snapshot --output cm://namespace/name` (Kubernetes-native)
 
 **ConfigMap Storage Pattern:**
 ```yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: eidos-snapshot
+  name: cns-snapshot
   namespace: gpu-operator
 data:
   snapshot.yaml: |
@@ -96,7 +96,7 @@ data:
 **Agent Deployment:**  
 Kubernetes Job writes snapshots directly to ConfigMap without volumes:
 ```bash
-eidos snapshot --output cm://gpu-operator/eidos-snapshot
+cnsctl snapshot --output cm://gpu-operator/cns-snapshot
 ```
 
 **Reading Interface:**
@@ -142,27 +142,27 @@ type Reading interface {
 
 **Query Mode** - Direct generation from parameters:
 ```bash
-eidos recipe --os ubuntu --gpu h100 --service eks --intent training
+cnsctl recipe --os ubuntu --gpu h100 --service eks --intent training
 ```
 
 **Snapshot Mode (File)** - Analyze captured snapshot:
 ```bash
-eidos snapshot --output system.yaml
-eidos recipe --snapshot system.yaml --intent training
+cnsctl snapshot --output system.yaml
+cnsctl recipe --snapshot system.yaml --intent training
 ```
 
 **Snapshot Mode (ConfigMap)** - Read from Kubernetes:
 ```bash
 # Agent or CLI writes snapshot to ConfigMap
-eidos snapshot --output cm://gpu-operator/eidos-snapshot
+cnsctl snapshot --output cm://gpu-operator/cns-snapshot
 
 # CLI reads from ConfigMap to generate recipe
-eidos recipe --snapshot cm://gpu-operator/eidos-snapshot --intent training
+cnsctl recipe --snapshot cm://gpu-operator/cns-snapshot --intent training
 
 # Recipe can also be written to ConfigMap
-eidos recipe --snapshot cm://gpu-operator/eidos-snapshot \
+cnsctl recipe --snapshot cm://gpu-operator/cns-snapshot \
             --intent training \
-            --output cm://gpu-operator/eidos-recipe
+            --output cm://gpu-operator/cns-recipe
 ```
 
 ### Query Extraction (Snapshot Mode)
@@ -326,19 +326,19 @@ Constraints use fully qualified paths: `{Type}.{Subtype}.{Key}`
 
 **File-based:**
 ```bash
-eidos validate --recipe recipe.yaml --snapshot snapshot.yaml
+cns validate --recipe recipe.yaml --snapshot snapshot.yaml
 ```
 
 **ConfigMap-based:**
 ```bash
-eidos validate \
+cns validate \
     --recipe recipe.yaml \
-    --snapshot cm://gpu-operator/eidos-snapshot
+    --snapshot cm://gpu-operator/cns-snapshot
 ```
 
 **HTTP/HTTPS:**
 ```bash
-eidos validate \
+cns validate \
     --recipe https://example.com/recipe.yaml \
     --snapshot https://example.com/snapshot.yaml
 ```
@@ -376,9 +376,9 @@ results:
 Use `--fail-on-error` flag to exit with non-zero status on validation failures:
 
 ```bash
-eidos validate \
+cns validate \
     --recipe recipe.yaml \
-    --snapshot cm://gpu-operator/eidos-snapshot \
+    --snapshot cm://gpu-operator/cns-snapshot \
     --fail-on-error
 
 # Exit code: 0 = all passed, 1 = failures detected

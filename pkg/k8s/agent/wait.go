@@ -108,7 +108,7 @@ func (d *Deployer) deleteConfigMap(ctx context.Context) error {
 func (d *Deployer) getJobLogs(ctx context.Context) (string, error) {
 	// Find Pod for this Job
 	pods, err := d.clientset.CoreV1().Pods(d.config.Namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=eidos",
+		LabelSelector: "app.kubernetes.io/name=cns",
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to list Pods: %w", err)
@@ -142,7 +142,7 @@ func (d *Deployer) WaitForPodReady(ctx context.Context, timeout time.Duration) e
 	return wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, timeout, true,
 		func(ctx context.Context) (bool, error) {
 			pods, err := d.clientset.CoreV1().Pods(d.config.Namespace).List(ctx, metav1.ListOptions{
-				LabelSelector: "app.kubernetes.io/name=eidos",
+				LabelSelector: "app.kubernetes.io/name=cns",
 			})
 			if err != nil {
 				return false, err
