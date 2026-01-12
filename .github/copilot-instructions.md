@@ -454,7 +454,7 @@ eidos bundle -f recipe.yaml -b gpu-operator \
 - **[Architecture Overview](../docs/architecture/README.md)** – System design
 - **[Bundler Development](../docs/architecture/component.md)** – Create new bundlers
 - **[API Reference](../docs/integration/api-reference.md)** – REST API endpoints
-- **[GitHub Actions README](.github/actions/README.md)** – CI/CD architecture
+- **[GitHub Actions README](actions/README.md)** – CI/CD architecture
 - **[API Specification](../api/eidos/v1/api-server-v1.yaml)** – OpenAPI spec
 
 ### Version Information
@@ -897,7 +897,7 @@ jobs:
 - **Signing**: Cosign keyless signing (Fulcio + Rekor)
 - **Verification**: `gh attestation verify oci://ghcr.io/nvidia/eidos:${TAG}`
 
-For detailed GitHub Actions architecture, see [.github/actions/README.md](.github/actions/README.md)
+For detailed GitHub Actions architecture, see [actions/README.md](actions/README.md)
 
 ### Workflow Patterns
 
