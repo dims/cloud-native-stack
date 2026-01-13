@@ -7,6 +7,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"strings"
 
@@ -17,6 +18,49 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
 	"github.com/NVIDIA/cloud-native-stack/pkg/snapshotter"
 )
+
+// DetectionSource describes where a criteria value was detected from.
+type DetectionSource struct {
+	Value      string // The detected value
+	Source     string // Human-readable source description
+	RawValue   string // The raw value from the snapshot (e.g., full version string)
+	Overridden bool   // Whether this was overridden by CLI flag
+}
+
+// CriteriaDetection holds criteria with detection sources for transparency.
+type CriteriaDetection struct {
+	Service     *DetectionSource
+	Accelerator *DetectionSource
+	OS          *DetectionSource
+	Intent      *DetectionSource
+	Nodes       *DetectionSource
+}
+
+// PrintDetection outputs the detected criteria to the given writer.
+func (cd *CriteriaDetection) PrintDetection(w io.Writer) {
+	fmt.Fprintln(w, "Detected criteria from snapshot:")
+	printDetectionField(w, "service", cd.Service)
+	printDetectionField(w, "accelerator", cd.Accelerator)
+	printDetectionField(w, "os", cd.OS)
+	printDetectionField(w, "intent", cd.Intent)
+	printDetectionField(w, "nodes", cd.Nodes)
+	fmt.Fprintln(w)
+}
+
+func printDetectionField(w io.Writer, name string, ds *DetectionSource) {
+	if ds == nil {
+		fmt.Fprintf(w, "  %-12s (not detected)\n", name+":")
+		return
+	}
+
+	if ds.Overridden {
+		fmt.Fprintf(w, "  %-12s %-12s (overridden by --%s flag)\n", name+":", ds.Value, name)
+	} else if ds.RawValue != "" && ds.RawValue != ds.Value {
+		fmt.Fprintf(w, "  %-12s %-12s (from %s: %s)\n", name+":", ds.Value, ds.Source, ds.RawValue)
+	} else {
+		fmt.Fprintf(w, "  %-12s %-12s (from %s)\n", name+":", ds.Value, ds.Source)
+	}
+}
 
 func recipeCmd() *cli.Command {
 	return &cli.Command{
@@ -89,13 +133,16 @@ Output can be in JSON or YAML format.`,
 					return fmt.Errorf("failed to load snapshot from %q: %w", snapFilePath, loadErr)
 				}
 
-				// Extract criteria from snapshot
-				criteria := extractCriteriaFromSnapshot(snap)
+				// Extract criteria from snapshot with detection sources
+				criteria, detection := extractCriteriaFromSnapshot(snap)
 
-				// Apply CLI overrides
-				if applyErr := applyCriteriaOverrides(cmd, criteria); applyErr != nil {
+				// Apply CLI overrides and track them
+				if applyErr := applyCriteriaOverrides(cmd, criteria, detection); applyErr != nil {
 					return applyErr
 				}
+
+				// Print detected criteria for transparency (to stderr so it doesn't interfere with output)
+				detection.PrintDetection(cmd.ErrWriter)
 
 				slog.Info("building recipe from snapshot", "criteria", criteria.String())
 				result, err = builder.BuildFromCriteria(ctx, criteria)
@@ -163,12 +210,13 @@ func buildCriteriaFromCmd(cmd *cli.Command) (*recipe.Criteria, error) {
 }
 
 // extractCriteriaFromSnapshot extracts criteria from a snapshot.
-// This maps snapshot measurements to criteria fields.
-func extractCriteriaFromSnapshot(snap *snapshotter.Snapshot) *recipe.Criteria {
+// This maps snapshot measurements to criteria fields and returns detection sources.
+func extractCriteriaFromSnapshot(snap *snapshotter.Snapshot) (*recipe.Criteria, *CriteriaDetection) {
 	criteria := recipe.NewCriteria()
+	detection := &CriteriaDetection{}
 
 	if snap == nil {
-		return criteria
+		return criteria, detection
 	}
 
 	// Extract from K8s measurements
@@ -186,19 +234,33 @@ func extractCriteriaFromSnapshot(snap *snapshotter.Snapshot) *recipe.Criteria {
 					if svcType, ok := st.Data["service"]; ok {
 						if parsed, err := recipe.ParseCriteriaServiceType(svcType.String()); err == nil {
 							criteria.Service = parsed
+							detection.Service = &DetectionSource{
+								Value:    string(parsed),
+								Source:   "K8s server.service field",
+								RawValue: svcType.String(),
+							}
 						}
 					}
 
 					// Extract service from K8s version string (e.g., "v1.33.5-eks-3025e55")
 					if version, ok := st.Data["version"]; ok {
 						versionStr := version.String()
+						var detectedService recipe.CriteriaServiceType
 						switch {
 						case strings.Contains(versionStr, "-eks-"):
-							criteria.Service = recipe.CriteriaServiceEKS
+							detectedService = recipe.CriteriaServiceEKS
 						case strings.Contains(versionStr, "-gke"):
-							criteria.Service = recipe.CriteriaServiceGKE
+							detectedService = recipe.CriteriaServiceGKE
 						case strings.Contains(versionStr, "-aks"):
-							criteria.Service = recipe.CriteriaServiceAKS
+							detectedService = recipe.CriteriaServiceAKS
+						}
+						if detectedService != "" {
+							criteria.Service = detectedService
+							detection.Service = &DetectionSource{
+								Value:    string(detectedService),
+								Source:   "K8s version string",
+								RawValue: versionStr,
+							}
 						}
 					}
 				}
@@ -211,31 +273,51 @@ func extractCriteriaFromSnapshot(snap *snapshotter.Snapshot) *recipe.Criteria {
 					// Try "gpu.model" field (from nvidia-smi)
 					if model, ok := st.Data["gpu.model"]; ok {
 						modelStr := model.String()
+						var detectedAccelerator recipe.CriteriaAcceleratorType
 						// Map model names to accelerator types
 						switch {
 						case containsIgnoreCase(modelStr, "gb200"):
-							criteria.Accelerator = recipe.CriteriaAcceleratorGB200
+							detectedAccelerator = recipe.CriteriaAcceleratorGB200
 						case containsIgnoreCase(modelStr, "h100"):
-							criteria.Accelerator = recipe.CriteriaAcceleratorH100
+							detectedAccelerator = recipe.CriteriaAcceleratorH100
 						case containsIgnoreCase(modelStr, "a100"):
-							criteria.Accelerator = recipe.CriteriaAcceleratorA100
+							detectedAccelerator = recipe.CriteriaAcceleratorA100
 						case containsIgnoreCase(modelStr, "l40"):
-							criteria.Accelerator = recipe.CriteriaAcceleratorL40
+							detectedAccelerator = recipe.CriteriaAcceleratorL40
+						}
+						if detectedAccelerator != "" {
+							criteria.Accelerator = detectedAccelerator
+							detection.Accelerator = &DetectionSource{
+								Value:    string(detectedAccelerator),
+								Source:   "nvidia-smi gpu.model",
+								RawValue: modelStr,
+							}
 						}
 					}
 
-					// Also try plain "model" field
-					if model, ok := st.Data["model"]; ok {
-						modelStr := model.String()
-						switch {
-						case containsIgnoreCase(modelStr, "gb200"):
-							criteria.Accelerator = recipe.CriteriaAcceleratorGB200
-						case containsIgnoreCase(modelStr, "h100"):
-							criteria.Accelerator = recipe.CriteriaAcceleratorH100
-						case containsIgnoreCase(modelStr, "a100"):
-							criteria.Accelerator = recipe.CriteriaAcceleratorA100
-						case containsIgnoreCase(modelStr, "l40"):
-							criteria.Accelerator = recipe.CriteriaAcceleratorL40
+					// Also try plain "model" field (if not already detected)
+					if detection.Accelerator == nil {
+						if model, ok := st.Data["model"]; ok {
+							modelStr := model.String()
+							var detectedAccelerator recipe.CriteriaAcceleratorType
+							switch {
+							case containsIgnoreCase(modelStr, "gb200"):
+								detectedAccelerator = recipe.CriteriaAcceleratorGB200
+							case containsIgnoreCase(modelStr, "h100"):
+								detectedAccelerator = recipe.CriteriaAcceleratorH100
+							case containsIgnoreCase(modelStr, "a100"):
+								detectedAccelerator = recipe.CriteriaAcceleratorA100
+							case containsIgnoreCase(modelStr, "l40"):
+								detectedAccelerator = recipe.CriteriaAcceleratorL40
+							}
+							if detectedAccelerator != "" {
+								criteria.Accelerator = detectedAccelerator
+								detection.Accelerator = &DetectionSource{
+									Value:    string(detectedAccelerator),
+									Source:   "GPU model field",
+									RawValue: modelStr,
+								}
+							}
 						}
 					}
 				}
@@ -248,6 +330,11 @@ func extractCriteriaFromSnapshot(snap *snapshotter.Snapshot) *recipe.Criteria {
 					if osID, ok := st.Data["ID"]; ok {
 						if parsed, err := recipe.ParseCriteriaOSType(osID.String()); err == nil {
 							criteria.OS = parsed
+							detection.OS = &DetectionSource{
+								Value:    string(parsed),
+								Source:   "/etc/os-release ID",
+								RawValue: osID.String(),
+							}
 						}
 					}
 				}
@@ -259,17 +346,22 @@ func extractCriteriaFromSnapshot(snap *snapshotter.Snapshot) *recipe.Criteria {
 		}
 	}
 
-	return criteria
+	return criteria, detection
 }
 
-// applyCriteriaOverrides applies CLI flag overrides to criteria.
-func applyCriteriaOverrides(cmd *cli.Command, criteria *recipe.Criteria) error {
+// applyCriteriaOverrides applies CLI flag overrides to criteria and tracks them in detection.
+func applyCriteriaOverrides(cmd *cli.Command, criteria *recipe.Criteria, detection *CriteriaDetection) error {
 	if s := cmd.String("service"); s != "" {
 		parsed, err := recipe.ParseCriteriaServiceType(s)
 		if err != nil {
 			return err
 		}
 		criteria.Service = parsed
+		detection.Service = &DetectionSource{
+			Value:      string(parsed),
+			Source:     "--service flag",
+			Overridden: detection.Service != nil, // Was previously detected
+		}
 	}
 	if s := cmd.String("accelerator"); s != "" {
 		parsed, err := recipe.ParseCriteriaAcceleratorType(s)
@@ -277,6 +369,11 @@ func applyCriteriaOverrides(cmd *cli.Command, criteria *recipe.Criteria) error {
 			return err
 		}
 		criteria.Accelerator = parsed
+		detection.Accelerator = &DetectionSource{
+			Value:      string(parsed),
+			Source:     "--accelerator flag",
+			Overridden: detection.Accelerator != nil, // Was previously detected
+		}
 	}
 	if s := cmd.String("intent"); s != "" {
 		parsed, err := recipe.ParseCriteriaIntentType(s)
@@ -284,6 +381,11 @@ func applyCriteriaOverrides(cmd *cli.Command, criteria *recipe.Criteria) error {
 			return err
 		}
 		criteria.Intent = parsed
+		detection.Intent = &DetectionSource{
+			Value:      string(parsed),
+			Source:     "--intent flag",
+			Overridden: detection.Intent != nil, // Was previously detected
+		}
 	}
 	if s := cmd.String("os"); s != "" {
 		parsed, err := recipe.ParseCriteriaOSType(s)
@@ -291,9 +393,19 @@ func applyCriteriaOverrides(cmd *cli.Command, criteria *recipe.Criteria) error {
 			return err
 		}
 		criteria.OS = parsed
+		detection.OS = &DetectionSource{
+			Value:      string(parsed),
+			Source:     "--os flag",
+			Overridden: detection.OS != nil, // Was previously detected
+		}
 	}
 	if n := cmd.Int("nodes"); n > 0 {
 		criteria.Nodes = n
+		detection.Nodes = &DetectionSource{
+			Value:      fmt.Sprintf("%d", n),
+			Source:     "--nodes flag",
+			Overridden: detection.Nodes != nil, // Was previously detected
+		}
 	}
 	return nil
 }

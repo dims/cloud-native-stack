@@ -271,6 +271,33 @@ Generate recipes from captured snapshots:
 - **URL**: HTTP/HTTPS URL (`https://example.com/snapshot.yaml`)
 - **ConfigMap**: Kubernetes ConfigMap URI (`cm://namespace/configmap-name`)
 
+**Criteria Detection:**
+
+When using `--snapshot`, criteria are automatically extracted from the snapshot data and displayed for transparency:
+
+```
+Detected criteria from snapshot:
+  service:     eks          (from K8s version string: v1.34.1-eks-3025e55)
+  accelerator: h100         (from nvidia-smi gpu.model: NVIDIA H100 80GB HBM3)
+  os:          ubuntu       (from /etc/os-release ID)
+  intent:      training     (from --intent flag)
+  nodes:       (not detected)
+```
+
+Detection sources include:
+| Criterion | Detection Source |
+|-----------|------------------|
+| `service` | K8s version string (e.g., `-eks-`, `-gke-`, `-aks-`) or `server.service` field |
+| `accelerator` | `nvidia-smi gpu.model` field (H100, GB200, A100, L40) |
+| `os` | `/etc/os-release ID` field |
+| `intent` | Not auto-detected; must be specified via `--intent` flag |
+| `nodes` | Not auto-detected; specify via `--nodes` flag if needed |
+
+When you override a detected value with a CLI flag, it shows:
+```
+  accelerator: a100         (overridden by --accelerator flag)
+```
+
 **Examples:**
 ```shell
 # Generate recipe from local snapshot file
@@ -283,6 +310,12 @@ cnsctl recipe --snapshot cm://gpu-operator/cns-snapshot --intent training
 cnsctl recipe \
   --snapshot cm://gpu-operator/cns-snapshot \
   --kubeconfig ~/.kube/prod-cluster \
+  --intent training
+
+# Override auto-detected accelerator type
+cnsctl recipe \
+  --snapshot cm://gpu-operator/cns-snapshot \
+  --accelerator a100 \
   --intent training
 
 # Output to ConfigMap

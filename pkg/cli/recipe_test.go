@@ -202,9 +202,10 @@ func TestBuildCriteriaFromCmd(t *testing.T) {
 
 func TestExtractCriteriaFromSnapshot(t *testing.T) {
 	tests := []struct {
-		name     string
-		snapshot *snapshotter.Snapshot
-		validate func(*testing.T, *recipe.Criteria)
+		name           string
+		snapshot       *snapshotter.Snapshot
+		validate       func(*testing.T, *recipe.Criteria)
+		validateDetect func(*testing.T, *CriteriaDetection)
 	}{
 		{
 			name:     "nil snapshot",
@@ -212,6 +213,11 @@ func TestExtractCriteriaFromSnapshot(t *testing.T) {
 			validate: func(t *testing.T, c *recipe.Criteria) {
 				if c == nil {
 					t.Error("expected non-nil criteria")
+				}
+			},
+			validateDetect: func(t *testing.T, d *CriteriaDetection) {
+				if d == nil {
+					t.Error("expected non-nil detection")
 				}
 			},
 		},
@@ -248,6 +254,18 @@ func TestExtractCriteriaFromSnapshot(t *testing.T) {
 					t.Errorf("Service = %v, want %v", c.Service, recipe.CriteriaServiceEKS)
 				}
 			},
+			validateDetect: func(t *testing.T, d *CriteriaDetection) {
+				if d.Service == nil {
+					t.Error("expected service detection")
+					return
+				}
+				if d.Service.Value != "eks" {
+					t.Errorf("Service detection value = %v, want eks", d.Service.Value)
+				}
+				if d.Service.Source != "K8s server.service field" {
+					t.Errorf("Service detection source = %v, want 'K8s server.service field'", d.Service.Source)
+				}
+			},
 		},
 		{
 			name: "snapshot with GPU H100",
@@ -269,6 +287,18 @@ func TestExtractCriteriaFromSnapshot(t *testing.T) {
 			validate: func(t *testing.T, c *recipe.Criteria) {
 				if c.Accelerator != recipe.CriteriaAcceleratorH100 {
 					t.Errorf("Accelerator = %v, want %v", c.Accelerator, recipe.CriteriaAcceleratorH100)
+				}
+			},
+			validateDetect: func(t *testing.T, d *CriteriaDetection) {
+				if d.Accelerator == nil {
+					t.Error("expected accelerator detection")
+					return
+				}
+				if d.Accelerator.Value != "h100" {
+					t.Errorf("Accelerator detection value = %v, want h100", d.Accelerator.Value)
+				}
+				if d.Accelerator.RawValue != "NVIDIA H100 80GB HBM3" {
+					t.Errorf("Accelerator raw value = %v, want 'NVIDIA H100 80GB HBM3'", d.Accelerator.RawValue)
 				}
 			},
 		},
@@ -315,6 +345,15 @@ func TestExtractCriteriaFromSnapshot(t *testing.T) {
 			validate: func(t *testing.T, c *recipe.Criteria) {
 				if c.OS != recipe.CriteriaOSUbuntu {
 					t.Errorf("OS = %v, want %v", c.OS, recipe.CriteriaOSUbuntu)
+				}
+			},
+			validateDetect: func(t *testing.T, d *CriteriaDetection) {
+				if d.OS == nil {
+					t.Error("expected OS detection")
+					return
+				}
+				if d.OS.Source != "/etc/os-release ID" {
+					t.Errorf("OS detection source = %v, want '/etc/os-release ID'", d.OS.Source)
 				}
 			},
 		},
@@ -369,14 +408,52 @@ func TestExtractCriteriaFromSnapshot(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "snapshot with K8s version string EKS",
+			snapshot: &snapshotter.Snapshot{
+				Measurements: []*measurement.Measurement{
+					{
+						Type: "K8s",
+						Subtypes: []measurement.Subtype{
+							{
+								Name: "server",
+								Data: map[string]measurement.Reading{
+									"version": measurement.Str("v1.33.5-eks-3025e55"),
+								},
+							},
+						},
+					},
+				},
+			},
+			validate: func(t *testing.T, c *recipe.Criteria) {
+				if c.Service != recipe.CriteriaServiceEKS {
+					t.Errorf("Service = %v, want %v", c.Service, recipe.CriteriaServiceEKS)
+				}
+			},
+			validateDetect: func(t *testing.T, d *CriteriaDetection) {
+				if d.Service == nil {
+					t.Error("expected service detection")
+					return
+				}
+				if d.Service.Source != "K8s version string" {
+					t.Errorf("Service detection source = %v, want 'K8s version string'", d.Service.Source)
+				}
+				if d.Service.RawValue != "v1.33.5-eks-3025e55" {
+					t.Errorf("Service raw value = %v, want 'v1.33.5-eks-3025e55'", d.Service.RawValue)
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			criteria := extractCriteriaFromSnapshot(tt.snapshot)
+			criteria, detection := extractCriteriaFromSnapshot(tt.snapshot)
 
 			if tt.validate != nil {
 				tt.validate(t, criteria)
+			}
+			if tt.validateDetect != nil {
+				tt.validateDetect(t, detection)
 			}
 		})
 	}
@@ -384,36 +461,51 @@ func TestExtractCriteriaFromSnapshot(t *testing.T) {
 
 func TestApplyCriteriaOverrides(t *testing.T) {
 	tests := []struct {
-		name     string
-		args     []string
-		initial  *recipe.Criteria
-		validate func(*testing.T, *recipe.Criteria)
-		wantErr  bool
+		name           string
+		args           []string
+		initial        *recipe.Criteria
+		initialDetect  *CriteriaDetection
+		validate       func(*testing.T, *recipe.Criteria)
+		validateDetect func(*testing.T, *CriteriaDetection)
+		wantErr        bool
 	}{
 		{
-			name:    "override service",
-			args:    []string{"cmd", "--service", "aks"},
-			initial: &recipe.Criteria{Service: recipe.CriteriaServiceEKS},
+			name:          "override service",
+			args:          []string{"cmd", "--service", "aks"},
+			initial:       &recipe.Criteria{Service: recipe.CriteriaServiceEKS},
+			initialDetect: &CriteriaDetection{Service: &DetectionSource{Value: "eks", Source: "test"}},
 			validate: func(t *testing.T, c *recipe.Criteria) {
 				if c.Service != recipe.CriteriaServiceAKS {
 					t.Errorf("Service = %v, want %v", c.Service, recipe.CriteriaServiceAKS)
 				}
 			},
+			validateDetect: func(t *testing.T, d *CriteriaDetection) {
+				if !d.Service.Overridden {
+					t.Error("Service should be marked as overridden")
+				}
+			},
 		},
 		{
-			name:    "override accelerator",
-			args:    []string{"cmd", "--accelerator", "l40"},
-			initial: &recipe.Criteria{Accelerator: recipe.CriteriaAcceleratorH100},
+			name:          "override accelerator",
+			args:          []string{"cmd", "--accelerator", "l40"},
+			initial:       &recipe.Criteria{Accelerator: recipe.CriteriaAcceleratorH100},
+			initialDetect: &CriteriaDetection{Accelerator: &DetectionSource{Value: "h100", Source: "test"}},
 			validate: func(t *testing.T, c *recipe.Criteria) {
 				if c.Accelerator != recipe.CriteriaAcceleratorL40 {
 					t.Errorf("Accelerator = %v, want %v", c.Accelerator, recipe.CriteriaAcceleratorL40)
 				}
 			},
+			validateDetect: func(t *testing.T, d *CriteriaDetection) {
+				if !d.Accelerator.Overridden {
+					t.Error("Accelerator should be marked as overridden")
+				}
+			},
 		},
 		{
-			name:    "no overrides preserves existing",
-			args:    []string{"cmd"},
-			initial: &recipe.Criteria{Service: recipe.CriteriaServiceGKE, Accelerator: recipe.CriteriaAcceleratorGB200},
+			name:          "no overrides preserves existing",
+			args:          []string{"cmd"},
+			initial:       &recipe.Criteria{Service: recipe.CriteriaServiceGKE, Accelerator: recipe.CriteriaAcceleratorGB200},
+			initialDetect: &CriteriaDetection{},
 			validate: func(t *testing.T, c *recipe.Criteria) {
 				if c.Service != recipe.CriteriaServiceGKE {
 					t.Errorf("Service = %v, want %v", c.Service, recipe.CriteriaServiceGKE)
@@ -424,10 +516,34 @@ func TestApplyCriteriaOverrides(t *testing.T) {
 			},
 		},
 		{
-			name:    "invalid override returns error",
-			args:    []string{"cmd", "--service", "invalid"},
-			initial: &recipe.Criteria{},
-			wantErr: true,
+			name:          "invalid override returns error",
+			args:          []string{"cmd", "--service", "invalid"},
+			initial:       &recipe.Criteria{},
+			initialDetect: &CriteriaDetection{},
+			wantErr:       true,
+		},
+		{
+			name:          "set intent from flag when not auto-detected",
+			args:          []string{"cmd", "--intent", "training"},
+			initial:       &recipe.Criteria{},
+			initialDetect: &CriteriaDetection{},
+			validate: func(t *testing.T, c *recipe.Criteria) {
+				if c.Intent != recipe.CriteriaIntentTraining {
+					t.Errorf("Intent = %v, want %v", c.Intent, recipe.CriteriaIntentTraining)
+				}
+			},
+			validateDetect: func(t *testing.T, d *CriteriaDetection) {
+				if d.Intent == nil {
+					t.Error("expected intent detection")
+					return
+				}
+				if d.Intent.Source != "--intent flag" {
+					t.Errorf("Intent source = %v, want '--intent flag'", d.Intent.Source)
+				}
+				if d.Intent.Overridden {
+					t.Error("Intent should NOT be marked as overridden (was not previously detected)")
+				}
+			},
 		},
 	}
 
@@ -443,7 +559,7 @@ func TestApplyCriteriaOverrides(t *testing.T) {
 					&cli.IntFlag{Name: "nodes"},
 				},
 				Action: func(ctx context.Context, cmd *cli.Command) error {
-					return applyCriteriaOverrides(cmd, tt.initial)
+					return applyCriteriaOverrides(cmd, tt.initial, tt.initialDetect)
 				},
 			}
 
@@ -463,6 +579,9 @@ func TestApplyCriteriaOverrides(t *testing.T) {
 
 			if tt.validate != nil {
 				tt.validate(t, tt.initial)
+			}
+			if tt.validateDetect != nil {
+				tt.validateDetect(t, tt.initialDetect)
 			}
 		})
 	}
