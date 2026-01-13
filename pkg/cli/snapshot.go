@@ -105,7 +105,8 @@ Combined node selector and custom tolerations:
 			},
 			&cli.BoolFlag{
 				Name:  "cleanup",
-				Usage: "Remove Job and RBAC resources on completion (default: keep for debugging)",
+				Value: true,
+				Usage: "Remove Job and RBAC resources on completion",
 			},
 			outputFlag,
 			formatFlag,
