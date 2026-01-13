@@ -223,3 +223,36 @@ func (s *MetadataStore) BuildRecipeResult(ctx context.Context, criteria *Criteri
 
 	return result, nil
 }
+
+// OverlayInfo contains information about an available overlay.
+type OverlayInfo struct {
+	// Name is the overlay identifier.
+	Name string
+
+	// Criteria describes when this overlay applies.
+	Criteria *Criteria
+}
+
+// GetAvailableOverlays returns information about all available recipe overlays.
+// This is useful for CLI help and listing available configurations.
+func GetAvailableOverlays() ([]OverlayInfo, error) {
+	store, err := loadMetadataStore(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to load metadata store: %w", err)
+	}
+
+	overlays := make([]OverlayInfo, 0, len(store.Overlays))
+	for name, metadata := range store.Overlays {
+		overlays = append(overlays, OverlayInfo{
+			Name:     name,
+			Criteria: metadata.Spec.Criteria,
+		})
+	}
+
+	// Sort by name for consistent output
+	sort.Slice(overlays, func(i, j int) bool {
+		return overlays[i].Name < overlays[j].Name
+	})
+
+	return overlays, nil
+}

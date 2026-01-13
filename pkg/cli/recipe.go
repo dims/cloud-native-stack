@@ -31,8 +31,14 @@ func recipeCmd() *cli.Command {
   - Number of GPU nodes in the cluster
 
 The recipe returns a list of components with deployment order based on dependencies.
-Output can be in JSON or YAML format.`,
+Output can be in JSON or YAML format.
+
+Use --list-overlays to see available overlay configurations.`,
 		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:  "list-overlays",
+				Usage: "List available recipe overlays and exit",
+			},
 			&cli.StringFlag{
 				Name:  "service",
 				Usage: fmt.Sprintf("Kubernetes service type (e.g. %s)", strings.Join(recipe.GetCriteriaServiceTypes(), ", ")),
@@ -66,6 +72,39 @@ Output can be in JSON or YAML format.`,
 			kubeconfigFlag,
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			// Handle list-overlays flag - prints overlay info and exits
+			if cmd.Bool("list-overlays") {
+				overlays, err := recipe.GetAvailableOverlays()
+				if err != nil {
+					return fmt.Errorf("failed to get overlays: %w", err)
+				}
+
+				fmt.Println("Available recipe overlay configurations:")
+				fmt.Println()
+				for _, o := range overlays {
+					fmt.Printf("  %s\n", o.Name)
+					if o.Criteria != nil {
+						if o.Criteria.Service != recipe.CriteriaServiceAny {
+							fmt.Printf("    service:     %s\n", o.Criteria.Service)
+						}
+						if o.Criteria.Accelerator != recipe.CriteriaAcceleratorAny {
+							fmt.Printf("    accelerator: %s\n", o.Criteria.Accelerator)
+						}
+						if o.Criteria.Intent != recipe.CriteriaIntentAny {
+							fmt.Printf("    intent:      %s\n", o.Criteria.Intent)
+						}
+						if o.Criteria.OS != recipe.CriteriaOSAny {
+							fmt.Printf("    os:          %s\n", o.Criteria.OS)
+						}
+						if o.Criteria.Nodes != 0 {
+							fmt.Printf("    nodes:       %d\n", o.Criteria.Nodes)
+						}
+					}
+					fmt.Println()
+				}
+				return nil
+			}
+
 			// Parse output format
 			outFormat := serializer.Format(cmd.String("format"))
 			if outFormat.IsUnknown() {

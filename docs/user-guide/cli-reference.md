@@ -220,6 +220,30 @@ Generate optimized configuration recipes from query parameters or captured snaps
 cnsctl recipe [flags]
 ```
 
+**Discovery Flags:**
+
+Use these flags to discover available options:
+
+| Flag | Description |
+|------|-------------|
+| `--list-services` | List available Kubernetes service types |
+| `--list-accelerators` | List available accelerator/GPU types |
+| `--list-intents` | List available workload intent types |
+| `--list-os` | List available operating system types |
+| `--list-overlays` | List available recipe overlay configurations |
+
+**Examples:**
+```shell
+# List available services
+cnsctl recipe --list-services
+
+# List available accelerators
+cnsctl recipe --list-accelerators
+
+# List all available overlay configurations with their criteria
+cnsctl recipe --list-overlays
+```
+
 **Modes:**
 
 #### Query Mode

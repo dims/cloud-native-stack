@@ -398,3 +398,39 @@ func TestOverlayMergeDoesNotLoseBaseComponents(t *testing.T) {
 		t.Logf("   network-operator added: version %s", networkOp.Version)
 	}
 }
+
+// TestGetAvailableOverlays verifies that GetAvailableOverlays returns the expected overlays.
+func TestGetAvailableOverlays(t *testing.T) {
+	overlays, err := GetAvailableOverlays()
+	if err != nil {
+		t.Fatalf("GetAvailableOverlays() failed: %v", err)
+	}
+
+	// Should have at least one overlay
+	if len(overlays) == 0 {
+		t.Fatal("Expected at least one overlay, got 0")
+	}
+
+	t.Logf("Found %d overlays:", len(overlays))
+	for _, o := range overlays {
+		t.Logf("  - %s", o.Name)
+		if o.Criteria != nil {
+			t.Logf("      criteria: %s", o.Criteria.String())
+		}
+	}
+
+	// Verify overlays are sorted alphabetically by name
+	for i := 1; i < len(overlays); i++ {
+		if overlays[i].Name < overlays[i-1].Name {
+			t.Errorf("Overlays not sorted: %s should come before %s",
+				overlays[i].Name, overlays[i-1].Name)
+		}
+	}
+
+	// Verify each overlay has criteria
+	for _, o := range overlays {
+		if o.Criteria == nil {
+			t.Errorf("Overlay %s has nil criteria", o.Name)
+		}
+	}
+}
