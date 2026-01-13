@@ -611,16 +611,24 @@ gpu-operator/
 **ArgoCD bundle structure** (with `--deployer argocd`):
 ```
 bundles/
+├── app-of-apps.yaml               # Parent Application (bundle root)
+├── recipe.yaml                    # Recipe used to generate bundle
 ├── gpu-operator/
-│   └── ...                        # Component-specific files
+│   ├── values.yaml                # Helm values for GPU Operator
+│   ├── manifests/                 # Additional manifests (ClusterPolicy, etc.)
+│   └── argocd/
+│       └── application.yaml       # ArgoCD Application (sync-wave: 0)
 ├── network-operator/
-│   └── ...
-└── argocd/
-    ├── gpu-operator-app.yaml      # ArgoCD Application (sync-wave: 0)
-    ├── network-operator-app.yaml  # ArgoCD Application (sync-wave: 1)
-    ├── app-of-apps.yaml           # Parent Application
-    └── README.md                  # ArgoCD deployment guide
+│   ├── values.yaml                # Helm values for Network Operator
+│   └── argocd/
+│       └── application.yaml       # ArgoCD Application (sync-wave: 1)
+└── README.md                      # ArgoCD deployment guide
 ```
+
+ArgoCD Applications use multi-source to:
+1. Pull Helm charts from upstream repositories
+2. Apply values.yaml from your GitOps repository
+3. Deploy additional manifests from component's manifests/ directory (if present)
 
 **Flux bundle structure** (with `--deployer flux`):
 ```

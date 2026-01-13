@@ -2739,12 +2739,12 @@ flowchart TD
 
 ### ArgoCD Deployer
 
-Generates ArgoCD Application manifests with proper sync ordering.
+Generates ArgoCD Application manifests with proper sync ordering using multi-source Applications.
 
 **Ordering Mechanism**: Uses `argocd.argoproj.io/sync-wave` annotation.
 
 ```yaml
-# gpu-operator-app.yaml (sync-wave: 0 = first)
+# gpu-operator/argocd/application.yaml (sync-wave: 0 = first)
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -2756,10 +2756,22 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: https://helm.ngc.nvidia.com/nvidia
-    chart: gpu-operator
-    targetRevision: v25.3.3
+  sources:
+    # Helm chart from upstream
+    - repoURL: https://helm.ngc.nvidia.com/nvidia
+      chart: gpu-operator
+      targetRevision: v25.3.3
+      helm:
+        valueFiles:
+          - $values/gpu-operator/values.yaml
+    # Values from GitOps repo
+    - repoURL: <YOUR_GIT_REPO>
+      targetRevision: main
+      ref: values
+    # Additional manifests (if present)
+    - repoURL: <YOUR_GIT_REPO>
+      targetRevision: main
+      path: gpu-operator/manifests
   destination:
     server: https://kubernetes.default.svc
     namespace: gpu-operator
@@ -2774,12 +2786,23 @@ spec:
 
 **Output Structure**:
 ```
-bundles/argocd/
-├── gpu-operator-app.yaml      # sync-wave: 0
-├── network-operator-app.yaml  # sync-wave: 1
-├── nvsentinel-app.yaml        # sync-wave: 2
-├── app-of-apps.yaml           # Parent Application
-└── README.md                  # ArgoCD deployment guide
+bundles/
+├── app-of-apps.yaml               # Parent Application (bundle root)
+├── recipe.yaml                    # Recipe used to generate bundle
+├── gpu-operator/
+│   ├── values.yaml
+│   ├── manifests/
+│   └── argocd/
+│       └── application.yaml       # sync-wave: 0
+├── network-operator/
+│   ├── values.yaml
+│   └── argocd/
+│       └── application.yaml       # sync-wave: 1
+├── nvsentinel/
+│   ├── values.yaml
+│   └── argocd/
+│       └── application.yaml       # sync-wave: 2
+└── README.md                      # ArgoCD deployment guide
 ```
 
 ### Flux Deployer

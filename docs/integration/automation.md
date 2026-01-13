@@ -308,8 +308,10 @@ jobs:
       
       - name: Commit to GitOps repo
         run: |
-          # Copy ArgoCD manifests to GitOps repository
-          cp -r bundles/*/argocd/* gitops-repo/apps/
+          # Copy entire bundle to GitOps repository
+          # ArgoCD apps are in <component>/argocd/ directories
+          # app-of-apps.yaml is at bundle root
+          cp -r bundles/* gitops-repo/
           
           cd gitops-repo
           git add .
@@ -317,7 +319,7 @@ jobs:
           git push
 ```
 
-**Generated ArgoCD Application with sync-wave:**
+**Generated ArgoCD Application with multi-source:**
 ```yaml
 # bundles/gpu-operator/argocd/application.yaml
 apiVersion: argoproj.io/v1alpha1
@@ -329,13 +331,22 @@ metadata:
     argocd.argoproj.io/sync-wave: "1"  # Deployed after cert-manager (wave 0)
 spec:
   project: default
-  source:
-    repoURL: https://helm.ngc.nvidia.com/nvidia
-    chart: gpu-operator
-    targetRevision: v25.3.3
-    helm:
-      valueFiles:
-        - values.yaml
+  sources:
+    # Helm chart from upstream
+    - repoURL: https://helm.ngc.nvidia.com/nvidia
+      chart: gpu-operator
+      targetRevision: v25.3.3
+      helm:
+        valueFiles:
+          - $values/gpu-operator/values.yaml
+    # Values from GitOps repo
+    - repoURL: <YOUR_GIT_REPO>
+      targetRevision: main
+      ref: values
+    # Additional manifests (ClusterPolicy, etc.)
+    - repoURL: <YOUR_GIT_REPO>
+      targetRevision: main
+      path: gpu-operator/manifests
   destination:
     server: https://kubernetes.default.svc
     namespace: gpu-operator
