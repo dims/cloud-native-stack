@@ -153,7 +153,8 @@ cnsctl bundle \
     --output ./bundles \
     --system-node-selector nodeGroup=system-pool \
     --accelerated-node-selector nodeGroup=customer-gpu \
-    --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule
+    --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule \
+    --deployer argocd
 ```
 
 Output:
