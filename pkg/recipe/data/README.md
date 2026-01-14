@@ -58,6 +58,13 @@ All recipe metadata and component values are automatically validated. Tests run 
 - Uniqueness (no duplicate criteria across overlays)
 - Merge consistency (base + overlay merges without data loss)
 
+```bash
+# Generate bundle from recipe with overrides
+cnsctl bundle -r pkg/recipe/data/your-recipe.yaml -o ./test-bundles
+
+# Verify merged values
+cat test-bundles/gpu-operator/values.yaml | grep -A5 "driver:"
+```
 For detailed test documentation, see [Automated Validation](../../../docs/architecture/data.md#automated-validation).
 
 ## See Also
