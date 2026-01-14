@@ -261,7 +261,7 @@ Generate recipes from captured snapshots:
 **Flags:**
 | Flag | Short | Type | Description |
 |------|-------|------|-------------|
-| `--snapshot` | `-f` | string | Path/URI to snapshot (file path, URL, or cm://namespace/name) |
+| `--snapshot` | `-s` | string | Path/URI to snapshot (file path, URL, or cm://namespace/name) |
 | `--intent` | `-i` | string | Workload intent: training, inference |
 | `--output` | `-o` | string | Output destination (file, ConfigMap URI, or stdout) |
 | `--format` | | string | Format: json, yaml (default: yaml) |
@@ -336,7 +336,7 @@ cnsctl validate [flags]
 **Flags:**
 | Flag | Short | Type | Description |
 |------|-------|------|-------------|
-| `--recipe` | `-f` | string | Path/URI to recipe file containing constraints (required) |
+| `--recipe` | `-r` | string | Path/URI to recipe file containing constraints (required) |
 | `--snapshot` | `-s` | string | Path/URI to snapshot file containing measurements (required) |
 | `--fail-on-error` | | bool | Exit with non-zero status if any constraint fails |
 | `--output` | `-o` | string | Output destination (file or stdout, default: stdout) |
@@ -462,7 +462,7 @@ cnsctl bundle [flags]
 **Flags:**
 | Flag | Short | Type | Description |
 |---------------------------------|-------|------|-------------|
-| `--recipe` | `-f` | string | Path to recipe file (required) |
+| `--recipe` | `-r` | string | Path to recipe file (required) |
 | `--bundlers` | `-b` | string[] | Bundler types to execute (repeatable) |
 | `--output` | `-o` | string | Output directory (default: current dir) |
 | `--deployer` | | string | Deployment method: script (default), argocd, flux |
