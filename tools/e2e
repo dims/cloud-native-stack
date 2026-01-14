@@ -292,7 +292,7 @@ test_all_recipe_data_files() {
     
     # Step 2: Generate bundle from RecipeResult
     local bundle_dir="${test_dir}/bundles"
-    if ! "${CNSCTL_BIN}" bundle -f "$recipe_result" -o "$bundle_dir" 2>&1; then
+    if ! "${CNSCTL_BIN}" bundle -r "$recipe_result" -o "$bundle_dir" 2>&1; then
       test_fail "recipe-data/${basename}/bundle-generation" "Failed to generate bundle from recipe"
       continue
     fi

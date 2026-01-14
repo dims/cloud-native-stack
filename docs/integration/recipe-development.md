@@ -578,7 +578,7 @@ When adding new recipe metadata or component configurations:
 
 6. **Generate and inspect bundle**:
    ```bash
-   cnsctl bundle -f pkg/recipe/data/your-recipe.yaml -o ./test-bundles
+   cnsctl bundle -r pkg/recipe/data/your-recipe.yaml -o ./test-bundles
    cat test-bundles/gpu-operator/values.yaml | grep -A5 "driver:"
    ```
 
