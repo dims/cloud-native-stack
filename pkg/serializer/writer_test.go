@@ -162,10 +162,13 @@ func TestWriter_Close(t *testing.T) {
 }
 
 func TestNewFileWriterOrStdout_EmptyPath(t *testing.T) {
-	tests := []string{"", "  ", "\t", "\n"}
+	tests := []string{"", "  ", "\t", "\n", "-"}
 
 	for _, path := range tests {
-		writer := NewFileWriterOrStdout(FormatJSON, path)
+		writer, err := NewFileWriterOrStdout(FormatJSON, path)
+		if err != nil {
+			t.Fatalf("Expected no error for empty path %q, got: %v", path, err)
+		}
 		if writer == nil {
 			t.Fatalf("Expected non-nil writer for empty path %q", path)
 		}
@@ -182,14 +185,17 @@ func TestNewFileWriterOrStdout_Success(t *testing.T) {
 	// Create a temporary file path
 	tmpFile := t.TempDir() + "/test_output.json"
 
-	writer := NewFileWriterOrStdout(FormatJSON, tmpFile)
+	writer, err := NewFileWriterOrStdout(FormatJSON, tmpFile)
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
 	if writer == nil {
 		t.Fatal("Expected non-nil writer")
 	}
 
 	// Write some data
 	data := testConfig{Name: testName, Value: 123}
-	err := writer.Serialize(context.Background(), data)
+	err = writer.Serialize(context.Background(), data)
 	if err != nil {
 		t.Fatalf("Serialize failed: %v", err)
 	}
@@ -224,19 +230,46 @@ func TestNewFileWriterOrStdout_Success(t *testing.T) {
 }
 
 func TestNewFileWriterOrStdout_InvalidPath(t *testing.T) {
-	// Try to create a file in a non-existent directory without creating it first
-	writer := NewFileWriterOrStdout(FormatJSON, "/nonexistent/path/file.json")
+	// Try to create a file in a non-existent directory
+	writer, err := NewFileWriterOrStdout(FormatJSON, "/nonexistent/path/file.json")
 
-	// Should fall back to stdout
-	if writer == nil {
-		t.Fatal("Expected non-nil writer (should fallback to stdout)")
+	// Should return an error instead of falling back to stdout
+	if err == nil {
+		t.Fatal("Expected error for invalid path")
+	}
+	if writer != nil {
+		t.Error("Expected nil writer when error is returned")
 	}
 
-	// Close should be safe
-	if closer, ok := writer.(Closer); ok {
-		if err := closer.Close(); err != nil {
-			t.Errorf("Close should not error on fallback writer: %v", err)
-		}
+	// Verify error message is helpful
+	if !strings.Contains(err.Error(), "failed to create output file") {
+		t.Errorf("Expected helpful error message, got: %v", err)
+	}
+}
+
+func TestNewFileWriterOrStdout_InvalidConfigMapURI(t *testing.T) {
+	tests := []struct {
+		name string
+		uri  string
+	}{
+		{"missing name", "cm://namespace"},
+		{"missing namespace", "cm:///name"},
+		{"empty", "cm://"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			writer, err := NewFileWriterOrStdout(FormatJSON, tt.uri)
+			if err == nil {
+				t.Fatalf("Expected error for invalid ConfigMap URI %q", tt.uri)
+			}
+			if writer != nil {
+				t.Error("Expected nil writer when error is returned")
+			}
+			if !strings.Contains(err.Error(), "invalid ConfigMap URI") {
+				t.Errorf("Expected helpful error message, got: %v", err)
+			}
+		})
 	}
 }
 

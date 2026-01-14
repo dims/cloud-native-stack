@@ -133,11 +133,17 @@ Combined node selector and custom tolerations:
 				collector.WithVersion(version),
 			)
 
+			// Create output serializer
+			ser, err := serializer.NewFileWriterOrStdout(outFormat, cmd.String("output"))
+			if err != nil {
+				return fmt.Errorf("failed to create output writer: %w", err)
+			}
+
 			// Build snapshotter configuration
 			ns := snapshotter.NodeSnapshotter{
 				Version:    version,
 				Factory:    factory,
-				Serializer: serializer.NewFileWriterOrStdout(outFormat, cmd.String("output")),
+				Serializer: ser,
 			}
 
 			// Check if agent deployment mode is enabled
