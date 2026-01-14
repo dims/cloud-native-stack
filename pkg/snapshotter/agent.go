@@ -167,7 +167,21 @@ func (n *NodeSnapshotter) measureWithAgent(ctx context.Context) error {
 
 		cleanupOpts := agent.CleanupOptions{Enabled: n.AgentConfig.Cleanup}
 		if cleanupErr := deployer.Cleanup(cleanupCtx, cleanupOpts); cleanupErr != nil {
-			slog.Error("cleanup failed", "error", cleanupErr)
+			slog.Warn("cleanup failed - resources may remain in cluster",
+				slog.String("error", cleanupErr.Error()),
+				slog.String("namespace", n.AgentConfig.Namespace),
+			)
+			slog.Warn("to manually clean up, run:",
+				slog.String("command", fmt.Sprintf(
+					"kubectl delete job/%s sa/%s role/%s rolebinding/%s -n %s && "+
+						"kubectl delete clusterrole/cns-node-reader clusterrolebinding/cns-node-reader",
+					n.AgentConfig.JobName,
+					n.AgentConfig.ServiceAccountName,
+					n.AgentConfig.ServiceAccountName,
+					n.AgentConfig.ServiceAccountName,
+					n.AgentConfig.Namespace,
+				)),
+			)
 		}
 	}()
 
