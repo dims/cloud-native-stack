@@ -112,6 +112,11 @@ Combined node selector and custom tolerations:
 				Value: true,
 				Usage: "Remove Job and RBAC resources on completion",
 			},
+			&cli.BoolFlag{
+				Name:  "privileged",
+				Value: true,
+				Usage: "Run agent in privileged mode (required for GPU/SystemD collectors). Set to false for PSS-restricted namespaces.",
+			},
 			outputFlag,
 			formatFlag,
 			kubeconfigFlag,
@@ -164,6 +169,7 @@ Combined node selector and custom tolerations:
 					Cleanup:            cmd.Bool("cleanup"),
 					Output:             cmd.String("output"),
 					Debug:              cmd.Bool("debug"),
+					Privileged:         cmd.Bool("privileged"),
 				}
 			}
 

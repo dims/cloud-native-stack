@@ -19,6 +19,7 @@ type Config struct {
 	Tolerations        []corev1.Toleration
 	Output             string
 	Debug              bool
+	Privileged         bool // If true, run with privileged security context (required for GPU/SystemD collectors)
 }
 
 // Deployer manages the deployment and lifecycle of the agent Job.

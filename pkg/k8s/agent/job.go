@@ -56,6 +56,9 @@ func (d *Deployer) buildJob() *batchv1.Job {
 		args = []string{"--debug", "--log-json", "snapshot", "-o", d.config.Output}
 	}
 
+	// Build pod spec based on privileged mode
+	podSpec := d.buildPodSpec(args)
+
 	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      d.config.JobName,
@@ -77,90 +80,153 @@ func (d *Deployer) buildJob() *batchv1.Job {
 						"app.kubernetes.io/name": "cns",
 					},
 				},
-				Spec: corev1.PodSpec{
-					ServiceAccountName: d.config.ServiceAccountName,
-					RestartPolicy:      corev1.RestartPolicyNever,
-					HostPID:            true,
-					HostNetwork:        true,
-					HostIPC:            true,
-					NodeSelector:       d.config.NodeSelector,
-					Tolerations:        d.config.Tolerations,
-					ImagePullSecrets:   toLocalObjectReferences(d.config.ImagePullSecrets),
-					SecurityContext: &corev1.PodSecurityContext{
-						RunAsUser:           ptr.To(int64(0)),
-						RunAsGroup:          ptr.To(int64(0)),
-						FSGroup:             ptr.To(int64(0)),
-						FSGroupChangePolicy: ptr.To(corev1.FSGroupChangeOnRootMismatch),
-					},
-					Containers: []corev1.Container{
-						{
-							Name:    "cns",
-							Image:   d.config.Image,
-							Command: []string{"/ko-app/cnsctl"},
-							Args:    args,
-							Env: []corev1.EnvVar{
-								{
-									Name: "NODE_NAME",
-									ValueFrom: &corev1.EnvVarSource{
-										FieldRef: &corev1.ObjectFieldSelector{
-											FieldPath: "spec.nodeName",
-										},
-									},
-								},
-							},
-							Resources: corev1.ResourceRequirements{
-								Requests: corev1.ResourceList{
-									corev1.ResourceCPU:              mustParseQuantity("1"),
-									corev1.ResourceMemory:           mustParseQuantity("4Gi"),
-									corev1.ResourceEphemeralStorage: mustParseQuantity("2Gi"),
-								},
-								Limits: corev1.ResourceList{
-									corev1.ResourceCPU:              mustParseQuantity("2"),
-									corev1.ResourceMemory:           mustParseQuantity("8Gi"),
-									corev1.ResourceEphemeralStorage: mustParseQuantity("4Gi"),
-								},
-							},
-							SecurityContext: &corev1.SecurityContext{
-								Privileged:               ptr.To(true),
-								RunAsUser:                ptr.To(int64(0)),
-								RunAsGroup:               ptr.To(int64(0)),
-								AllowPrivilegeEscalation: ptr.To(true),
-								Capabilities: &corev1.Capabilities{
-									Add: []corev1.Capability{"SYS_ADMIN", "SYS_CHROOT"},
-								},
-							},
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "run-systemd",
-									MountPath: "/run/systemd",
-									ReadOnly:  true,
-								},
-								{
-									Name:      "tmp",
-									MountPath: "/tmp",
-								},
-							},
-						},
-					},
-					Volumes: []corev1.Volume{
-						{
-							Name: "run-systemd",
-							VolumeSource: corev1.VolumeSource{
-								HostPath: &corev1.HostPathVolumeSource{
-									Path: "/run/systemd",
-									Type: ptr.To(corev1.HostPathDirectory),
-								},
-							},
-						},
-						{
-							Name: "tmp",
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{},
+				Spec: podSpec,
+			},
+		},
+	}
+}
+
+// buildPodSpec constructs the pod specification.
+// When Privileged=true: enables hostPID, hostNetwork, privileged container for full collector access.
+// When Privileged=false: PSS-compliant restricted pod, only K8s collector works.
+func (d *Deployer) buildPodSpec(args []string) corev1.PodSpec {
+	spec := corev1.PodSpec{
+		ServiceAccountName: d.config.ServiceAccountName,
+		RestartPolicy:      corev1.RestartPolicyNever,
+		NodeSelector:       d.config.NodeSelector,
+		Tolerations:        d.config.Tolerations,
+		ImagePullSecrets:   toLocalObjectReferences(d.config.ImagePullSecrets),
+		Containers: []corev1.Container{
+			{
+				Name:    "cns",
+				Image:   d.config.Image,
+				Command: []string{"/ko-app/cnsctl"},
+				Args:    args,
+				Env: []corev1.EnvVar{
+					{
+						Name: "NODE_NAME",
+						ValueFrom: &corev1.EnvVarSource{
+							FieldRef: &corev1.ObjectFieldSelector{
+								FieldPath: "spec.nodeName",
 							},
 						},
 					},
 				},
+				VolumeMounts: []corev1.VolumeMount{
+					{
+						Name:      "tmp",
+						MountPath: "/tmp",
+					},
+				},
 			},
+		},
+		Volumes: []corev1.Volume{
+			{
+				Name: "tmp",
+				VolumeSource: corev1.VolumeSource{
+					EmptyDir: &corev1.EmptyDirVolumeSource{},
+				},
+			},
+		},
+	}
+
+	if d.config.Privileged {
+		d.applyPrivilegedSettings(&spec)
+	} else {
+		d.applyRestrictedSettings(&spec)
+	}
+
+	return spec
+}
+
+// applyPrivilegedSettings configures the pod for privileged mode (GPU/SystemD/OS collectors).
+func (d *Deployer) applyPrivilegedSettings(spec *corev1.PodSpec) {
+	spec.HostPID = true
+	spec.HostNetwork = true
+	spec.HostIPC = true
+	spec.SecurityContext = &corev1.PodSecurityContext{
+		RunAsUser:           ptr.To(int64(0)),
+		RunAsGroup:          ptr.To(int64(0)),
+		FSGroup:             ptr.To(int64(0)),
+		FSGroupChangePolicy: ptr.To(corev1.FSGroupChangeOnRootMismatch),
+	}
+
+	container := &spec.Containers[0]
+	container.Resources = corev1.ResourceRequirements{
+		Requests: corev1.ResourceList{
+			corev1.ResourceCPU:              mustParseQuantity("1"),
+			corev1.ResourceMemory:           mustParseQuantity("4Gi"),
+			corev1.ResourceEphemeralStorage: mustParseQuantity("2Gi"),
+		},
+		Limits: corev1.ResourceList{
+			corev1.ResourceCPU:              mustParseQuantity("2"),
+			corev1.ResourceMemory:           mustParseQuantity("8Gi"),
+			corev1.ResourceEphemeralStorage: mustParseQuantity("4Gi"),
+		},
+	}
+	container.SecurityContext = &corev1.SecurityContext{
+		Privileged:               ptr.To(true),
+		RunAsUser:                ptr.To(int64(0)),
+		RunAsGroup:               ptr.To(int64(0)),
+		AllowPrivilegeEscalation: ptr.To(true),
+		Capabilities: &corev1.Capabilities{
+			Add: []corev1.Capability{"SYS_ADMIN", "SYS_CHROOT"},
+		},
+	}
+	container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+		Name:      "run-systemd",
+		MountPath: "/run/systemd",
+		ReadOnly:  true,
+	})
+
+	spec.Volumes = append(spec.Volumes, corev1.Volume{
+		Name: "run-systemd",
+		VolumeSource: corev1.VolumeSource{
+			HostPath: &corev1.HostPathVolumeSource{
+				Path: "/run/systemd",
+				Type: ptr.To(corev1.HostPathDirectory),
+			},
+		},
+	})
+}
+
+// applyRestrictedSettings configures the pod for PSS-restricted namespaces (K8s collector only).
+func (d *Deployer) applyRestrictedSettings(spec *corev1.PodSpec) {
+	spec.SecurityContext = &corev1.PodSecurityContext{
+		RunAsNonRoot: ptr.To(true),
+		RunAsUser:    ptr.To(int64(65534)), // nobody
+		RunAsGroup:   ptr.To(int64(65534)),
+		FSGroup:      ptr.To(int64(65534)),
+		SeccompProfile: &corev1.SeccompProfile{
+			Type: corev1.SeccompProfileTypeRuntimeDefault,
+		},
+	}
+
+	container := &spec.Containers[0]
+	container.Resources = corev1.ResourceRequirements{
+		Requests: corev1.ResourceList{
+			corev1.ResourceCPU:              mustParseQuantity("100m"),
+			corev1.ResourceMemory:           mustParseQuantity("256Mi"),
+			corev1.ResourceEphemeralStorage: mustParseQuantity("256Mi"),
+		},
+		Limits: corev1.ResourceList{
+			corev1.ResourceCPU:              mustParseQuantity("500m"),
+			corev1.ResourceMemory:           mustParseQuantity("512Mi"),
+			corev1.ResourceEphemeralStorage: mustParseQuantity("512Mi"),
+		},
+	}
+	container.SecurityContext = &corev1.SecurityContext{
+		Privileged:               ptr.To(false),
+		RunAsNonRoot:             ptr.To(true),
+		RunAsUser:                ptr.To(int64(65534)),
+		RunAsGroup:               ptr.To(int64(65534)),
+		AllowPrivilegeEscalation: ptr.To(false),
+		ReadOnlyRootFilesystem:   ptr.To(true),
+		Capabilities: &corev1.Capabilities{
+			Drop: []corev1.Capability{"ALL"},
+		},
+		SeccompProfile: &corev1.SeccompProfile{
+			Type: corev1.SeccompProfileTypeRuntimeDefault,
 		},
 	}
 }

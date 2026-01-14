@@ -179,6 +179,7 @@ func TestDeployer_EnsureJob(t *testing.T) {
 		JobName:            testName,
 		Image:              "ghcr.io/nvidia/cns:latest",
 		Output:             "cm://test-namespace/cns-snapshot",
+		Privileged:         true, // Test privileged mode (default for agent deployment)
 		NodeSelector: map[string]string{
 			"nodeGroup": "customer-gpu",
 		},
@@ -266,6 +267,80 @@ func TestDeployer_EnsureJob(t *testing.T) {
 			t.Errorf("Job should exist after recreate: %v", err)
 		}
 	})
+}
+
+func TestDeployer_EnsureJob_Unprivileged(t *testing.T) {
+	clientset := fake.NewClientset()
+	config := Config{
+		Namespace:          "test-namespace",
+		ServiceAccountName: testName,
+		JobName:            testName,
+		Image:              "ghcr.io/nvidia/cns:latest",
+		Output:             "cm://test-namespace/cns-snapshot",
+		Privileged:         false, // Test unprivileged mode for PSS-restricted namespaces
+	}
+	deployer := NewDeployer(clientset, config)
+	ctx := context.Background()
+
+	if err := deployer.ensureJob(ctx); err != nil {
+		t.Fatalf("failed to create Job: %v", err)
+	}
+
+	job, err := clientset.BatchV1().Jobs(config.Namespace).
+		Get(ctx, config.JobName, metav1.GetOptions{})
+	if err != nil {
+		t.Fatalf("Job not found: %v", err)
+	}
+
+	// Verify NO host settings (PSS-compliant)
+	if job.Spec.Template.Spec.HostPID {
+		t.Error("expected HostPID to be false in unprivileged mode")
+	}
+	if job.Spec.Template.Spec.HostNetwork {
+		t.Error("expected HostNetwork to be false in unprivileged mode")
+	}
+	if job.Spec.Template.Spec.HostIPC {
+		t.Error("expected HostIPC to be false in unprivileged mode")
+	}
+
+	// Verify pod security context
+	psc := job.Spec.Template.Spec.SecurityContext
+	if psc == nil {
+		t.Fatal("expected pod SecurityContext to be set")
+	}
+	if psc.RunAsNonRoot == nil || !*psc.RunAsNonRoot {
+		t.Error("expected RunAsNonRoot to be true")
+	}
+	if psc.SeccompProfile == nil || psc.SeccompProfile.Type != corev1.SeccompProfileTypeRuntimeDefault {
+		t.Error("expected SeccompProfile to be RuntimeDefault")
+	}
+
+	// Verify container security context
+	container := job.Spec.Template.Spec.Containers[0]
+	csc := container.SecurityContext
+	if csc == nil {
+		t.Fatal("expected container SecurityContext to be set")
+	}
+	if csc.Privileged == nil || *csc.Privileged {
+		t.Error("expected Privileged to be false")
+	}
+	if csc.AllowPrivilegeEscalation == nil || *csc.AllowPrivilegeEscalation {
+		t.Error("expected AllowPrivilegeEscalation to be false")
+	}
+	if csc.ReadOnlyRootFilesystem == nil || !*csc.ReadOnlyRootFilesystem {
+		t.Error("expected ReadOnlyRootFilesystem to be true")
+	}
+	if csc.Capabilities == nil || len(csc.Capabilities.Drop) == 0 {
+		t.Error("expected capabilities to drop ALL")
+	}
+
+	// Verify only 1 volume (tmp, no hostPath)
+	if len(job.Spec.Template.Spec.Volumes) != 1 {
+		t.Errorf("expected 1 volume, got %d", len(job.Spec.Template.Spec.Volumes))
+	}
+	if job.Spec.Template.Spec.Volumes[0].HostPath != nil {
+		t.Error("expected no hostPath volumes in unprivileged mode")
+	}
 }
 
 func TestDeployer_Deploy(t *testing.T) {

@@ -61,6 +61,10 @@ type AgentConfig struct {
 
 	// Debug enables debug logging
 	Debug bool
+
+	// Privileged enables privileged mode (hostPID, hostNetwork, privileged container).
+	// Required for GPU and SystemD collectors. When false, only K8s and OS collectors work.
+	Privileged bool
 }
 
 // ParseNodeSelectors parses node selector strings in format "key=value".
@@ -167,6 +171,7 @@ func (n *NodeSnapshotter) measureWithAgent(ctx context.Context) error {
 		Tolerations:        n.AgentConfig.Tolerations,
 		Output:             output,
 		Debug:              n.AgentConfig.Debug,
+		Privileged:         n.AgentConfig.Privileged,
 	}
 
 	// Create deployer
