@@ -1,8 +1,10 @@
 package agent
 
 import (
+	"bytes"
 	"context"
 	"testing"
+	"time"
 
 	authv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -552,6 +554,104 @@ func TestDeployer_GetSnapshot_MissingKey(t *testing.T) {
 	_, err := deployer.GetSnapshot(ctx)
 	if err == nil {
 		t.Error("GetSnapshot() should fail when snapshot.yaml key is missing")
+	}
+}
+
+func TestDeployer_WaitForPodReady(t *testing.T) {
+	// Create a Pod in Running state
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "cns-xyz",
+			Namespace: "test-namespace",
+			Labels: map[string]string{
+				"app.kubernetes.io/name": "cns",
+			},
+		},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodRunning,
+		},
+	}
+
+	clientset := fake.NewClientset(pod)
+	config := Config{
+		Namespace: "test-namespace",
+		JobName:   testName,
+		Output:    "cm://test-namespace/cns-snapshot",
+	}
+	deployer := NewDeployer(clientset, config)
+	ctx := context.Background()
+
+	// Should succeed because Pod is Running
+	err := deployer.WaitForPodReady(ctx, 1*time.Second)
+	if err != nil {
+		t.Errorf("WaitForPodReady() failed: %v", err)
+	}
+}
+
+func TestDeployer_WaitForPodReady_NoPod(t *testing.T) {
+	clientset := fake.NewClientset()
+	config := Config{
+		Namespace: "test-namespace",
+		JobName:   testName,
+		Output:    "cm://test-namespace/cns-snapshot",
+	}
+	deployer := NewDeployer(clientset, config)
+	ctx := context.Background()
+
+	// Should timeout because no Pod exists
+	err := deployer.WaitForPodReady(ctx, 100*time.Millisecond)
+	if err == nil {
+		t.Error("WaitForPodReady() should fail when no Pod exists")
+	}
+}
+
+func TestDeployer_WaitForPodReady_PodFailed(t *testing.T) {
+	// Create a Pod in Failed state
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "cns-xyz",
+			Namespace: "test-namespace",
+			Labels: map[string]string{
+				"app.kubernetes.io/name": "cns",
+			},
+		},
+		Status: corev1.PodStatus{
+			Phase:   corev1.PodFailed,
+			Message: "container exited with error",
+		},
+	}
+
+	clientset := fake.NewClientset(pod)
+	config := Config{
+		Namespace: "test-namespace",
+		JobName:   testName,
+		Output:    "cm://test-namespace/cns-snapshot",
+	}
+	deployer := NewDeployer(clientset, config)
+	ctx := context.Background()
+
+	// Should fail because Pod failed
+	err := deployer.WaitForPodReady(ctx, 1*time.Second)
+	if err == nil {
+		t.Error("WaitForPodReady() should fail when Pod is in Failed state")
+	}
+}
+
+func TestDeployer_StreamLogs_NoPod(t *testing.T) {
+	clientset := fake.NewClientset()
+	config := Config{
+		Namespace: "test-namespace",
+		JobName:   testName,
+		Output:    "cm://test-namespace/cns-snapshot",
+	}
+	deployer := NewDeployer(clientset, config)
+	ctx := context.Background()
+
+	// Should fail because no Pod exists
+	var buf bytes.Buffer
+	err := deployer.StreamLogs(ctx, &buf, "[agent]")
+	if err == nil {
+		t.Error("StreamLogs() should fail when no Pod exists")
 	}
 }
 

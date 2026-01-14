@@ -3,7 +3,9 @@ package snapshotter
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
+	"os"
 	"strings"
 	"time"
 
@@ -12,6 +14,12 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
 	corev1 "k8s.io/api/core/v1"
 )
+
+// logWriter returns an io.Writer for streaming agent logs.
+// Uses stderr to avoid interfering with stdout output.
+func logWriter() io.Writer {
+	return os.Stderr
+}
 
 // AgentConfig contains configuration for Kubernetes agent deployment.
 type AgentConfig struct {
@@ -190,7 +198,32 @@ func (n *NodeSnapshotter) measureWithAgent(ctx context.Context) error {
 		slog.String("job", agentConfig.JobName),
 		slog.Duration("timeout", timeout))
 
+	// Wait for Pod to be ready before streaming logs
+	podReadyTimeout := 60 * time.Second
+	logCtx, cancelLogs := context.WithCancel(ctx)
+	defer cancelLogs()
+
+	if podErr := deployer.WaitForPodReady(ctx, podReadyTimeout); podErr != nil {
+		slog.Warn("could not wait for pod ready, skipping log streaming", slog.String("error", podErr.Error()))
+	} else {
+		// Start streaming logs in background
+		go func() {
+			if streamErr := deployer.StreamLogs(logCtx, logWriter(), "[agent]"); streamErr != nil {
+				// Only log if not canceled (expected when job completes)
+				if logCtx.Err() == nil {
+					slog.Debug("log streaming ended", slog.String("reason", streamErr.Error()))
+				}
+			}
+		}()
+	}
+
 	if waitErr := deployer.WaitForCompletion(ctx, timeout); waitErr != nil {
+		// On failure, try to get pod logs to show what went wrong
+		if logs, logErr := deployer.GetPodLogs(ctx); logErr == nil && logs != "" {
+			fmt.Fprintln(logWriter(), "--- agent logs ---")
+			fmt.Fprintln(logWriter(), logs)
+			fmt.Fprintln(logWriter(), "--- end logs ---")
+		}
 		return fmt.Errorf("job failed: %w", waitErr)
 	}
 

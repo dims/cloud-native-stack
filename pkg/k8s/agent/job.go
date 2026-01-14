@@ -50,10 +50,10 @@ func (d *Deployer) ensureJob(ctx context.Context) error {
 
 // buildJob constructs the Job specification.
 func (d *Deployer) buildJob() *batchv1.Job {
-	// Build command arguments
-	args := fmt.Sprintf("/ko-app/cnsctl snapshot -o %s", d.config.Output)
+	// Build command arguments (directly invoke binary without shell)
+	args := []string{"snapshot", "-o", d.config.Output}
 	if d.config.Debug {
-		args = fmt.Sprintf("/ko-app/cnsctl --debug --log-json snapshot -o %s", d.config.Output)
+		args = []string{"--debug", "--log-json", "snapshot", "-o", d.config.Output}
 	}
 
 	return &batchv1.Job{
@@ -95,8 +95,8 @@ func (d *Deployer) buildJob() *batchv1.Job {
 						{
 							Name:    "cns",
 							Image:   d.config.Image,
-							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{args},
+							Command: []string{"/ko-app/cnsctl"},
+							Args:    args,
 							Env: []corev1.EnvVar{
 								{
 									Name: "NODE_NAME",
