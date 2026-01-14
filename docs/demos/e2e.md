@@ -78,7 +78,7 @@ Or query the [CNS API](https://cns.dgxc.io) directly:
 curl -s "https://cns.dgxc.io/v1/recipe?service=eks&accelerator=h100&intent=training" | jq .
 ```
 
-![data flow](images/data.png)
+![data flow](images/recipe.png)
 
 ## 3. Validate 
 
