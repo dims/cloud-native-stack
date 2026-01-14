@@ -74,30 +74,29 @@ func NewWriter(format Format, output io.Writer) *Writer {
 }
 
 // NewFileWriterOrStdout creates a new Writer that outputs to the specified file path in the given format.
-// If the file cannot be created or path is empty, it falls back to stdout.
+// If path is empty or "-", writes to stdout.
+// Returns an error if the path is invalid or the file cannot be created.
 // Remember to call Close() on the returned Writer to ensure the file is properly closed.
 //
 // Supports ConfigMap URIs in the format cm://namespace/name for Kubernetes ConfigMap output.
-func NewFileWriterOrStdout(format Format, path string) Serializer {
+func NewFileWriterOrStdout(format Format, path string) (Serializer, error) {
 	trimmed := strings.TrimSpace(path)
-	if trimmed == "" {
-		return NewStdoutWriter(format)
+	if trimmed == "" || trimmed == "-" || trimmed == StdoutURI {
+		return NewStdoutWriter(format), nil
 	}
 
 	// Check for ConfigMap URI (cm://namespace/name)
 	if strings.HasPrefix(trimmed, ConfigMapURIScheme) {
 		namespace, name, err := parseConfigMapURI(trimmed)
 		if err != nil {
-			slog.Error("invalid ConfigMap URI, falling back to stdout", "error", err, "uri", trimmed)
-			return NewStdoutWriter(format)
+			return nil, fmt.Errorf("invalid ConfigMap URI %q: %w", trimmed, err)
 		}
-		return NewConfigMapWriter(namespace, name, format)
+		return NewConfigMapWriter(namespace, name, format), nil
 	}
 
 	file, err := os.Create(trimmed)
 	if err != nil {
-		slog.Error("failed to create output file", "error", err, "path", trimmed)
-		return NewStdoutWriter(format)
+		return nil, fmt.Errorf("failed to create output file %q: %w", trimmed, err)
 	}
 
 	if format.IsUnknown() {
@@ -109,7 +108,7 @@ func NewFileWriterOrStdout(format Format, path string) Serializer {
 		format: format,
 		output: file,
 		closer: file,
-	}
+	}, nil
 }
 
 // NewStdoutWriter creates a new Writer that outputs to stdout in the specified format.

@@ -136,7 +136,10 @@ Fail the command if any constraint fails (useful for CI/CD):
 
 			// Serialize output
 			output := cmd.String("output")
-			ser := serializer.NewFileWriterOrStdout(outFormat, output)
+			ser, err := serializer.NewFileWriterOrStdout(outFormat, output)
+			if err != nil {
+				return fmt.Errorf("failed to create output writer: %w", err)
+			}
 			defer func() {
 				if closer, ok := ser.(interface{ Close() error }); ok {
 					if err := closer.Close(); err != nil {
