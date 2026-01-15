@@ -80,11 +80,13 @@ func bundleCmd() *cli.Command {
 				Usage: fmt.Sprintf("Deployment method for generated components (supported: %s)",
 					strings.Join(deployerTypesToStrings(deployerTypes.AllDeployerTypes()), ", ")),
 			},
+			kubeconfigFlag,
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			recipeFilePath := cmd.String("recipe")
 			outputDir := cmd.String("output")
 			bundlerTypesStr := cmd.StringSlice("bundlers")
+			kubeconfig := cmd.String("kubeconfig")
 
 			// Parse value overrides from --set flags
 			valueOverrides, err := config.ParseValueOverrides(cmd.StringSlice("set"))
@@ -139,7 +141,7 @@ func bundleCmd() *cli.Command {
 				slog.String("deployerType", string(deployerType)),
 			)
 
-			rec, err := serializer.FromFile[recipe.RecipeResult](recipeFilePath)
+			rec, err := serializer.FromFileWithKubeconfig[recipe.RecipeResult](recipeFilePath, kubeconfig)
 			if err != nil {
 				slog.Error("failed to load recipe file", "error", err, "path", recipeFilePath)
 				return err
