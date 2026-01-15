@@ -32,7 +32,28 @@ func bundleCmd() *cli.Command {
   - Helm charts
   - Installation scripts
   - Configuration files
-`,
+
+# Examples
+
+Generate bundle with default settings (script deployer):
+  cnsctl bundle --recipe recipe.yaml --output ./my-bundle
+
+Generate bundle for ArgoCD GitOps deployment:
+  cnsctl bundle --recipe recipe.yaml --deployer argocd --output ./argocd-bundle
+
+Generate bundle for Flux GitOps deployment:
+  cnsctl bundle --recipe recipe.yaml --deployer flux --output ./flux-bundle
+
+Generate only specific components:
+  cnsctl bundle --recipe recipe.yaml --bundlers gpu-operator,cert-manager
+
+Override values in generated bundle:
+  cnsctl bundle --recipe recipe.yaml --set gpuoperator:driver.version=570.133.20
+
+Set node selectors for GPU workloads:
+  cnsctl bundle --recipe recipe.yaml \
+    --accelerated-node-selector nodeGroup=gpu-nodes \
+    --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "recipe",

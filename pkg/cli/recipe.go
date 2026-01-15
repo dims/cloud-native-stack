@@ -31,7 +31,24 @@ func recipeCmd() *cli.Command {
   - Number of GPU nodes in the cluster
 
 The recipe returns a list of components with deployment order based on dependencies.
-Output can be in JSON or YAML format.`,
+Output can be in JSON or YAML format.
+
+# Examples
+
+Generate recipe from explicit criteria:
+  cnsctl recipe --service eks --accelerator h100 --os ubuntu --intent training
+
+Generate recipe from a snapshot file:
+  cnsctl recipe --snapshot snapshot.yaml
+
+Generate recipe from a ConfigMap snapshot:
+  cnsctl recipe --snapshot cm://gpu-operator/cns-snapshot
+
+Save recipe to a file:
+  cnsctl recipe --snapshot cm://gpu-operator/cns-snapshot -o recipe.yaml
+
+Override snapshot-detected criteria:
+  cnsctl recipe --snapshot cm://gpu-operator/cns-snapshot --service gke`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "service",
