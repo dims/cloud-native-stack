@@ -61,8 +61,8 @@ Load snapshot from ConfigMap (results to stdout):
 Output validation result to a file:
   cnsctl validate -r recipe.yaml -s snapshot.yaml -o result.yaml
 
-Fail the command if any constraint fails (useful for CI/CD):
-  cnsctl validate -r recipe.yaml -s snapshot.yaml --fail-on-error`,
+Run validation without failing on constraint errors (informational mode):
+  cnsctl validate -r recipe.yaml -s snapshot.yaml --fail-on-error=false`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "recipe",
@@ -80,6 +80,7 @@ Fail the command if any constraint fails (useful for CI/CD):
 			},
 			&cli.BoolFlag{
 				Name:  "fail-on-error",
+				Value: true,
 				Usage: "Exit with non-zero status if any constraint fails validation",
 			},
 			outputFlag,

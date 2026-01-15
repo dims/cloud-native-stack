@@ -373,15 +373,15 @@ results:
 
 ### CI/CD Integration
 
-Use `--fail-on-error` flag to exit with non-zero status on validation failures:
+By default, the command exits with non-zero status on validation failures (ideal for CI/CD):
 
 ```bash
-cns validate \
+cnsctl validate \
     --recipe recipe.yaml \
-    --snapshot cm://gpu-operator/cns-snapshot \
-    --fail-on-error
+    --snapshot cm://gpu-operator/cns-snapshot
 
 # Exit code: 0 = all passed, 1 = failures detected
+# Use --fail-on-error=false for informational mode without failing
 ```
 
 ## Stage 4: Bundle (Data Packaging)

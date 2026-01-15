@@ -84,9 +84,9 @@ Constraints use fully qualified measurement paths: `{Type}.{Subtype}.{Key}`
 
 **CI/CD integration:**
 
-Use `--fail-on-error` to exit with non-zero status when constraints fail:
+By default, the command exits with non-zero status when constraints fail (ideal for CI/CD). To run in informational mode without failing:
 ```shell
-cnsctl validate -r recipe.yaml -s cm://gpu-operator/cns-snapshot --fail-on-error
+cnsctl validate -r recipe.yaml -s cm://gpu-operator/cns-snapshot --fail-on-error=false
 ```
 
 ### Step 4: Bundle Command

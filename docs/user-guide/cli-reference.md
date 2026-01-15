@@ -338,7 +338,7 @@ cnsctl validate [flags]
 |------|-------|------|-------------|
 | `--recipe` | `-r` | string | Path/URI to recipe file containing constraints (required) |
 | `--snapshot` | `-s` | string | Path/URI to snapshot file containing measurements (required) |
-| `--fail-on-error` | | bool | Exit with non-zero status if any constraint fails |
+| `--fail-on-error` | | bool | Exit with non-zero status if any constraint fails (default: true) |
 | `--output` | `-o` | string | Output destination (file or stdout, default: stdout) |
 | `--format` | `-t` | string | Output format: json, yaml, table (default: yaml) |
 | `--kubeconfig` | `-k` | string | Path to kubeconfig file (for ConfigMap URIs) |
