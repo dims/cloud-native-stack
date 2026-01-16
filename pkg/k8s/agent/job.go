@@ -104,6 +104,10 @@ func (d *Deployer) buildPodSpec(args []string) corev1.PodSpec {
 				Args:    args,
 				Env: []corev1.EnvVar{
 					{
+						Name:  "CNS_LOG_PREFIX",
+						Value: "agent",
+					},
+					{
 						Name: "NODE_NAME",
 						ValueFrom: &corev1.EnvVarSource{
 							FieldRef: &corev1.ObjectFieldSelector{

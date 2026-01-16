@@ -16,6 +16,17 @@ const (
 	colorRed   = "\033[31m"
 )
 
+// LogPrefixEnvVar is the environment variable name for customizing the log prefix.
+const LogPrefixEnvVar = "CNS_LOG_PREFIX"
+
+// getLogPrefix returns the log prefix from env var or default "cli".
+func getLogPrefix() string {
+	if prefix := os.Getenv(LogPrefixEnvVar); prefix != "" {
+		return prefix
+	}
+	return "cli"
+}
+
 // CLIHandler is a custom slog.Handler for CLI output.
 // It formats log messages in a user-friendly way:
 // - Non-error messages: just the message text
@@ -40,7 +51,7 @@ func (h *CLIHandler) Enabled(_ context.Context, level slog.Level) bool {
 
 // Handle formats and writes the log record with attributes.
 func (h *CLIHandler) Handle(_ context.Context, r slog.Record) error {
-	msg := "[cli] " + r.Message
+	msg := "[" + getLogPrefix() + "] " + r.Message
 
 	// Append attributes as key=value pairs
 	if r.NumAttrs() > 0 {

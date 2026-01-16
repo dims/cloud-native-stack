@@ -45,6 +45,8 @@ spec:
           image: ghcr.io/nvidia/cns:latest
           command: ["/bin/sh", "-c"]
           env:
+            - name: CNS_LOG_PREFIX
+              value: agent
             - name: NODE_NAME
               valueFrom:
                 fieldRef:

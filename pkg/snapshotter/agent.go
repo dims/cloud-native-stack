@@ -231,7 +231,7 @@ func (n *NodeSnapshotter) measureWithAgent(ctx context.Context) error {
 	} else {
 		// Start streaming logs in background
 		go func() {
-			if streamErr := deployer.StreamLogs(logCtx, logWriter(), "[agent]"); streamErr != nil {
+			if streamErr := deployer.StreamLogs(logCtx, logWriter(), ""); streamErr != nil {
 				// Only log if not canceled (expected when job completes)
 				if logCtx.Err() == nil {
 					slog.Debug("log streaming ended", slog.String("reason", streamErr.Error()))
