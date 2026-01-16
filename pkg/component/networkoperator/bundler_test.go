@@ -140,7 +140,6 @@ func TestBundler_Make(t *testing.T) {
 
 func TestGetTemplate(t *testing.T) {
 	expectedTemplates := []string{
-		"values.yaml",
 		"install.sh",
 		"uninstall.sh",
 		"README.md",

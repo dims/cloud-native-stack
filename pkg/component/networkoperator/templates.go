@@ -4,12 +4,6 @@ import (
 	_ "embed"
 )
 
-//go:embed templates/values.yaml.tmpl
-var valuesTemplate string
-
-//go:embed templates/nicclusterpolicy.yaml.tmpl
-var nicClusterPolicyTemplate string
-
 //go:embed templates/install.sh.tmpl
 var installScriptTemplate string
 
@@ -22,11 +16,9 @@ var readmeTemplate string
 // GetTemplate returns the named template content.
 func GetTemplate(name string) (string, bool) {
 	templates := map[string]string{
-		"values.yaml":      valuesTemplate,
-		"nicclusterpolicy": nicClusterPolicyTemplate,
-		"install.sh":       installScriptTemplate,
-		"uninstall.sh":     uninstallScriptTemplate,
-		"README.md":        readmeTemplate,
+		"install.sh":   installScriptTemplate,
+		"uninstall.sh": uninstallScriptTemplate,
+		"README.md":    readmeTemplate,
 	}
 
 	tmpl, ok := templates[name]

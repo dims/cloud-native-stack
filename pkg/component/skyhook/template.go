@@ -4,12 +4,6 @@ import (
 	_ "embed"
 )
 
-//go:embed templates/values.yaml.tmpl
-var valuesTemplate string
-
-//go:embed templates/skyhook.yaml.tmpl
-var skyhookCRTemplate string
-
 //go:embed templates/install.sh.tmpl
 var installScriptTemplate string
 
@@ -33,8 +27,6 @@ var customizationTemplates = map[string]string{
 // GetTemplate returns the named template content.
 func GetTemplate(name string) (string, bool) {
 	templates := map[string]string{
-		"values.yaml":  valuesTemplate,
-		"skyhook.yaml": skyhookCRTemplate,
 		"install.sh":   installScriptTemplate,
 		"uninstall.sh": uninstallScriptTemplate,
 		"README.md":    readmeTemplate,
