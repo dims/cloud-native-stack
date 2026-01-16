@@ -209,12 +209,12 @@
 //
 // It depends on:
 //   - pkg/measurement - Measurement data structures
-//   - pkg/recipe/version - Version parsing
-//   - pkg/recipe/header - Common header types
+//   - pkg/version - Version parsing
+//   - pkg/header - Common header types
 //   - pkg/errors - Structured error handling
 //
 // # Subpackages
 //
-//   - recipe/version - Semantic version parsing with flexible precision
-//   - recipe/header - Common header structures for API resources
+//   - recipe/version - Semantic version parsing (moved to pkg/version)
+//   - recipe/header - Common header structures (moved to pkg/header)
 package recipe

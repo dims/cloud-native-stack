@@ -8,7 +8,7 @@ package validator
 import (
 	"time"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/recipe/header"
+	"github.com/NVIDIA/cloud-native-stack/pkg/header"
 )
 
 // ValidationStatus represents the overall validation outcome.

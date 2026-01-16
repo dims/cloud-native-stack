@@ -11,8 +11,8 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/NVIDIA/cloud-native-stack/pkg/header"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
-	"github.com/NVIDIA/cloud-native-stack/pkg/recipe/header"
 	"github.com/NVIDIA/cloud-native-stack/pkg/snapshotter"
 )
 

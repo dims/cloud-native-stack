@@ -7,18 +7,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/NVIDIA/cloud-native-stack/pkg/header"
 	"github.com/NVIDIA/cloud-native-stack/pkg/k8s/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	accorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 )
-
-// version is the application version used in ConfigMap labels.
-var version = "unknown"
-
-// SetVersion sets the version used in ConfigMap labels.
-func SetVersion(v string) {
-	version = v
-}
 
 // ConfigMapWriter writes serialized data to a Kubernetes ConfigMap.
 // The ConfigMap is created if it doesn't exist, or updated if it does.
@@ -97,21 +90,51 @@ func (w *ConfigMapWriter) Serialize(ctx context.Context, snapshot any) error {
 		return fmt.Errorf("failed to serialize snapshot: %w", err)
 	}
 
+	// Extract metadata from snapshot if it has a header
+	var snapshotVersion string
+	var snapshotKind string
+	var snapshotTimestamp string
+
+	// Try to extract header information if snapshot implements it
+	if headerData, ok := snapshot.(interface {
+		GetKind() header.Kind
+		GetMetadata() map[string]string
+	}); ok {
+		snapshotKind = headerData.GetKind().String()
+		metadata := headerData.GetMetadata()
+		if v, exists := metadata["version"]; exists {
+			snapshotVersion = v
+		}
+		if ts, exists := metadata["timestamp"]; exists {
+			snapshotTimestamp = ts
+		}
+	}
+
+	// Use defaults if not available from header
+	if snapshotVersion == "" {
+		snapshotVersion = "unknown"
+	}
+	if snapshotKind == "" {
+		snapshotKind = header.KindSnapshot.String()
+	}
+	if snapshotTimestamp == "" {
+		snapshotTimestamp = time.Now().UTC().Format(time.RFC3339)
+	}
+
 	// Create ConfigMap data
-	timestamp := time.Now().UTC().Format(time.RFC3339)
 	dataKey := fmt.Sprintf("snapshot.%s", extension)
 	configMapData := map[string]string{
 		dataKey:     string(content),
 		"format":    string(w.format),
-		"timestamp": timestamp,
+		"timestamp": snapshotTimestamp,
 	}
 
 	// Build ConfigMap apply configuration for Server-Side Apply
 	configMap := accorev1.ConfigMap(w.name, w.namespace).
 		WithLabels(map[string]string{
 			"app.kubernetes.io/name":      "cns",
-			"app.kubernetes.io/component": "snapshot",
-			"app.kubernetes.io/version":   version,
+			"app.kubernetes.io/component": snapshotKind,
+			"app.kubernetes.io/version":   snapshotVersion,
 		}).
 		WithData(configMapData)
 

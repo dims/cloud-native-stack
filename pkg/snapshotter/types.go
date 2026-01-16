@@ -3,8 +3,8 @@ package snapshotter
 import (
 	"context"
 
+	"github.com/NVIDIA/cloud-native-stack/pkg/header"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
-	"github.com/NVIDIA/cloud-native-stack/pkg/recipe/header"
 )
 
 // Snapshotter defines the interface for collecting system configuration snapshots.

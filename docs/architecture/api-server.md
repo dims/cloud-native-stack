@@ -900,7 +900,7 @@ func TestRecipeHandler(t *testing.T) {
 ### Internal Packages
 - `pkg/recipe` - Recipe building logic
 - `pkg/measurement` - Data model
-- `pkg/recipe/version` - Semantic versioning
+- `pkg/version` - Semantic versioning
 - `pkg/serializer` - JSON response formatting
 - `pkg/logging` - Logging configuration
 

@@ -66,6 +66,16 @@ func (h *Header) SetKind(kind Kind) {
 	h.Kind = kind
 }
 
+// GetKind returns the Kind field of the Header.
+func (h *Header) GetKind() Kind {
+	return h.Kind
+}
+
+// GetMetadata returns the Metadata map of the Header.
+func (h *Header) GetMetadata() map[string]string {
+	return h.Metadata
+}
+
 // New creates a new Header instance with the provided functional options.
 // The Metadata map is initialized automatically.
 func New(opts ...Option) *Header {

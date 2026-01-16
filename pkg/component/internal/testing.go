@@ -8,9 +8,9 @@ import (
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/result"
+	"github.com/NVIDIA/cloud-native-stack/pkg/header"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
-	"github.com/NVIDIA/cloud-native-stack/pkg/recipe/header"
 )
 
 // BundlerInterface defines the interface that bundlers must implement for testing.

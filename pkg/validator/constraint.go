@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/recipe/version"
+	"github.com/NVIDIA/cloud-native-stack/pkg/version"
 )
 
 // Operator represents a comparison operator in constraint expressions.

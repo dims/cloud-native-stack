@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/NVIDIA/cloud-native-stack/pkg/header"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
-	"github.com/NVIDIA/cloud-native-stack/pkg/recipe/header"
 )
 
 // Validator defines the interface for validating recipes before bundling.

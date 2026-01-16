@@ -231,11 +231,92 @@ func TestHeader_SetKind(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := &Header{Kind: KindSnapshot}
+			h := &Header{}
 			h.SetKind(tt.kind)
 
 			if h.Kind != tt.want {
 				t.Errorf("Kind = %v, want %v", h.Kind, tt.want)
+			}
+		})
+	}
+}
+
+func TestHeader_GetKind(t *testing.T) {
+	tests := []struct {
+		name string
+		kind Kind
+		want Kind
+	}{
+		{
+			name: "Get Snapshot kind",
+			kind: KindSnapshot,
+			want: KindSnapshot,
+		},
+		{
+			name: "Get Recipe kind",
+			kind: KindRecipe,
+			want: KindRecipe,
+		},
+		{
+			name: "Get empty kind",
+			kind: Kind(""),
+			want: Kind(""),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := &Header{Kind: tt.kind}
+			if got := h.GetKind(); got != tt.want {
+				t.Errorf("GetKind() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestHeader_GetMetadata(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata map[string]string
+		want     map[string]string
+	}{
+		{
+			name:     "Get metadata with values",
+			metadata: map[string]string{"key1": "value1", "key2": "value2"},
+			want:     map[string]string{"key1": "value1", "key2": "value2"},
+		},
+		{
+			name:     "Get empty metadata",
+			metadata: map[string]string{},
+			want:     map[string]string{},
+		},
+		{
+			name:     "Get nil metadata",
+			metadata: nil,
+			want:     nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := &Header{Metadata: tt.metadata}
+			got := h.GetMetadata()
+
+			if (got == nil) != (tt.want == nil) {
+				t.Errorf("GetMetadata() nil status = %v, want %v", got == nil, tt.want == nil)
+				return
+			}
+
+			if len(got) != len(tt.want) {
+				t.Errorf("GetMetadata() length = %v, want %v", len(got), len(tt.want))
+			}
+
+			for key, wantValue := range tt.want {
+				if gotValue, exists := got[key]; !exists {
+					t.Errorf("Expected key %q not found in metadata", key)
+				} else if gotValue != wantValue {
+					t.Errorf("Metadata[%q] = %v, want %v", key, gotValue, wantValue)
+				}
 			}
 		})
 	}

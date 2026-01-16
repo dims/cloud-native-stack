@@ -423,7 +423,7 @@ func TestOSCollector(t *testing.T) {
 When adding version parsing support for vendor-specific formats:
 
 ```go
-// pkg/recipe/version/version.go
+// pkg/version/version.go
 type Version struct {
     Major  int
     Minor  int

@@ -65,20 +65,32 @@ func GetKubeClient() (Interface, *rest.Config, error) {
 //	    return fmt.Errorf("failed to build client: %w", err)
 //	}
 func BuildKubeClient(kubeconfig string) (*kubernetes.Clientset, *rest.Config, error) {
+	var config *rest.Config
+	var err error
+
 	if kubeconfig == "" {
 		kubeconfig = os.Getenv("KUBECONFIG")
 
 		if kubeconfig == "" {
 			kubeconfig = filepath.Join(homedir.HomeDir(), ".kube", "config")
-			if _, err := os.Stat(kubeconfig); os.IsNotExist(err) {
+			if _, err = os.Stat(kubeconfig); os.IsNotExist(err) {
 				kubeconfig = ""
 			}
 		}
 	}
 
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to build kube config: %w", err)
+	// Use InClusterConfig directly when no kubeconfig is available
+	// This avoids the warning: "Neither --kubeconfig nor --master was specified"
+	if kubeconfig == "" {
+		config, err = rest.InClusterConfig()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get in-cluster config: %w", err)
+		}
+	} else {
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to build kube config from %s: %w", kubeconfig, err)
+		}
 	}
 
 	client, err := kubernetes.NewForConfig(config)

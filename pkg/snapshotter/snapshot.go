@@ -9,8 +9,8 @@ import (
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/collector"
 	"github.com/NVIDIA/cloud-native-stack/pkg/collector/k8s"
+	"github.com/NVIDIA/cloud-native-stack/pkg/header"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
-	"github.com/NVIDIA/cloud-native-stack/pkg/recipe/header"
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
 
 	"golang.org/x/sync/errgroup"

@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/collector"
+	"github.com/NVIDIA/cloud-native-stack/pkg/header"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
-	"github.com/NVIDIA/cloud-native-stack/pkg/recipe/header"
 )
 
 func TestNewSnapshot(t *testing.T) {
