@@ -1,3 +1,27 @@
+/*
+Copyright © 2025 NVIDIA Corporation
+SPDX-License-Identifier: Apache-2.0
+*/
+
+// metadata_test.go tests the RecipeMetadata types and MetadataStore.
+//
+// Area of Concern: Recipe metadata behavior and inheritance
+// - RecipeMetadataSpec.ValidateDependencies() - component dependency validation
+// - RecipeMetadataSpec.TopologicalSort() - deployment ordering
+// - RecipeMetadataSpec.Merge() - overlay merging with base recipes
+// - ComponentRef merging - how overlays override/inherit base values
+// - MetadataStore inheritance chains - multi-level spec.base resolution
+//   (e.g., base → eks → eks-training → h100-eks-training)
+//
+// These tests use synthesized Go structs and the actual MetadataStore
+// to verify runtime behavior of the metadata layer.
+//
+// Related test files:
+// - recipe_test.go: Tests Recipe struct validation methods after recipes
+//   are built (Validate, ValidateStructure, ValidateMeasurementExists)
+// - yaml_test.go: Tests embedded YAML data files for schema conformance,
+//   valid references, enum values, and constraint syntax
+
 package recipe
 
 import (
@@ -397,4 +421,143 @@ func TestOverlayMergeDoesNotLoseBaseComponents(t *testing.T) {
 	if networkOp != nil {
 		t.Logf("   network-operator added: version %s", networkOp.Version)
 	}
+}
+
+// TestInheritanceChain verifies that multi-level inheritance chains work correctly.
+// Tests the chain: base → eks → eks-training → h100-eks-training
+func TestInheritanceChain(t *testing.T) {
+	ctx := context.Background()
+	builder := NewBuilder()
+
+	// Build H100 EKS training recipe (full chain: base → eks → eks-training → h100-eks-training)
+	criteria := NewCriteria()
+	criteria.Service = CriteriaServiceEKS
+	criteria.Accelerator = CriteriaAcceleratorH100
+	criteria.OS = CriteriaOSUbuntu
+	criteria.Intent = CriteriaIntentTraining
+
+	result, err := builder.BuildFromCriteria(ctx, criteria)
+	if err != nil {
+		t.Fatalf("BuildFromCriteria failed: %v", err)
+	}
+
+	// Verify applied overlays includes the full chain
+	// Should include: base, eks, eks-training, h100-eks-training
+	appliedOverlays := result.Metadata.AppliedOverlays
+	t.Logf("Applied overlays: %v", appliedOverlays)
+
+	if len(appliedOverlays) < 2 {
+		t.Errorf("Expected at least 2 applied overlays (base + matching), got %d: %v",
+			len(appliedOverlays), appliedOverlays)
+	}
+
+	// Verify base components are present
+	expectedComponents := []string{"cert-manager", "gpu-operator", "nvsentinel", "skyhook"}
+	for _, name := range expectedComponents {
+		if comp := result.GetComponentRef(name); comp == nil {
+			t.Errorf("Expected component %q not found in result", name)
+		}
+	}
+
+	// Verify gpu-operator has H100-specific overrides (from h100-eks-training)
+	gpuOp := result.GetComponentRef("gpu-operator")
+	if gpuOp == nil {
+		t.Fatal("gpu-operator not found")
+	}
+	if gpuOp.Overrides == nil {
+		t.Error("gpu-operator should have overrides from h100-eks-training")
+	} else {
+		if driver, ok := gpuOp.Overrides["driver"].(map[string]interface{}); ok {
+			if version, ok := driver["version"].(string); ok {
+				if version != "570.133.20" {
+					t.Errorf("Expected H100 driver version 570.133.20, got %s", version)
+				}
+			}
+		}
+	}
+
+	// Verify gpu-operator has training values file (from eks-training)
+	if gpuOp.ValuesFile != "components/gpu-operator/values-eks-training.yaml" {
+		t.Errorf("Expected gpu-operator valuesFile from eks-training, got %q", gpuOp.ValuesFile)
+	}
+
+	t.Logf("Inheritance chain test passed")
+	t.Logf("   Applied overlays: %v", appliedOverlays)
+	t.Logf("   GPU operator version: %s", gpuOp.Version)
+	t.Logf("   GPU operator valuesFile: %s", gpuOp.ValuesFile)
+}
+
+// TestInheritanceChainGB200 verifies that GB200 inherits correctly from eks-training.
+func TestInheritanceChainGB200(t *testing.T) {
+	ctx := context.Background()
+	builder := NewBuilder()
+
+	// Build GB200 EKS training recipe
+	criteria := NewCriteria()
+	criteria.Service = CriteriaServiceEKS
+	criteria.Accelerator = CriteriaAcceleratorGB200
+	criteria.OS = CriteriaOSUbuntu
+	criteria.Intent = CriteriaIntentTraining
+
+	result, err := builder.BuildFromCriteria(ctx, criteria)
+	if err != nil {
+		t.Fatalf("BuildFromCriteria failed: %v", err)
+	}
+
+	// Verify applied overlays
+	t.Logf("Applied overlays: %v", result.Metadata.AppliedOverlays)
+
+	// Verify gpu-operator has GB200-specific overrides
+	gpuOp := result.GetComponentRef("gpu-operator")
+	if gpuOp == nil {
+		t.Fatal("gpu-operator not found")
+	}
+
+	// GB200 should have gdrcopy enabled
+	if gpuOp.Overrides != nil {
+		if gdrcopy, ok := gpuOp.Overrides["gdrcopy"].(map[string]interface{}); ok {
+			if enabled, ok := gdrcopy["enabled"].(bool); ok && !enabled {
+				t.Error("GB200 should have gdrcopy enabled")
+			}
+		}
+	}
+
+	// Verify training values file is inherited
+	if gpuOp.ValuesFile != "components/gpu-operator/values-eks-training.yaml" {
+		t.Errorf("Expected gpu-operator valuesFile from eks-training, got %q", gpuOp.ValuesFile)
+	}
+
+	t.Logf("GB200 inheritance chain test passed")
+}
+
+// TestInheritanceChainDoesNotDuplicateRecipes verifies that recipes in the inheritance
+// chain are only applied once, even if they appear in multiple matching overlays' chains.
+func TestInheritanceChainDoesNotDuplicateRecipes(t *testing.T) {
+	ctx := context.Background()
+	builder := NewBuilder()
+
+	criteria := NewCriteria()
+	criteria.Service = CriteriaServiceEKS
+	criteria.Accelerator = CriteriaAcceleratorH100
+	criteria.Intent = CriteriaIntentTraining
+
+	result, err := builder.BuildFromCriteria(ctx, criteria)
+	if err != nil {
+		t.Fatalf("BuildFromCriteria failed: %v", err)
+	}
+
+	// Count occurrences of each overlay in the applied list
+	counts := make(map[string]int)
+	for _, name := range result.Metadata.AppliedOverlays {
+		counts[name]++
+	}
+
+	// Verify no duplicates
+	for name, count := range counts {
+		if count > 1 {
+			t.Errorf("Recipe %q applied %d times (should be 1)", name, count)
+		}
+	}
+
+	t.Logf("No duplicate recipes in chain: %v", result.Metadata.AppliedOverlays)
 }

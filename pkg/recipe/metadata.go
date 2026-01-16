@@ -58,6 +58,12 @@ type ComponentRef struct {
 
 // RecipeMetadataSpec contains the specification for a recipe.
 type RecipeMetadataSpec struct {
+	// Base is the name of the parent recipe to inherit from.
+	// If empty, the recipe inherits from "base" (the root base.yaml).
+	// This enables multi-level inheritance chains like:
+	//   base → eks → eks-training → h100-eks-training
+	Base string `json:"base,omitempty" yaml:"base,omitempty"`
+
 	// Criteria defines when this recipe/overlay applies.
 	// Only present in overlay files, not in base.
 	Criteria *Criteria `json:"criteria,omitempty" yaml:"criteria,omitempty"`

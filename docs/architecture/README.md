@@ -52,6 +52,10 @@ Produces optimized configuration recipes based on environment criteria or captur
   - **Snapshot Mode**: Analyzes captured snapshots and generates tailored recipes based on workload intent
   - **ConfigMap Input**: Can read snapshots from ConfigMap URIs (`cm://namespace/name`)
 - **API Server**: `GET /v1/recipe` endpoint for programmatic access (query mode only)
+- **Multi-Level Inheritance**: Recipes support `spec.base` references for inheritance chains
+  - Example chain: `base → eks → eks-training → h100-eks-training`
+  - Intermediate recipes (eks, eks-training) capture shared configurations
+  - Leaf recipes (h100-eks-training) contain hardware-specific overrides
 - **Output**: Recipe with component references and deployment constraints
 - **Storage**: File, stdout, or **Kubernetes ConfigMap**
 

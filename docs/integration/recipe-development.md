@@ -5,6 +5,7 @@ This guide covers how to create, modify, and validate recipe metadata.
 ## Table of Contents
 
 - [Overview](#overview)
+- [Multi-Level Inheritance](#multi-level-inheritance)
 - [Component Value Configuration](#component-value-configuration)
 - [Value Merge Precedence](#value-merge-precedence)
 - [File Naming Conventions](#file-naming-conventions)
@@ -17,15 +18,153 @@ This guide covers how to create, modify, and validate recipe metadata.
 
 ## Overview
 
-Recipe metadata files define component configurations for GPU-accelerated Kubernetes deployments. The system uses a **base-plus-overlay architecture**:
+Recipe metadata files define component configurations for GPU-accelerated Kubernetes deployments. The system uses a **base-plus-overlay architecture** with **multi-level inheritance**:
 
 - **Base values** (`base.yaml`) provide default configurations
-- **Overlay values** (e.g., `eks-gb200-training.yaml`) provide environment-specific optimizations
+- **Intermediate recipes** (e.g., `eks.yaml`, `eks-training.yaml`) capture shared configurations
+- **Leaf recipes** (e.g., `h100-eks-training.yaml`) provide hardware-specific overrides
 - **Inline overrides** allow per-recipe customization without creating new files
 
 Recipe files are located in `pkg/recipe/data/` and are embedded into the CLI binary and API server at compile time.
 
 For details on how the recipe generation process works (query matching, overlay merging), see the [Data Architecture](../architecture/data.md) document.
+
+## Multi-Level Inheritance
+
+Recipes support multi-level inheritance through the `spec.base` field. This enables inheritance chains where intermediate recipes capture shared configurations.
+
+### Inheritance Structure
+
+```yaml
+kind: recipeMetadata
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: h100-eks-training
+
+spec:
+  base: eks-training  # Inherits from eks-training (which inherits from eks)
+  
+  criteria:
+    service: eks
+    accelerator: h100
+    os: ubuntu
+    intent: training
+    
+  # Only H100-specific overrides here
+  componentRefs:
+    - name: gpu-operator
+      overrides:
+        driver:
+          version: 570.133.20
+```
+
+### Inheritance Chain Example
+
+```
+base.yaml (foundation)
+    │
+    └── eks.yaml (EKS-specific settings)
+            │
+            └── eks-training.yaml (training optimizations)
+                    │
+                    ├── h100-eks-training.yaml (H100 overrides)
+                    │
+                    └── gb200-eks-training.yaml (GB200 overrides)
+```
+
+### Creating an Intermediate Recipe
+
+Intermediate recipes have **partial criteria** and are not matched directly by user queries. They capture shared configurations for a category:
+
+```yaml
+# eks.yaml - Intermediate recipe for all EKS deployments
+kind: recipeMetadata
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: eks
+
+spec:
+  # No spec.base = inherits from base.yaml
+  
+  criteria:
+    service: eks  # Only service specified (partial criteria)
+
+  constraints:
+    - name: K8s.server.version
+      value: ">= 1.28"  # EKS minimum version
+```
+
+```yaml
+# eks-training.yaml - Training settings for EKS
+kind: recipeMetadata
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: eks-training
+
+spec:
+  base: eks  # Inherits from eks
+  
+  criteria:
+    service: eks
+    intent: training  # Added training intent (still partial)
+
+  constraints:
+    - name: K8s.server.version
+      value: ">= 1.30"  # Training requires newer K8s
+
+  componentRefs:
+    - name: gpu-operator
+      valuesFile: components/gpu-operator/values-eks-training.yaml
+```
+
+### Creating a Leaf Recipe
+
+Leaf recipes have **complete criteria** (all required fields) and are matched by user queries:
+
+```yaml
+# h100-eks-training.yaml - Full specification for H100 + EKS + training
+kind: recipeMetadata
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: h100-eks-training
+
+spec:
+  base: eks-training  # Inherits from eks-training
+  
+  criteria:
+    service: eks
+    accelerator: h100
+    os: ubuntu
+    intent: training  # Complete criteria
+
+  constraints:
+    - name: OS.release.ID
+      value: ubuntu
+    - name: OS.release.VERSION_ID
+      value: "24.04"
+
+  componentRefs:
+    - name: gpu-operator
+      overrides:
+        driver:
+          version: 570.133.20
+```
+
+### Inheritance Merge Order
+
+When resolving a leaf recipe, the system merges in order from root to leaf:
+
+```
+1. base.yaml (lowest precedence)
+2. eks.yaml
+3. eks-training.yaml
+4. h100-eks-training.yaml (highest precedence)
+```
+
+**Merge rules:**
+- **Constraints**: Same-named constraints are overridden; new ones are added
+- **ComponentRefs**: Same-named components merge field-by-field; new ones are added
+- **Criteria**: Not inherited (each recipe defines its own)
 
 ## Component Value Configuration
 
@@ -193,9 +332,11 @@ File names are for human readability only—the recipe engine matches based on `
 | File Type | Naming Pattern | Examples |
 |-----------|---------------|----------|
 | Base recipe | `base.yaml` | `base.yaml` |
-| Overlay recipe | `{service}-{gpu}-{intent}.yaml` | `eks-gb200-training.yaml`, `gke-h100-inference.yaml` |
+| Intermediate recipe (service) | `{service}.yaml` | `eks.yaml`, `gke.yaml` |
+| Intermediate recipe (intent) | `{service}-{intent}.yaml` | `eks-training.yaml`, `gke-inference.yaml` |
+| Leaf recipe (full) | `{gpu}-{service}-{os}-{intent}.yaml` | `h100-eks-ubuntu-training.yaml` |
 | Component values (base) | `base.yaml` or `values.yaml` | `components/gpu-operator/base.yaml` |
-| Component values (overlay) | `{service}-{gpu}-{intent}.yaml` | `components/gpu-operator/eks-gb200-training.yaml` |
+| Component values (overlay) | `values-{service}-{intent}.yaml` | `components/gpu-operator/values-eks-training.yaml` |
 
 ## Recipe Constraints
 

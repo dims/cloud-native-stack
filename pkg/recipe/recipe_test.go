@@ -1,3 +1,26 @@
+/*
+Copyright © 2025 NVIDIA Corporation
+SPDX-License-Identifier: Apache-2.0
+*/
+
+// recipe_test.go tests the Recipe struct and its validation methods.
+//
+// Area of Concern: Runtime recipe validation
+// - Recipe.Validate() - ensures recipe has measurements
+// - Recipe.ValidateStructure() - validates measurement structure integrity
+// - Recipe.ValidateMeasurementExists() - checks specific measurements exist
+// - Recipe.ValidateSubtypeExists() - checks specific subtypes exist
+// - ValidateRequiredKeys() - validates required keys in readings
+//
+// These tests use synthesized Go structs to verify the Recipe type behavior
+// after a recipe has been built from metadata.
+//
+// Related test files:
+// - metadata_test.go: Tests RecipeMetadata types, Merge(), TopologicalSort(),
+//   ValidateDependencies(), and MetadataStore inheritance chain resolution
+// - yaml_test.go: Tests embedded YAML data files for schema conformance,
+//   valid references, enum values, and constraint syntax
+
 package recipe
 
 import (

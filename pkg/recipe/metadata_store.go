@@ -144,6 +144,55 @@ func (s *MetadataStore) GetValuesFile(filename string) ([]byte, error) {
 	return content, nil
 }
 
+// GetRecipeByName returns a recipe metadata by name.
+// Returns the base recipe if name is "base", otherwise looks up in overlays.
+func (s *MetadataStore) GetRecipeByName(name string) (*RecipeMetadata, bool) {
+	if name == "" || name == "base" {
+		return s.Base, s.Base != nil
+	}
+	overlay, exists := s.Overlays[name]
+	return overlay, exists
+}
+
+// resolveInheritanceChain builds the inheritance chain for a recipe.
+// Returns recipes in order from root (base) to the target recipe.
+// Detects cycles in the inheritance chain.
+func (s *MetadataStore) resolveInheritanceChain(recipeName string) ([]*RecipeMetadata, error) {
+	// Track visited recipes to detect cycles
+	visited := make(map[string]bool)
+	var chain []*RecipeMetadata
+
+	currentName := recipeName
+	for currentName != "" && currentName != "base" {
+		// Check for cycle
+		if visited[currentName] {
+			return nil, cnserrors.New(cnserrors.ErrCodeInvalidRequest,
+				fmt.Sprintf("circular inheritance detected: recipe %q references itself in inheritance chain", currentName))
+		}
+		visited[currentName] = true
+
+		// Get the recipe
+		recipe, exists := s.GetRecipeByName(currentName)
+		if !exists {
+			return nil, cnserrors.New(cnserrors.ErrCodeNotFound,
+				fmt.Sprintf("recipe %q not found (referenced in inheritance chain)", currentName))
+		}
+
+		// Prepend to chain (we're walking backwards, will reverse later)
+		chain = append([]*RecipeMetadata{recipe}, chain...)
+
+		// Move to parent
+		currentName = recipe.Spec.Base
+	}
+
+	// Prepend base at the start (root of all inheritance)
+	if s.Base != nil {
+		chain = append([]*RecipeMetadata{s.Base}, chain...)
+	}
+
+	return chain, nil
+}
+
 // FindMatchingOverlays finds all overlays that match the given criteria.
 // Returns overlays sorted by specificity (least specific first).
 func (s *MetadataStore) FindMatchingOverlays(criteria *Criteria) []*RecipeMetadata {
@@ -167,6 +216,8 @@ func (s *MetadataStore) FindMatchingOverlays(criteria *Criteria) []*RecipeMetada
 }
 
 // BuildRecipeResult builds a RecipeResult by merging base with matching overlays.
+// Each matching overlay is resolved through its inheritance chain before merging.
+// This enables multi-level inheritance: base → intermediate → overlay.
 func (s *MetadataStore) BuildRecipeResult(ctx context.Context, criteria *Criteria) (*RecipeResult, error) {
 	// Check if ctx has been canceled and exit early if so
 	select {
@@ -182,25 +233,55 @@ func (s *MetadataStore) BuildRecipeResult(ctx context.Context, criteria *Criteri
 	default:
 	}
 
-	// Start with a copy of the base spec
+	// Find matching overlays (sorted by specificity, least specific first)
+	overlays := s.FindMatchingOverlays(criteria)
+
+	// Track all applied recipes (from inheritance chains)
+	appliedOverlays := make([]string, 0)
+
+	// Start with the base spec
 	mergedSpec := RecipeMetadataSpec{
 		Constraints:   make([]Constraint, len(s.Base.Spec.Constraints)),
 		ComponentRefs: make([]ComponentRef, len(s.Base.Spec.ComponentRefs)),
 	}
 	copy(mergedSpec.Constraints, s.Base.Spec.Constraints)
 	copy(mergedSpec.ComponentRefs, s.Base.Spec.ComponentRefs)
+	appliedOverlays = append(appliedOverlays, "base")
 
-	// Find and apply matching overlays
-	overlays := s.FindMatchingOverlays(criteria)
-	appliedOverlays := make([]string, 0, len(overlays))
+	// For each matching overlay, resolve its inheritance chain and merge
+	// We only apply the leaf overlay's chain, not intermediate ones
+	// This avoids double-applying recipes that appear in multiple chains
+	processedChains := make(map[string]bool) // Track which recipes we've already applied
 
 	for _, overlay := range overlays {
-		mergedSpec.Merge(&overlay.Spec)
-		appliedOverlays = append(appliedOverlays, overlay.Metadata.Name)
+		// Resolve the full inheritance chain for this overlay
+		chain, err := s.resolveInheritanceChain(overlay.Metadata.Name)
+		if err != nil {
+			return nil, cnserrors.WrapWithContext(
+				cnserrors.ErrCodeInvalidRequest,
+				"failed to resolve inheritance chain",
+				err,
+				map[string]any{
+					"overlay": overlay.Metadata.Name,
+				},
+			)
+		}
+
+		// Apply each recipe in the chain that hasn't been applied yet
+		// Skip base (index 0) since we already started with it
+		for i := 1; i < len(chain); i++ {
+			recipe := chain[i]
+			if processedChains[recipe.Metadata.Name] {
+				continue // Already applied this recipe
+			}
+			processedChains[recipe.Metadata.Name] = true
+			mergedSpec.Merge(&recipe.Spec)
+			appliedOverlays = append(appliedOverlays, recipe.Metadata.Name)
+		}
 	}
 
 	// Warn if no overlays matched - user is getting base-only configuration
-	if len(appliedOverlays) == 0 {
+	if len(appliedOverlays) <= 1 { // Only "base" was applied
 		slog.Warn("no environment-specific overlays matched, using base configuration only",
 			"criteria", criteria.String(),
 			"hint", "recipe may not be optimized for your environment")

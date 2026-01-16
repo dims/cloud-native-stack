@@ -4,6 +4,9 @@ metadata:
   name: gb200-eks-training
 
 spec:
+  # Inherits from eks-training recipe (EKS + training settings)
+  base: eks-training
+
   criteria:
     service: eks
     accelerator: gb200
@@ -24,11 +27,10 @@ spec:
 
   componentRefs:
 
-    # Override with training configuration and add GB200-specific features via overrides
+    # GB200-specific GPU Operator overrides (inherits valuesFile from eks-training)
     - name: gpu-operator
       type: Helm
       version: v25.3.3
-      valuesFile: components/gpu-operator/values-eks-training.yaml
       overrides:
         driver:
           version: 580.82.07

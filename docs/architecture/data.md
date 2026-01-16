@@ -8,6 +8,7 @@ This document describes the data system used by the cnsctl CLI and API to genera
 - [Data Structure](#data-structure)
 - [Base Measurements](#base-measurements)
 - [Overlay System](#overlay-system)
+- [Multi-Level Inheritance](#multi-level-inheritance)
 - [Query Matching Algorithm](#query-matching-algorithm)
 - [Recipe Generation Process](#recipe-generation-process)
 - [Usage Examples](#usage-examples)
@@ -424,6 +425,163 @@ Overlays should contain:
             /proc/sys/vm/nr_hugepages: Increased hugepages for large training batches
 ```
 
+## Multi-Level Inheritance
+
+Recipe files support **multi-level inheritance** through the `spec.base` field. This enables building inheritance chains where intermediate recipes capture shared configurations, reducing duplication and improving maintainability.
+
+### Inheritance Mechanism
+
+Each recipe can specify a parent recipe via `spec.base`:
+
+```yaml
+kind: recipeMetadata
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: h100-eks-training
+
+spec:
+  base: eks-training  # Inherits from eks-training recipe
+  
+  criteria:
+    service: eks
+    accelerator: h100
+    os: ubuntu
+    intent: training
+    
+  # Only H100-specific overrides here
+  componentRefs:
+    - name: gpu-operator
+      overrides:
+        driver:
+          version: 570.133.20
+```
+
+### Inheritance Chain Example
+
+The system supports inheritance chains of arbitrary depth:
+
+```
+base.yaml
+    │
+    ├── eks.yaml (spec.base: implicit/empty = base)
+    │       │
+    │       └── eks-training.yaml (spec.base: eks)
+    │               │
+    │               ├── h100-eks-training.yaml (spec.base: eks-training)
+    │               │
+    │               └── gb200-eks-training.yaml (spec.base: eks-training)
+    │
+    └── gke.yaml (spec.base: implicit/empty = base)
+            │
+            └── gke-inference.yaml (spec.base: gke)
+```
+
+**Resolution Order:** When resolving `h100-eks-training`:
+1. Start with `base.yaml` (root)
+2. Merge `eks.yaml` (EKS-specific settings)
+3. Merge `eks-training.yaml` (training optimizations)
+4. Merge `h100-eks-training.yaml` (H100-specific overrides)
+
+### Inheritance Rules
+
+**1. Base Resolution**
+- `spec.base: ""` or omitted → Inherits directly from `base.yaml`
+- `spec.base: "eks"` → Inherits from the recipe named "eks"
+- The root `base.yaml` has no parent (it's the foundation)
+
+**2. Merge Precedence**
+Later recipes in the chain override earlier ones:
+```
+base → eks → eks-training → h100-eks-training
+(lowest)                      (highest priority)
+```
+
+**3. Field Merging**
+- **Constraints**: Same-named constraints are overridden; new constraints are added
+- **ComponentRefs**: Same-named components are merged field-by-field; new components are added
+- **Criteria**: Each recipe defines its own criteria (not inherited)
+
+### Intermediate vs Leaf Recipes
+
+**Intermediate Recipes** (eks, eks-training):
+- Have **partial criteria** (not all fields specified)
+- Capture shared configurations for a category
+- Typically not matched directly by user queries
+
+**Leaf Recipes** (h100-eks-training, gb200-eks-training):
+- Have **complete criteria** (all required fields)
+- Matched by specific user queries
+- Contain final, hardware-specific overrides
+
+### Example: Intermediate Recipe
+
+```yaml
+# eks.yaml - Intermediate recipe for all EKS deployments
+kind: recipeMetadata
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: eks
+
+spec:
+  # Implicit base (inherits from base.yaml)
+  
+  criteria:
+    service: eks  # Only service specified (partial criteria)
+
+  constraints:
+    - name: K8s.server.version
+      value: ">= 1.28"  # EKS minimum version
+```
+
+```yaml
+# eks-training.yaml - Intermediate recipe for EKS training workloads
+kind: recipeMetadata
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: eks-training
+
+spec:
+  base: eks  # Inherits EKS settings
+  
+  criteria:
+    service: eks
+    intent: training  # Added training intent (still partial)
+
+  constraints:
+    - name: K8s.server.version
+      value: ">= 1.30"  # Training requires newer K8s
+
+  componentRefs:
+    - name: gpu-operator
+      valuesFile: components/gpu-operator/values-eks-training.yaml
+```
+
+### Benefits of Multi-Level Inheritance
+
+| Benefit | Description |
+|---------|-------------|
+| **Reduced Duplication** | Shared settings defined once in intermediate recipes |
+| **Easier Maintenance** | Update EKS settings in one place, all EKS recipes inherit |
+| **Clear Organization** | Hierarchy reflects logical relationships |
+| **Flexible Extension** | Add new leaf recipes without duplicating parent configs |
+| **Testable** | Each level can be validated independently |
+
+### Cycle Detection
+
+The system detects circular inheritance to prevent infinite loops:
+
+```yaml
+# INVALID: Would create cycle
+# a.yaml: spec.base: b
+# b.yaml: spec.base: c
+# c.yaml: spec.base: a  ← Cycle detected!
+```
+
+Tests in `pkg/recipe/yaml_test.go` automatically validate:
+- All `spec.base` references point to existing recipes
+- No circular inheritance chains exist
+- Inheritance depth is reasonable (max 10 levels)
+
 ## Query Matching Algorithm
 
 The recipe system uses an **asymmetric rule matching algorithm** where overlay keys (rules) match against user queries (candidates).
@@ -727,7 +885,15 @@ The recipe data system includes comprehensive automated tests to ensure data int
 
 ### Test Suite Overview
 
-The test suite is located in [`pkg/recipe/data_test.go`](../../pkg/recipe/data_test.go) and covers:
+The test suite is organized across three files in `pkg/recipe/`:
+
+| File | Responsibility |
+|------|----------------|
+| `yaml_test.go` | Static YAML file validation (parsing, references, enums, inheritance) |
+| `metadata_test.go` | Runtime behavior tests (Merge, TopologicalSort, inheritance resolution) |
+| `recipe_test.go` | Recipe struct validation (Validate, ValidateStructure) |
+
+### Test Categories
 
 | Test Category | What It Validates |
 |---------------|-------------------|
@@ -740,6 +906,20 @@ The test suite is located in [`pkg/recipe/data_test.go`](../../pkg/recipe/data_t
 | Dependency Cycles | No circular dependencies in componentRefs |
 | Component Types | All bundler types are registered and available |
 | Values Files | Component values files parse as valid YAML |
+| **Inheritance Chains** | Base references valid, no circular inheritance, reasonable depth |
+
+### Inheritance-Specific Tests
+
+The test suite includes specific tests for multi-level inheritance:
+
+| Test | What It Validates |
+|------|-------------------|
+| `TestAllBaseReferencesPointToExistingRecipes` | All `spec.base` references resolve to existing recipes |
+| `TestNoCircularBaseReferences` | No circular inheritance chains (a→b→c→a) |
+| `TestInheritanceChainDepthReasonable` | Inheritance depth ≤ 10 levels |
+| `TestIntermediateRecipesHavePartialCriteria` | Intermediate recipes (non-leaf) have partial criteria |
+| `TestLeafRecipesHaveCompleteCriteria` | Leaf recipes have complete criteria (all required fields) |
+| `TestInheritanceChain` | Full chain resolution and merge correctness |
 
 ### Running Tests
 
@@ -750,13 +930,15 @@ make test
 # Run only recipe package tests
 go test -v ./pkg/recipe/... -count=1
 
-# Run specific test
-go test -v ./pkg/recipe/... -run TestAllMetadataFilesConformToSchema
+# Run specific test file
+go test -v ./pkg/recipe/... -run TestAllMetadataFilesConformToSchema  # yaml_test.go
+go test -v ./pkg/recipe/... -run TestInheritanceChain                  # metadata_test.go
+go test -v ./pkg/recipe/... -run TestRecipe_Validate                   # recipe_test.go
 ```
 
 ### Test Descriptions
 
-#### Schema Tests
+#### YAML Tests (yaml_test.go)
 
 **`TestAllMetadataFilesConformToSchema`**  
 Verifies all YAML files in `pkg/recipe/data/` parse correctly and contain valid `RecipeMetadata` structures with required fields (apiVersion, kind, metadata, spec).
@@ -764,7 +946,16 @@ Verifies all YAML files in `pkg/recipe/data/` parse correctly and contain valid 
 **`TestAllComponentValuesFilesAreValidYAML`**  
 Ensures all component values files in `pkg/recipe/data/components/` are valid YAML syntax.
 
-#### Criteria Tests
+**`TestAllBaseReferencesPointToExistingRecipes`**  
+Validates that all `spec.base` references in recipes point to existing recipe files.
+
+**`TestNoCircularBaseReferences`**  
+Detects circular inheritance chains that would cause infinite loops during resolution.
+
+**`TestInheritanceChainDepthReasonable`**  
+Ensures no inheritance chain exceeds 10 levels (prevents accidental complexity).
+
+#### Criteria Tests (yaml_test.go)
 
 **`TestCriteriaContainValidEnumValues`**  
 Validates that all criteria fields use only allowed enum values:

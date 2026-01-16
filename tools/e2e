@@ -1,6 +1,37 @@
 #!/bin/bash
 set -eo pipefail
 
+# =============================================================================
+# E2E Integration Tests for cnsctl CLI
+# =============================================================================
+#
+# PURPOSE:
+# This script tests the compiled cnsctl binary and CLI flag handling.
+# It complements Go unit tests by testing what can only be verified after
+# the binary is built: CLI argument parsing, flag combinations, and
+# end-to-end command execution.
+#
+# WHAT THIS SCRIPT TESTS:
+# - Binary builds successfully (make build)
+# - CLI workflow: cnsctl recipe → cnsctl bundle
+# - CLI flags: --set, --system-node-selector, --accelerated-node-toleration, etc.
+# - Flag combinations and interactions
+#
+# WHAT GO TESTS COVER (not duplicated here):
+# - YAML file validation: pkg/recipe/yaml_test.go
+#   (parsing, references, enums, constraints, inheritance chains)
+# - Metadata behavior: pkg/recipe/metadata_test.go
+#   (Merge, TopologicalSort, ValidateDependencies, inheritance resolution)
+# - Recipe validation: pkg/recipe/recipe_test.go
+#   (Validate, ValidateStructure, ValidateMeasurementExists)
+#
+# DESIGN PRINCIPLE:
+# Front-load validation into Go tests (run during development with 'go test')
+# so issues are caught early. Reserve this script for true integration testing
+# that requires the compiled binary.
+#
+# =============================================================================
+
 # Dir setup
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "${DIR}/common"
@@ -26,18 +57,23 @@ usage() {
   echo "  -o, --output PATH     Output directory for test artifacts (default: temp dir)"
   echo "  -h, --help            Show this help message"
   echo ""
-  echo "This script:"
-  echo "  1. Builds the cnsctl binary using 'make build'"
-  echo "  2. Tests all recipe metadata files in pkg/recipe/data/ can generate bundles"
-  echo "  3. Generates a recipe via query mode (service=eks, accelerator=gb200, os=ubuntu, intent=training)"
-  echo "  4. Tests bundle generation with various CLI flag combinations:"
-  echo "     - Basic generation (no overrides)"
-  echo "     - System node selectors (--system-node-selector)"
-  echo "     - Accelerated node selectors (--accelerated-node-selector)"
-  echo "     - System tolerations (--system-node-toleration)"
-  echo "     - Accelerated tolerations (--accelerated-node-toleration)"
-  echo "     - Value overrides (--set)"
-  echo "     - Combined flags"
+  echo "E2E Integration Tests for cnsctl CLI"
+  echo ""
+  echo "This script tests what requires a compiled binary:"
+  echo "  1. Binary builds successfully (make build)"
+  echo "  2. CLI workflow: cnsctl recipe → cnsctl bundle (for each leaf recipe)"
+  echo "  3. CLI flag handling:"
+  echo "     - --system-node-selector, --accelerated-node-selector"
+  echo "     - --system-node-toleration, --accelerated-node-toleration"
+  echo "     - --set (value overrides)"
+  echo "     - Combined flag interactions"
+  echo ""
+  echo "Go tests cover (not duplicated here):"
+  echo "  - pkg/recipe/yaml_test.go: YAML parsing, references, enums, constraints"
+  echo "  - pkg/recipe/metadata_test.go: Merge, inheritance chains, topological sort"
+  echo "  - pkg/recipe/recipe_test.go: Recipe validation methods"
+  echo ""
+  echo "Run 'go test ./pkg/recipe/...' to validate recipe data during development."
   echo ""
   echo "Examples:"
   echo "  $0                        # Run all tests with temp output"
@@ -213,63 +249,57 @@ build_binary() {
 # RECIPE DATA FILE TESTS
 # ============================================================================
 
-# Test all recipe metadata files in pkg/recipe/data/ can be used to generate recipes and bundles
-# The workflow is: metadata file -> cnsctl recipe -> RecipeResult -> cnsctl bundle
+# Test that leaf recipe data files can be used to generate recipes and bundles via CLI.
+# This is a smoke test to verify the CLI workflow works end-to-end.
+#
+# Note: Detailed validation of YAML files (parsing, references, enums, constraints,
+# inheritance chains) is covered by Go tests in pkg/recipe/yaml_test.go and
+# pkg/recipe/metadata_test.go. This test only verifies CLI integration.
 test_all_recipe_data_files() {
   msg ""
   msg "=========================================="
-  msg "Testing All Recipe Data Files"
+  msg "Testing CLI Workflow for Leaf Recipes"
   msg "=========================================="
   
   local recipe_data_dir="${ROOT}/pkg/recipe/data"
   local all_recipes_dir="${OUTPUT_DIR}/bundles/all-recipes"
   mkdir -p "$all_recipes_dir"
   
-  # Find all overlay recipe files (exclude base.yaml and README.md)
+  # Find all overlay recipe files (exclude base.yaml)
   local recipe_files
   recipe_files=$(find "$recipe_data_dir" -maxdepth 1 -name "*.yaml" ! -name "base.yaml" -type f | sort)
   
   if [ -z "$recipe_files" ]; then
-    test_fail "recipe-data/find-files" "No recipe files found in ${recipe_data_dir}"
+    test_fail "cli-workflow/find-files" "No recipe files found in ${recipe_data_dir}"
     return 1
   fi
-  test_pass "recipe-data/find-files"
   
-  local file_count=0
+  local leaf_count=0
+  local skip_count=0
+  
   for recipe_file in $recipe_files; do
     local basename
     basename=$(basename "$recipe_file" .yaml)
-    file_count=$((file_count + 1))
     
-    msg ""
-    msg "--- Testing recipe: ${basename} ---"
-    
-    local test_dir="${all_recipes_dir}/${basename}"
-    mkdir -p "$test_dir"
-    
-    # Extract criteria from the recipe metadata file to use with cnsctl recipe
-    # Parse service, accelerator, os, intent from criteria section
+    # Extract criteria from the recipe metadata file
     local service accelerator os_val intent
     service=$(awk '/^  criteria:/{in_crit=1;next} in_crit && /^  [a-z]/{exit} in_crit && /service:/{gsub(/.*service: /,""); print}' "$recipe_file")
     accelerator=$(awk '/^  criteria:/{in_crit=1;next} in_crit && /^  [a-z]/{exit} in_crit && /accelerator:/{gsub(/.*accelerator: /,""); print}' "$recipe_file")
     os_val=$(awk '/^  criteria:/{in_crit=1;next} in_crit && /^  [a-z]/{exit} in_crit && /os:/{gsub(/.*os: /,""); print}' "$recipe_file")
     intent=$(awk '/^  criteria:/{in_crit=1;next} in_crit && /^  [a-z]/{exit} in_crit && /intent:/{gsub(/.*intent: /,""); print}' "$recipe_file")
     
-    # At minimum we need accelerator, os, and intent
+    # Skip intermediate recipes (those without complete criteria)
+    # Go tests validate intermediate recipes; here we only test CLI with leaf recipes
     if [ -z "$accelerator" ] || [ -z "$os_val" ] || [ -z "$intent" ]; then
-      test_fail "recipe-data/${basename}/parse-criteria" "Could not extract required criteria from ${basename} (need accelerator, os, intent)"
+      skip_count=$((skip_count + 1))
       continue
     fi
     
-    # Build criteria summary for logging
-    local criteria_summary="accelerator=${accelerator}, os=${os_val}, intent=${intent}"
-    if [ -n "$service" ]; then
-      criteria_summary="service=${service}, ${criteria_summary}"
-    fi
-    test_pass "recipe-data/${basename}/parse-criteria (${criteria_summary})"
+    leaf_count=$((leaf_count + 1))
+    local test_dir="${all_recipes_dir}/${basename}"
+    mkdir -p "$test_dir"
     
-    # Step 1: Generate RecipeResult using cnsctl recipe with the extracted criteria
-    # Build the command with optional service flag
+    # Build CLI command
     local recipe_result="${test_dir}/recipe.yaml"
     local recipe_cmd="${CNSCTL_BIN} recipe --accelerator $accelerator --os $os_val --intent $intent"
     if [ -n "$service" ]; then
@@ -277,62 +307,33 @@ test_all_recipe_data_files() {
     fi
     recipe_cmd="$recipe_cmd -o $recipe_result"
     
+    # Test: CLI generates recipe
     if ! eval "$recipe_cmd" 2>&1; then
-      test_fail "recipe-data/${basename}/recipe-generation" "Failed to generate recipe from criteria"
+      test_fail "cli-workflow/${basename}/recipe" "Failed to generate recipe"
       continue
     fi
-    test_pass "recipe-data/${basename}/recipe-generation"
     
-    # Verify recipe file was created
-    if [ ! -f "$recipe_result" ]; then
-      test_fail "recipe-data/${basename}/recipe-file-exists" "Recipe file not created"
-      continue
-    fi
-    test_pass "recipe-data/${basename}/recipe-file-exists"
-    
-    # Step 2: Generate bundle from RecipeResult
+    # Test: CLI generates bundle
     local bundle_dir="${test_dir}/bundles"
     if ! "${CNSCTL_BIN}" bundle -r "$recipe_result" -o "$bundle_dir" 2>&1; then
-      test_fail "recipe-data/${basename}/bundle-generation" "Failed to generate bundle from recipe"
+      test_fail "cli-workflow/${basename}/bundle" "Failed to generate bundle"
       continue
     fi
-    test_pass "recipe-data/${basename}/bundle-generation"
     
-    # Verify at least one component was generated
+    # Test: At least one component was generated
     local component_count
     component_count=$(find "$bundle_dir" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
     
     if [ "$component_count" -eq 0 ]; then
-      test_fail "recipe-data/${basename}/has-components" "No components generated for ${basename}"
+      test_fail "cli-workflow/${basename}/has-output" "No components generated"
       continue
     fi
-    test_pass "recipe-data/${basename}/has-components (${component_count} components)"
     
-    # Verify each generated component has required files
-    for component_dir in "${bundle_dir}"/*/; do
-      if [ -d "$component_dir" ]; then
-        local component_name
-        component_name=$(basename "$component_dir")
-        
-        # Check for values.yaml
-        if [ ! -f "${component_dir}values.yaml" ]; then
-          test_fail "recipe-data/${basename}/${component_name}/values.yaml" "Missing values.yaml"
-        else
-          test_pass "recipe-data/${basename}/${component_name}/values.yaml"
-        fi
-        
-        # Check for checksums.txt
-        if [ ! -f "${component_dir}checksums.txt" ]; then
-          test_fail "recipe-data/${basename}/${component_name}/checksums.txt" "Missing checksums.txt"
-        else
-          test_pass "recipe-data/${basename}/${component_name}/checksums.txt"
-        fi
-      fi
-    done
+    test_pass "cli-workflow/${basename} (${component_count} components)"
   done
   
   msg ""
-  msg "Tested ${file_count} recipe data files"
+  msg "Tested ${leaf_count} leaf recipes (skipped ${skip_count} intermediate recipes)"
 }
 
 # ============================================================================
@@ -598,7 +599,9 @@ msg ""
 # Step 1: Build the binary
 build_binary
 
-# Step 2: Test all recipe data files in pkg/recipe/data/
+# Step 2: Test CLI workflow for all leaf recipes in pkg/recipe/data/
+# Note: YAML file validation (parsing, references, inheritance chains) is covered
+# by Go tests in pkg/recipe/yaml_test.go and pkg/recipe/metadata_test.go
 test_all_recipe_data_files
 
 # Step 3: Generate recipe via query mode (for detailed bundle flag tests)

@@ -3,6 +3,25 @@ Copyright © 2025 NVIDIA Corporation
 SPDX-License-Identifier: Apache-2.0
 */
 
+// yaml_test.go validates the embedded recipe YAML files in data/.
+//
+// Area of Concern: Static YAML data file validation
+// - Schema conformance - all YAML files parse into RecipeMetadata
+// - Reference validation - spec.base, valuesFile, dependencies exist
+// - Enum validation - service, accelerator, os, intent use valid values
+// - Constraint syntax - all constraint expressions are parseable
+// - Inheritance chains - no circular spec.base references, reasonable depth
+// - Criteria completeness - leaf recipes have accelerator, os, intent
+//
+// These tests iterate over actual embedded YAML files to catch data errors
+// at build/test time before runtime.
+//
+// Related test files:
+// - metadata_test.go: Tests RecipeMetadata types, Merge(), TopologicalSort(),
+//   ValidateDependencies(), and MetadataStore inheritance chain resolution
+// - recipe_test.go: Tests Recipe struct validation methods after recipes
+//   are built (Validate, ValidateStructure, ValidateMeasurementExists)
+
 package recipe
 
 import (
@@ -365,6 +384,249 @@ func validateConstraintValue(value string) error {
 
 	// No operator - valid as exact match
 	return nil
+}
+
+// ============================================================================
+// Inheritance Chain Validation Tests
+// ============================================================================
+
+// TestAllBaseReferencesPointToExistingRecipes verifies that all spec.base
+// references in recipe files point to existing recipe files.
+func TestAllBaseReferencesPointToExistingRecipes(t *testing.T) {
+	files := collectMetadataFiles(t)
+
+	// Build map of recipe names to files
+	recipeNames := make(map[string]string)
+	for _, path := range files {
+		content, err := testMetadataFS.ReadFile(path)
+		if err != nil {
+			t.Fatalf("failed to read %s: %v", path, err)
+		}
+
+		var metadata RecipeMetadata
+		if err := yaml.Unmarshal(content, &metadata); err != nil {
+			t.Fatalf("failed to parse %s: %v", path, err)
+		}
+
+		recipeNames[metadata.Metadata.Name] = path
+	}
+
+	// Check all base references
+	for _, path := range files {
+		filename := filepath.Base(path)
+		if filename == baseYAMLFile {
+			continue // base.yaml doesn't have a base reference
+		}
+
+		t.Run(filename, func(t *testing.T) {
+			content, err := testMetadataFS.ReadFile(path)
+			if err != nil {
+				t.Fatalf("failed to read %s: %v", path, err)
+			}
+
+			var metadata RecipeMetadata
+			if err := yaml.Unmarshal(content, &metadata); err != nil {
+				t.Fatalf("failed to parse %s: %v", path, err)
+			}
+
+			// If spec.base is defined, verify it points to an existing recipe
+			if metadata.Spec.Base != "" {
+				if _, exists := recipeNames[metadata.Spec.Base]; !exists {
+					t.Errorf("spec.base references non-existent recipe %q; available recipes: %v",
+						metadata.Spec.Base, getKeys(recipeNames))
+				}
+			}
+		})
+	}
+}
+
+// TestNoCircularBaseReferences verifies that there are no circular references
+// in the spec.base inheritance chain.
+func TestNoCircularBaseReferences(t *testing.T) {
+	files := collectMetadataFiles(t)
+
+	// Build map of recipe name -> base reference
+	baseRefs := make(map[string]string)
+	for _, path := range files {
+		content, err := testMetadataFS.ReadFile(path)
+		if err != nil {
+			t.Fatalf("failed to read %s: %v", path, err)
+		}
+
+		var metadata RecipeMetadata
+		if err := yaml.Unmarshal(content, &metadata); err != nil {
+			t.Fatalf("failed to parse %s: %v", path, err)
+		}
+
+		if metadata.Spec.Base != "" {
+			baseRefs[metadata.Metadata.Name] = metadata.Spec.Base
+		}
+	}
+
+	// Check for cycles in each recipe's inheritance chain
+	for recipeName := range baseRefs {
+		t.Run(recipeName, func(t *testing.T) {
+			visited := make(map[string]bool)
+			current := recipeName
+
+			for current != "" {
+				if visited[current] {
+					t.Errorf("circular inheritance detected: recipe %q leads back to itself", recipeName)
+					return
+				}
+				visited[current] = true
+				current = baseRefs[current]
+			}
+		})
+	}
+}
+
+// TestInheritanceChainDepthReasonable verifies that inheritance chains
+// don't exceed a reasonable depth (prevents accidental deep nesting).
+func TestInheritanceChainDepthReasonable(t *testing.T) {
+	const maxDepth = 10 // Reasonable limit for inheritance depth
+
+	files := collectMetadataFiles(t)
+
+	// Build map of recipe name -> base reference
+	baseRefs := make(map[string]string)
+	for _, path := range files {
+		content, err := testMetadataFS.ReadFile(path)
+		if err != nil {
+			t.Fatalf("failed to read %s: %v", path, err)
+		}
+
+		var metadata RecipeMetadata
+		if err := yaml.Unmarshal(content, &metadata); err != nil {
+			t.Fatalf("failed to parse %s: %v", path, err)
+		}
+
+		if metadata.Spec.Base != "" {
+			baseRefs[metadata.Metadata.Name] = metadata.Spec.Base
+		}
+	}
+
+	// Check depth of each recipe's inheritance chain
+	for recipeName := range baseRefs {
+		t.Run(recipeName, func(t *testing.T) {
+			depth := 0
+			current := recipeName
+
+			for current != "" && depth <= maxDepth {
+				depth++
+				current = baseRefs[current]
+			}
+
+			if depth > maxDepth {
+				t.Errorf("inheritance chain for %q exceeds max depth of %d", recipeName, maxDepth)
+			}
+		})
+	}
+}
+
+// TestIntermediateRecipesHavePartialCriteria verifies that intermediate recipes
+// (those with a spec.base but incomplete criteria) are properly structured.
+// Intermediate recipes should have at least one criteria field set.
+func TestIntermediateRecipesHavePartialCriteria(t *testing.T) {
+	files := collectMetadataFiles(t)
+
+	for _, path := range files {
+		filename := filepath.Base(path)
+		if filename == baseYAMLFile {
+			continue
+		}
+
+		t.Run(filename, func(t *testing.T) {
+			content, err := testMetadataFS.ReadFile(path)
+			if err != nil {
+				t.Fatalf("failed to read %s: %v", path, err)
+			}
+
+			var metadata RecipeMetadata
+			if err := yaml.Unmarshal(content, &metadata); err != nil {
+				t.Fatalf("failed to parse %s: %v", path, err)
+			}
+
+			// If this recipe has a base reference, it's part of an inheritance chain
+			// Verify it has at least one criteria field to differentiate it
+			if metadata.Spec.Base != "" && metadata.Spec.Criteria != nil {
+				c := metadata.Spec.Criteria
+				hasSomeCriteria := c.Service != "" || c.Accelerator != "" || c.OS != "" || c.Intent != ""
+				if !hasSomeCriteria {
+					t.Errorf("recipe with spec.base should have at least one criteria field set")
+				}
+			}
+		})
+	}
+}
+
+// TestLeafRecipesHaveCompleteCriteria verifies that leaf recipes
+// (those that are intended to be matched directly) have complete criteria.
+// A leaf recipe is one where no other recipe references it as a base.
+func TestLeafRecipesHaveCompleteCriteria(t *testing.T) {
+	files := collectMetadataFiles(t)
+
+	// Build set of recipes that are referenced as base by other recipes
+	referencedAsBases := make(map[string]bool)
+	for _, path := range files {
+		content, err := testMetadataFS.ReadFile(path)
+		if err != nil {
+			t.Fatalf("failed to read %s: %v", path, err)
+		}
+
+		var metadata RecipeMetadata
+		if err := yaml.Unmarshal(content, &metadata); err != nil {
+			t.Fatalf("failed to parse %s: %v", path, err)
+		}
+
+		if metadata.Spec.Base != "" {
+			referencedAsBases[metadata.Spec.Base] = true
+		}
+	}
+
+	// Check leaf recipes (not referenced by others) have complete criteria
+	for _, path := range files {
+		filename := filepath.Base(path)
+		if filename == baseYAMLFile {
+			continue
+		}
+
+		t.Run(filename, func(t *testing.T) {
+			content, err := testMetadataFS.ReadFile(path)
+			if err != nil {
+				t.Fatalf("failed to read %s: %v", path, err)
+			}
+
+			var metadata RecipeMetadata
+			if err := yaml.Unmarshal(content, &metadata); err != nil {
+				t.Fatalf("failed to parse %s: %v", path, err)
+			}
+
+			// Skip if this recipe is referenced as a base by another recipe
+			// (it's an intermediate recipe, not a leaf)
+			if referencedAsBases[metadata.Metadata.Name] {
+				return
+			}
+
+			// Leaf recipes should have complete criteria for matching
+			c := metadata.Spec.Criteria
+			if c == nil {
+				t.Error("leaf recipe missing criteria")
+				return
+			}
+
+			// Leaf recipes need accelerator, os, and intent for bundle generation
+			if c.Accelerator == "" {
+				t.Error("leaf recipe missing accelerator in criteria")
+			}
+			if c.OS == "" {
+				t.Error("leaf recipe missing os in criteria")
+			}
+			if c.Intent == "" {
+				t.Error("leaf recipe missing intent in criteria")
+			}
+		})
+	}
 }
 
 // ============================================================================

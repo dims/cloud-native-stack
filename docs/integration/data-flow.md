@@ -186,6 +186,36 @@ GPU/smi/model               → gpu (type)
 
 ### Recipe Generation
 
+**Inheritance Chain Resolution:**
+
+When a query matches a leaf recipe that has a `spec.base` reference, the system resolves the full inheritance chain before merging:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Inheritance Resolution                                      │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Query: {service: eks, accelerator: h100, intent: training} |
+│                                                             │
+│  1. Find matching leaf recipe: h100-eks-training            │
+│                                                             │
+│  2. Resolve inheritance chain:                              │
+│     h100-eks-training.spec.base = "eks-training"            │
+│     eks-training.spec.base = "eks"                          │
+│     eks.spec.base = "" (implicit base)                      │
+│                                                             │
+│  3. Build chain (root to leaf):                             │
+│     [base] → [eks] → [eks-training] → [h100-eks-training]   |
+│                                                             │
+│  4. Merge in order:                                         │
+│     result = base                                           │
+│     result = merge(result, eks)                             │
+│     result = merge(result, eks-training)                    │
+│     result = merge(result, h100-eks-training)               │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
 **Base + Overlay Merging:**
 ```
 ┌────────────────────────────────────────────────────────┐
@@ -193,18 +223,17 @@ GPU/smi/model               → gpu (type)
 ├────────────────────────────────────────────────────────┤
 │                                                        │
 │  1. Load base measurements (universal config)          │
-│     └─ From embedded data-v1.yaml                      │
+│     └─ From embedded base.yaml                         │
 │                                                        │
-│  2. Match query to overlays                            │
-│     ├─ service=eks, os=ubuntu                          │
-│     ├─ service=eks, gpu=gb200                          │
-│     └─ service=eks, gpu=h100                           │
+│  2. Match query to overlays (leaf recipes)             │
+│     ├─ h100-eks-training (full match)                  │
+│     └─ Resolve inheritance chain                       │
 │                                                        │
-│  3. Merge measurements                                 │
-│     ├─ Base values                                     │
-│     ├─ + Overlay 1 (augment/override)                  │
-│     ├─ + Overlay 2 (augment/override)                  │
-│     └─ + Overlay N (augment/override)                  │
+│  3. Merge inheritance chain in order                   │
+│     ├─ Base values (from base.yaml)                    │
+│     ├─ + eks (EKS-specific settings)                   │
+│     ├─ + eks-training (training optimizations)         │
+│     └─ + h100-eks-training (H100 overrides)            │
 │                                                        │
 │  4. Strip context (if !context)                        │
 │     └─ Remove context maps from all subtypes           │
@@ -243,7 +272,7 @@ Result: MATCH (os wildcarded)
 │ metadata:                                               │
 │   version: recipe format version                        │
 │   created: timestamp                                    │
-│   appliedOverlays: matched overlay descriptions         │
+│   appliedOverlays: inheritance chain (root to leaf)     │
 │                                                         │
 │ criteria: Criteria (service, accelerator, intent, os)   │
 │                                                         │
@@ -256,6 +285,16 @@ Result: MATCH (os wildcarded)
 │ constraints:                                            │
 │   └─ driver: version, cudaVersion                       │
 └─────────────────────────────────────────────────────────┘
+```
+
+**Applied Overlays Example (with inheritance):**
+```yaml
+metadata:
+  appliedOverlays:
+    - base
+    - eks
+    - eks-training
+    - h100-eks-training
 ```
 
 ## Stage 3: Validate (Constraint Checking)
