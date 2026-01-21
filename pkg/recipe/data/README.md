@@ -15,10 +15,13 @@ This directory contains recipe metadata and component configurations for the NVI
 
 ```
 pkg/recipe/data/
-├── base.yaml                    # Base recipe (universal defaults)
-├── eks-gb200-training.yaml      # EKS + GB200 training overlay
-├── ...
-└── components/                  # Component value configurations
+├── base.yaml                      # Base recipe (universal defaults)
+├── eks.yaml                       # EKS overlay
+├── eks-training.yaml              # EKS + training overlay
+├── gb200-eks-training.yaml        # GB200 + EKS + training overlay
+├── gb200-eks-ubuntu-training.yaml # Full criteria leaf recipe
+├── h100-ubuntu-inference.yaml     # H100 inference overlay
+└── components/                    # Component value configurations
     ├── cert-manager/
     ├── gpu-operator/
     ├── ...

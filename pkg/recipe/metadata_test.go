@@ -11,7 +11,7 @@ SPDX-License-Identifier: Apache-2.0
 // - RecipeMetadataSpec.Merge() - overlay merging with base recipes
 // - ComponentRef merging - how overlays override/inherit base values
 // - MetadataStore inheritance chains - multi-level spec.base resolution
-//   (e.g., base → eks → eks-training → h100-eks-training)
+//   (e.g., base → eks → eks-training → gb200-eks-training)
 //
 // These tests use synthesized Go structs and the actual MetadataStore
 // to verify runtime behavior of the metadata layer.
@@ -335,10 +335,13 @@ func TestOverlayAddsNewComponent(t *testing.T) {
 	ctx := context.Background()
 
 	// Build recipe for H100 inference workload
-	// h100-inference.yaml adds network-operator which is NOT in base.yaml
+	// h100-ubuntu-inference.yaml adds network-operator which is NOT in base.yaml
+	// Note: The overlay file requires accelerator=h100, os=ubuntu, intent=inference
+	// so we must specify all criteria to match it (asymmetric matching).
 	builder := NewBuilder()
 	criteria := NewCriteria()
 	criteria.Accelerator = CriteriaAcceleratorH100
+	criteria.OS = CriteriaOSUbuntu
 	criteria.Intent = CriteriaIntentInference
 
 	result, err := builder.BuildFromCriteria(ctx, criteria)
@@ -388,8 +391,11 @@ func TestOverlayMergeDoesNotLoseBaseComponents(t *testing.T) {
 	builder := NewBuilder()
 
 	// Build H100 inference recipe (matches overlay that adds network-operator)
+	// Note: The h100-ubuntu-inference.yaml overlay requires all three criteria
+	// (accelerator=h100, os=ubuntu, intent=inference) to match due to asymmetric matching.
 	criteria := NewCriteria()
 	criteria.Accelerator = CriteriaAcceleratorH100
+	criteria.OS = CriteriaOSUbuntu
 	criteria.Intent = CriteriaIntentInference
 
 	result, err := builder.BuildFromCriteria(ctx, criteria)
@@ -424,15 +430,15 @@ func TestOverlayMergeDoesNotLoseBaseComponents(t *testing.T) {
 }
 
 // TestInheritanceChain verifies that multi-level inheritance chains work correctly.
-// Tests the chain: base → eks → eks-training → h100-eks-training
+// Tests the chain: base → eks → eks-training → gb200-eks-training
 func TestInheritanceChain(t *testing.T) {
 	ctx := context.Background()
 	builder := NewBuilder()
 
-	// Build H100 EKS training recipe (full chain: base → eks → eks-training → h100-eks-training)
+	// Build GB200 EKS training recipe (full chain: base → eks → eks-training → gb200-eks-training)
 	criteria := NewCriteria()
 	criteria.Service = CriteriaServiceEKS
-	criteria.Accelerator = CriteriaAcceleratorH100
+	criteria.Accelerator = CriteriaAcceleratorGB200
 	criteria.OS = CriteriaOSUbuntu
 	criteria.Intent = CriteriaIntentTraining
 
@@ -442,7 +448,7 @@ func TestInheritanceChain(t *testing.T) {
 	}
 
 	// Verify applied overlays includes the full chain
-	// Should include: base, eks, eks-training, h100-eks-training
+	// Should include: base, eks, eks-training, gb200-eks-training
 	appliedOverlays := result.Metadata.AppliedOverlays
 	t.Logf("Applied overlays: %v", appliedOverlays)
 
@@ -459,18 +465,18 @@ func TestInheritanceChain(t *testing.T) {
 		}
 	}
 
-	// Verify gpu-operator has H100-specific overrides (from h100-eks-training)
+	// Verify gpu-operator has GB200-specific overrides (from gb200-eks-training)
 	gpuOp := result.GetComponentRef("gpu-operator")
 	if gpuOp == nil {
 		t.Fatal("gpu-operator not found")
 	}
 	if gpuOp.Overrides == nil {
-		t.Error("gpu-operator should have overrides from h100-eks-training")
+		t.Error("gpu-operator should have overrides from gb200-eks-training")
 	} else {
 		if driver, ok := gpuOp.Overrides["driver"].(map[string]interface{}); ok {
 			if version, ok := driver["version"].(string); ok {
-				if version != "570.133.20" {
-					t.Errorf("Expected H100 driver version 570.133.20, got %s", version)
+				if version != "580.82.07" {
+					t.Errorf("Expected GB200 driver version 580.82.07, got %s", version)
 				}
 			}
 		}
@@ -538,7 +544,7 @@ func TestInheritanceChainDoesNotDuplicateRecipes(t *testing.T) {
 
 	criteria := NewCriteria()
 	criteria.Service = CriteriaServiceEKS
-	criteria.Accelerator = CriteriaAcceleratorH100
+	criteria.Accelerator = CriteriaAcceleratorGB200
 	criteria.Intent = CriteriaIntentTraining
 
 	result, err := builder.BuildFromCriteria(ctx, criteria)

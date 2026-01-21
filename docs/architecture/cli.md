@@ -39,7 +39,7 @@ Generates optimized configuration recipes with two modes:
 - **Snapshot Mode**: Analyzes captured snapshots and generates tailored recipes based on workload intent (training/inference)
 
 **Input Options:**
-- **Query parameters**: `--os ubuntu --gpu h100 --service eks` (direct recipe generation)
+- **Query parameters**: `--os ubuntu --gpu gb200 --service eks` (direct recipe generation)
 - **Snapshot file**: `--snapshot system.yaml` (analyze captured snapshot)
 - **ConfigMap**: `--snapshot cm://namespace/name` (read from Kubernetes)
 
@@ -431,7 +431,7 @@ flowchart TD
     
     C --> C1["Step 1: Load Recipe Store<br/>(embedded YAML, cached)"]
     C1 --> C2["Step 2: Clone Base Measurements<br/>(deep copy: os, systemd, k8s, gpu)"]
-    C2 --> C3["Step 3: Match Overlays<br/>• For each overlay: IsMatch(query)<br/>• Matching: empty=any, else equal<br/>• Version matching with precision"]
+    C2 --> C3["Step 3: Match Overlays<br/>• For each overlay: IsMatch(query)<br/>• Asymmetric: recipe any=wildcard<br/>• Query any ≠ specific recipe"]
     C3 --> C4["Step 4: Merge Overlay Measurements<br/>• Index by measurement.Type<br/>• Merge subtypes by name<br/>• Overlay data takes precedence"]
     C4 --> C5["Step 5: Strip Context<br/>(if not requested)"]
     C5 --> C6["Recipe Structure:<br/>request,<br/>measurements"]
@@ -441,32 +441,29 @@ flowchart TD
 
 #### Recipe Matching Algorithm
 
-The recipe matching uses a **rule-based query system** where overlays specify keys that must match the user's query:
+The recipe matching uses an **asymmetric rule-based query system** where overlay criteria (rules) match against user queries (candidates):
 
 ```yaml
-overlays:
-  - key:
-      service: eks          # Rule: must have service=eks
-      os: ubuntu           # Rule: must have os=ubuntu
-    types:
-      - type: os
-        subtypes:
-          - subtype: grub
-            data:
-              BOOT_IMAGE: /boot/vmlinuz-6.8.0-1028-aws
+# Overlay file (eks.yaml)
+spec:
+  criteria:
+    service: eks          # Rule: query must have service=eks
+                         # Other fields empty = wildcards (match any query value)
 ```
 
-**Matching Rules:**
-1. **All** fields in the overlay key must be satisfied
-2. Empty overlay field → matches anything (wildcard)
-3. Empty query field → matches nothing (no match)
+**Asymmetric Matching Rules:**
+1. **All** non-empty fields in the overlay criteria must be satisfied by the query
+2. **Empty overlay field** → Wildcard (matches any query value)
+3. **Query "any" field** → Only matches overlay "any" (does NOT match specific overlays)
 4. Version fields use semantic version equality with precision awareness
+
+This asymmetric behavior ensures generic queries (e.g., `--service eks --intent training`) don't match overly specific recipes (e.g., recipes requiring `accelerator: gb200`).
 
 #### Usage Examples
 
 ```bash
-# Basic recipe for Ubuntu with H100 GPU
-cnsctl recipe --os ubuntu --gpu h100
+# Basic recipe for Ubuntu with gb200 GPU
+cnsctl recipe --os ubuntu --gpu gb200
 
 # Full specification with all parameters
 cnsctl recipe \
@@ -479,7 +476,7 @@ cnsctl recipe \
   --output recipe.yaml
 
 # Inference workload on GKE  
-cnsctl recipe --service gke --gpu a100 --intent inference
+cnsctl recipe --service gke --gpu gb200 --intent inference
 
 # Snapshot mode - analyze captured snapshot for training
 cnsctl recipe --snapshot system.yaml --intent training
@@ -577,7 +574,11 @@ metadata:
   version: v1.0.0
   created: "2025-01-15T10:30:00Z"
   appliedOverlays:
-    - "service=eks, accelerator=gb200, intent=training"
+    - base
+    - eks
+    - eks-training
+    - gb200-eks-training
+    - gb200-eks-ubuntu-training
 criteria:
   service: eks
   accelerator: gb200

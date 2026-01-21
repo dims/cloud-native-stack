@@ -641,20 +641,20 @@ cnsctl snapshot --deploy-agent --kubeconfig ~/.kube/prod-cluster
 # Note: All taints are tolerated by default, only specify --toleration to restrict
 cnsctl snapshot --deploy-agent \
   --namespace gpu-operator \
-  --node-selector accelerator=nvidia-h100 \
+  --node-selector accelerator=nvidia-gb200 \
   --toleration nvidia.com/gpu:NoSchedule \
   --timeout 10m
 
 # STEP 2: Recipe - Generate optimized configuration
 # Query mode: Direct generation from parameters
-cnsctl recipe --os ubuntu --service eks --gpu h100
+cnsctl recipe --os ubuntu --service eks --gpu gb200
 cnsctl recipe \
   --os ubuntu \
   --osv 24.04 \
   --kernel 6.8 \
   --service eks \
   --k8s 1.33 \
-  --gpu h100 \
+  --gpu gb200 \
   --intent training \
   --context \
   --format yaml
@@ -795,11 +795,11 @@ PORT=8080 LOG_LEVEL=debug go run cmd/cnsd/main.go
 curl http://localhost:8080/health
 curl http://localhost:8080/ready
 curl http://localhost:8080/metrics
-curl "http://localhost:8080/v1/recipe?os=ubuntu&gpu=h100&intent=training"
+curl "http://localhost:8080/v1/recipe?os=ubuntu&gpu=gb200&intent=training"
 curl "http://localhost:8080/v1/recipe?os=ubuntu&osv=24.04&service=eks&gpu=gb200&context=true"
 
 # Test with jq
-curl -s "http://localhost:8080/v1/recipe?gpu=h100" | jq '.matchedRules'
+curl -s "http://localhost:8080/v1/recipe?gpu=gb200" | jq '.matchedRules'
 ```
 
 ### Testing in Kubernetes
@@ -837,9 +837,9 @@ The `tools/e2e` script validates the complete ConfigMap workflow:
 
 ```bash
 # Run full E2E test (snapshot → recipe → bundle)
-./tools/e2e -s examples/snapshots/h100.yaml \
-           -r examples/recipes/h100-eks-ubuntu-training.yaml \
-           -b examples/bundles/h100-eks-ubuntu-training
+./tools/e2e -s examples/snapshots/gb200.yaml \
+           -r examples/recipes/gb200-eks-ubuntu-training.yaml \
+           -b examples/bundles/gb200-eks-ubuntu-training
 
 # Just capture snapshot
 ./tools/e2e -s snapshot.yaml

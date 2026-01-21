@@ -175,33 +175,88 @@ func NewCriteria() *Criteria {
 	}
 }
 
-// Matches checks if the given criteria matches this criteria.
-// A criteria matches if all non-"any" fields match.
-// "any" acts as a wildcard and matches everything.
+// Matches checks if this recipe criteria matches the given query criteria.
+// Uses asymmetric matching:
+//   - Query "any" (or empty) = ONLY matches recipes that are also "any"/empty for that field
+//   - Recipe "any" (or empty) = wildcard (matches any query value for that field)
+//   - Query specific + Recipe specific = must match exactly
+//
+// This ensures a generic query (e.g., accelerator=any) only matches generic recipes
+// (e.g., accelerator=any), while a specific query (e.g., accelerator=gb200) can match
+// both generic recipes and recipes with that specific value.
 func (c *Criteria) Matches(other *Criteria) bool {
 	if other == nil {
 		return true
 	}
 
-	// Check each field - "any" matches everything
-	if c.Service != CriteriaServiceAny && other.Service != CriteriaServiceAny && c.Service != other.Service {
+	// Asymmetric matching for each field:
+	// - If query (other) is "any"/empty → only match if recipe is also "any"/empty
+	// - If recipe (c) is "any"/empty → match any query value (recipe is generic)
+	// - Otherwise → must match exactly
+	//
+	// Note: Empty string ("") is treated as equivalent to "any" because when YAML is parsed,
+	// omitted fields get the zero value ("") rather than the "any" constant.
+
+	// Service matching
+	if !matchesCriteriaField(string(c.Service), string(other.Service)) {
 		return false
 	}
-	if c.Accelerator != CriteriaAcceleratorAny && other.Accelerator != CriteriaAcceleratorAny && c.Accelerator != other.Accelerator {
+
+	// Accelerator matching
+	if !matchesCriteriaField(string(c.Accelerator), string(other.Accelerator)) {
 		return false
 	}
-	if c.Intent != CriteriaIntentAny && other.Intent != CriteriaIntentAny && c.Intent != other.Intent {
+
+	// Intent matching
+	if !matchesCriteriaField(string(c.Intent), string(other.Intent)) {
 		return false
 	}
-	if c.OS != CriteriaOSAny && other.OS != CriteriaOSAny && c.OS != other.OS {
+
+	// OS matching
+	if !matchesCriteriaField(string(c.OS), string(other.OS)) {
 		return false
 	}
-	// Nodes: 0 means any, otherwise must match exactly
-	if c.Nodes != 0 && other.Nodes != 0 && c.Nodes != other.Nodes {
+
+	// Nodes: 0 means any - apply same asymmetric logic
+	// Query 0 (any) → only match if recipe is also 0 (generic)
+	// Recipe 0 (any) → match any query value
+	if other.Nodes == 0 && c.Nodes != 0 {
+		// Query is generic but recipe is specific - no match
+		return false
+	}
+	if other.Nodes != 0 && c.Nodes != 0 && c.Nodes != other.Nodes {
+		// Both specific but different values - no match
 		return false
 	}
 
 	return true
+}
+
+// matchesCriteriaField implements asymmetric matching for a single criteria field.
+// Returns true if the recipe field matches the query field.
+//
+// Matching rules:
+//   - Query is "any"/empty → only matches if recipe is also "any"/empty
+//   - Recipe is "any"/empty → matches any query value (recipe is generic/wildcard)
+//   - Otherwise → must match exactly
+func matchesCriteriaField(recipeValue, queryValue string) bool {
+	recipeIsAny := recipeValue == criteriaAnyValue || recipeValue == ""
+	queryIsAny := queryValue == criteriaAnyValue || queryValue == ""
+
+	// If recipe is "any", it matches any query value (recipe is generic)
+	if recipeIsAny {
+		return true
+	}
+
+	// Recipe has a specific value
+	// Query must also have that specific value (not "any")
+	if queryIsAny {
+		// Query is generic but recipe is specific - no match
+		return false
+	}
+
+	// Both have specific values - must match exactly
+	return recipeValue == queryValue
 }
 
 // Specificity returns a score indicating how specific this criteria is.

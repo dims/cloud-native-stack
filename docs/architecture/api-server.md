@@ -66,7 +66,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A["HTTP Client<br/>GET /v1/recipe?os=ubuntu&gpu=h100"] --> M1
+    A["HTTP Client<br/>GET /v1/recipe?os=ubuntu&gpu=gb200"] --> M1
     
     M1["1. Metrics Middleware<br/>• Start timer<br/>• Increment in-flight counter<br/>• Wrap response writer<br/>• Record duration & count"] --> M2
     
@@ -269,13 +269,17 @@ Shared with CLI - same logic as described in CLI architecture.
     "version": "v1.0.0",
     "created": "2025-12-25T12:00:00Z",
     "appliedOverlays": [
-      "service=eks, accelerator=h100"
+      "base",
+      "eks",
+      "eks-training",
+      "gb200-eks-training"
     ]
   },
   "criteria": {
     "service": "eks",
-    "accelerator": "h100",
-    "os": "ubuntu"
+    "accelerator": "gb200",
+    "intent": "training",
+    "os": "any"
   },
   "componentRefs": [
     {

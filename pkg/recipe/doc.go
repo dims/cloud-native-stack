@@ -109,15 +109,19 @@
 //
 // # Criteria Matching
 //
-// Criteria use a priority-based matching system:
+// Criteria use asymmetric matching with priority-based resolution:
+//
+// Recipe Wildcard (recipe field = "any"):
+//   - Recipe "any" acts as a wildcard, matching any query value
+//   - Example: Recipe with accelerator="any" matches query accelerator="h100"
+//
+// Query Wildcard (query field = "any"):
+//   - Query "any" only matches recipes that also have "any"
+//   - Prevents generic queries from matching overly-specific recipes
+//   - Example: Query accelerator="any" does NOT match recipe accelerator="h100"
 //
 // Exact Match:
-//   - Criteria: Service=eks, Accelerator=h100
-//   - Matches: Overlay with service="eks", accelerator="h100"
-//
-// Wildcard Match:
-//   - Criteria: Service=eks, Accelerator=any
-//   - Matches: Any accelerator type with Service=eks
+//   - Query service="eks", accelerator="h100" matches recipe with same values
 //
 // Priority:
 //   - More specific overlays take precedence

@@ -114,14 +114,17 @@ Generate optimized configuration recipe based on environment parameters.
     "version": "v1.0.0",
     "created": "2025-12-31T10:30:00Z",
     "appliedOverlays": [
-      "service=eks, accelerator=h100, intent=training"
+      "base",
+      "eks",
+      "eks-training",
+      "gb200-eks-training"
     ]
   },
   "criteria": {
     "service": "eks",
-    "accelerator": "h100",
+    "accelerator": "gb200",
     "intent": "training",
-    "os": "ubuntu"
+    "os": "any"
   },
   "componentRefs": [
     {

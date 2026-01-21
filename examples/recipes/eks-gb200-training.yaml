@@ -4,12 +4,15 @@ metadata:
   timestamp: "2026-01-12T21:53:03Z"
   version: v0.12.3-next
   appliedOverlays:
+    - base
+    - eks
+    - eks-training
     - gb200-eks-training
 criteria:
   service: eks
   accelerator: gb200
   intent: training
-  os: ubuntu
+  os: any
 constraints:
   - name: K8s.server.version
     value: '>= 1.32.4'

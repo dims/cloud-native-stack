@@ -119,12 +119,20 @@ func TestCriteriaMatches(t *testing.T) {
 			want:     true,
 		},
 		{
-			name: "specific service matches any",
+			name: "specific recipe does not match generic query",
 			criteria: &Criteria{
 				Service: CriteriaServiceEKS,
 			},
 			other: NewCriteria(),
-			want:  true,
+			want:  false, // Query "any" only matches generic recipes
+		},
+		{
+			name:     "generic recipe matches specific query",
+			criteria: NewCriteria(), // Recipe: all "any"
+			other: &Criteria{
+				Service: CriteriaServiceEKS,
+			},
+			want: true, // Recipe is generic, matches any query value
 		},
 		{
 			name: "same service matches",
@@ -173,6 +181,30 @@ func TestCriteriaMatches(t *testing.T) {
 				Intent:      CriteriaIntentTraining,
 			},
 			want: false,
+		},
+		{
+			name: "recipe with partial criteria matches query with more fields",
+			criteria: &Criteria{
+				Service: CriteriaServiceEKS,
+				// Accelerator is "any" (zero value)
+			},
+			other: &Criteria{
+				Service:     CriteriaServiceEKS,
+				Accelerator: CriteriaAcceleratorGB200,
+			},
+			want: true, // Recipe service=eks matches, accelerator is generic so matches any
+		},
+		{
+			name: "recipe with more specific criteria does not match less specific query",
+			criteria: &Criteria{
+				Service:     CriteriaServiceEKS,
+				Accelerator: CriteriaAcceleratorGB200,
+			},
+			other: &Criteria{
+				Service: CriteriaServiceEKS,
+				// Accelerator is "any"
+			},
+			want: false, // Query doesn't specify accelerator, but recipe requires gb200
 		},
 	}
 

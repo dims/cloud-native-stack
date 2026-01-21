@@ -154,9 +154,9 @@ git clone https://github.com/NVIDIA/cloud-native-stack.git
 cd cloud-native-stack
 
 # Test complete workflow: agent → snapshot → recipe → bundle
-./tools/e2e -s examples/snapshots/h100.yaml \
-           -r examples/recipes/h100-eks-ubuntu-training.yaml \
-           -b examples/bundles/h100-eks-ubuntu-training
+./tools/e2e -s examples/snapshots/gb200.yaml \
+           -r examples/recipes/gb200-eks-ubuntu-training.yaml \
+           -b examples/bundles/gb200-eks-ubuntu-training
 
 # Test just snapshot capture
 ./tools/e2e -s snapshot.yaml

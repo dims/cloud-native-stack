@@ -53,9 +53,9 @@ Produces optimized configuration recipes based on environment criteria or captur
   - **ConfigMap Input**: Can read snapshots from ConfigMap URIs (`cm://namespace/name`)
 - **API Server**: `GET /v1/recipe` endpoint for programmatic access (query mode only)
 - **Multi-Level Inheritance**: Recipes support `spec.base` references for inheritance chains
-  - Example chain: `base → eks → eks-training → h100-eks-training`
-  - Intermediate recipes (eks, eks-training) capture shared configurations
-  - Leaf recipes (h100-eks-training) contain hardware-specific overrides
+  - Example chain: `base → eks → eks-training → gb200-eks-training → gb200-eks-ubuntu-training`
+  - Intermediate recipes (eks, eks-training, gb200-eks-training) capture shared configurations
+  - Leaf recipes (gb200-eks-ubuntu-training) contain hardware + OS-specific overrides
 - **Output**: Recipe with component references and deployment constraints
 - **Storage**: File, stdout, or **Kubernetes ConfigMap**
 
@@ -1197,9 +1197,9 @@ flowchart TD
 **Example Usage**:
 ```bash
 # Full workflow (snapshot → recipe → bundle)
-./tools/e2e -s examples/snapshots/h100.yaml \
-           -r examples/recipes/h100-eks-ubuntu-training.yaml \
-           -b examples/bundles/h100-eks-ubuntu-training
+./tools/e2e -s examples/snapshots/gb200.yaml \
+           -r examples/recipes/gb200-eks-ubuntu-training.yaml \
+           -b examples/bundles/gb200-eks-ubuntu-training
 
 # Just capture snapshot from agent
 ./tools/e2e -s snapshot.yaml

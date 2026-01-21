@@ -373,9 +373,9 @@ Validate the complete workflow with the e2e script:
 
 ```bash
 # Test full workflow: agent → snapshot → recipe → bundle
-./tools/e2e -s examples/snapshots/h100.yaml \
-           -r examples/recipes/h100-eks-ubuntu-training.yaml \
-           -b examples/bundles/h100-eks-ubuntu-training
+./tools/e2e -s examples/snapshots/gb200.yaml \
+           -r examples/recipes/gb200-eks-ubuntu-training.yaml \
+           -b examples/bundles/gb200-eks-ubuntu-training
 
 # Just test agent deployment and snapshot capture
 ./tools/e2e -s snapshot.yaml

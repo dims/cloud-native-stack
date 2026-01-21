@@ -11,7 +11,7 @@ spec:
     service: eks
     intent: training
 
-  # Training-specific constraints for EKS
+  # Training specific constraints for EKS workloads
   # Constraint names use fully qualified measurement paths: {type}.{subtype}.{key}
   constraints:
     - name: K8s.server.version

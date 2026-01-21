@@ -38,7 +38,7 @@ Cloud Native Stack separates **validated configuration knowledge** from **how th
 - Those definitions can be rendered into concrete artifacts such as Helm values, Kubernetes manifests, or install scripts.- Recipes can be validated against actual system configurations to verify compatibility.
 This separation allows the same validated configuration to be applied consistently across different environments and automation systems.
 
-*For example, a configuration validated for H100 on Ubuntu 22.04 with Kubernetes 1.29 can be rendered into Helm values and manifests suitable for use in an existing GitOps pipeline.*
+*For example, a configuration validated for gb200 on Ubuntu 22.04 with Kubernetes 1.29 can be rendered into Helm values and manifests suitable for use in an existing GitOps pipeline.*
 
 ## Get Started
 

@@ -212,7 +212,7 @@ func TestBundleEndpointValidRequest(t *testing.T) {
 		"metadata": {
 			"version": "v1.0.0",
 			"generatedAt": "2025-01-15T10:30:00Z",
-			"appliedOverlays": ["service=eks, accelerator=h100"]
+			"appliedOverlays": ["base", "eks", "eks-training"]
 		},
 		"criteria": {
 			"service": "eks",

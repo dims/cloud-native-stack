@@ -32,7 +32,6 @@ pkg/recipe/data/
 ├── eks.yaml                       # EKS-specific settings
 ├── eks-training.yaml              # EKS + training workloads (inherits from eks)
 ├── gb200-eks-ubuntu-training.yaml # GB200/EKS/Ubuntu/training (inherits from eks-training)
-├── h100-eks-ubuntu-training.yaml  # H100/EKS/Ubuntu/training (inherits from eks-training)
 ├── h100-ubuntu-inference.yaml     # H100/Ubuntu/inference
 └── components/                    # Component values files
     ├── cert-manager/
@@ -204,24 +203,24 @@ Each recipe can specify a parent recipe via `spec.base`:
 kind: recipeMetadata
 apiVersion: cns.nvidia.com/v1alpha1
 metadata:
-  name: h100-eks-ubuntu-training
+  name: gb200-eks-ubuntu-training
 
 spec:
   base: eks-training  # Inherits from eks-training recipe
   
   criteria:
     service: eks
-    accelerator: h100
+    accelerator: gb200
     os: ubuntu
     intent: training
     
-  # Only H100-specific overrides here
+  # Only GB200-specific overrides here
   componentRefs:
     - name: gpu-operator
       version: v25.3.3
       overrides:
         driver:
-          version: 570.133.20
+          version: 580.82.07
 ```
 
 ### Inheritance Chain Example
@@ -235,18 +234,19 @@ base.yaml
     │       │
     │       └── eks-training.yaml (spec.base: eks)
     │               │
-    │               ├── h100-eks-ubuntu-training.yaml (spec.base: eks-training)
-    │               │
-    │               └── gb200-eks-ubuntu-training.yaml (spec.base: eks-training)
+    │               └── gb200-eks-training.yaml (spec.base: eks-training)
+    │                       │
+    │                       └── gb200-eks-ubuntu-training.yaml (spec.base: gb200-eks-training)
     │
     └── h100-ubuntu-inference.yaml (spec.base: empty → inherits from base)
 ```
 
-**Resolution Order:** When resolving `h100-eks-ubuntu-training`:
+**Resolution Order:** When resolving `gb200-eks-ubuntu-training`:
 1. Start with `base.yaml` (root)
 2. Merge `eks.yaml` (EKS-specific settings)
 3. Merge `eks-training.yaml` (training optimizations)
-4. Merge `h100-eks-ubuntu-training.yaml` (H100-specific overrides)
+4. Merge `gb200-eks-training.yaml` (GB200 + training-specific overrides)
+5. Merge `gb200-eks-ubuntu-training.yaml` (Ubuntu + full-spec overrides)
 
 ### Inheritance Rules
 
@@ -258,8 +258,8 @@ base.yaml
 **2. Merge Precedence**
 Later recipes in the chain override earlier ones:
 ```
-base → eks → eks-training → h100-eks-training
-(lowest)                      (highest priority)
+base → eks → eks-training → gb200-eks-training → gb200-eks-ubuntu-training
+(lowest)                                            (highest priority)
 ```
 
 **3. Field Merging**
@@ -274,7 +274,7 @@ base → eks → eks-training → h100-eks-training
 - Capture shared configurations for a category
 - Can be matched by user queries (but typically less specific)
 
-**Leaf Recipes** (e.g., `h100-eks-ubuntu-training.yaml`):
+**Leaf Recipes** (e.g., `gb200-eks-ubuntu-training.yaml`):
 - Have **complete criteria** (all required fields)
 - Matched by specific user queries
 - Contain final, hardware-specific overrides
@@ -479,24 +479,52 @@ The recipe system uses an **asymmetric rule matching algorithm** where recipe cr
 
 A recipe's criteria matches a user query when **every non-"any" field in the criteria is satisfied by the query**:
 
-1. **Empty/unpopulated fields in criteria** = Wildcard (matches any value)
+1. **Empty/unpopulated fields in recipe criteria** = Wildcard (matches any query value)
 2. **Populated fields must match exactly** (case-insensitive)
-3. **Matching is asymmetric**: More specific recipes match more specific queries
+3. **Matching is asymmetric**: A recipe with specific fields (e.g., `accelerator: h100`) will NOT match a generic query (e.g., `accelerator: any`)
+
+### Asymmetric Matching Explained
+
+The key insight is that matching is **one-directional**:
+
+- **Recipe "any"** (or empty) → Matches ANY query value (acts as wildcard)
+- **Query "any"** → Only matches recipe "any" (does NOT match specific recipes)
+
+This prevents overly specific recipes from being selected when the user hasn't specified those criteria.
 
 ### Matching Logic
 
 ```go
-// A criteria matches if all non-"any" fields match
+// Asymmetric matching: recipe criteria as receiver, query as parameter
 func (c *Criteria) Matches(other *Criteria) bool {
-    // "any" matches everything
-    if c.Service != "any" && other.Service != "any" && c.Service != other.Service {
-        return false
-    }
-    if c.Accelerator != "any" && other.Accelerator != "any" && c.Accelerator != other.Accelerator {
-        return false
-    }
-    // ... same for intent, os, nodes
+    // If recipe (c) is "any" (or empty), it matches any query value (wildcard).
+    // If query (other) is "any" but recipe is specific, it does NOT match.
+    // If both have specific values, they must match exactly.
+    
+    // For each field, call matchesCriteriaField(recipeValue, queryValue)
+    // ...
     return true
+}
+
+// matchesCriteriaField implements asymmetric matching for a single field.
+func matchesCriteriaField(recipeValue, queryValue string) bool {
+    recipeIsAny := recipeValue == "any" || recipeValue == ""
+    queryIsAny := queryValue == "any" || queryValue == ""
+
+    // If recipe is "any", it matches any query value (recipe is generic)
+    if recipeIsAny {
+        return true
+    }
+
+    // Recipe has a specific value
+    // Query must also have that specific value (not "any")
+    if queryIsAny {
+        // Query is generic but recipe is specific - no match
+        return false
+    }
+
+    // Both have specific values - must match exactly
+    return recipeValue == queryValue
 }
 ```
 
@@ -518,7 +546,7 @@ func (c *Criteria) Specificity() int {
 
 ### Matching Examples
 
-**Example 1: Broad Recipe**
+**Example 1: Broad Recipe Matches Specific Query**
 ```yaml
 Recipe Criteria: { service: "eks" }
 User Query:      { service: "eks", os: "ubuntu", accelerator: "h100" }
@@ -526,21 +554,32 @@ Result:          ✅ MATCH - Recipe only requires service=eks, other fields are 
 Specificity:     1
 ```
 
-**Example 2: Specific Recipe**
+**Example 2: Specific Recipe Doesn't Match Different Specific Query**
 ```yaml
 Recipe Criteria: { service: "eks", accelerator: "gb200", intent: "training" }
 User Query:      { service: "eks", os: "ubuntu", accelerator: "h100" }
 Result:          ❌ NO MATCH - Accelerator doesn't match (gb200 ≠ h100)
 ```
 
-**Example 3: Multiple Matches**
+**Example 3: Specific Recipe Doesn't Match Generic Query (Asymmetric)**
+```yaml
+Recipe Criteria: { service: "eks", accelerator: "gb200", intent: "training" }
+User Query:      { service: "eks", intent: "training" }  # accelerator unspecified = "any"
+Result:          ❌ NO MATCH - Recipe requires gb200, query has "any" (wildcard doesn't match specific)
+```
+
+This asymmetric behavior ensures that a generic query like `--service eks --intent training` only matches generic recipes, not hardware-specific ones like `gb200-eks-training.yaml`.
+
+**Example 4: Multiple Matches (Fully Specific Query)**
 ```yaml
 User Query: { service: "eks", os: "ubuntu", accelerator: "gb200", intent: "training" }
 
 Matching Recipes (sorted by specificity):
-  1. eks.yaml               { service: eks }                                    Specificity: 1
-  2. eks-training.yaml      { service: eks, intent: training }                  Specificity: 2
-  3. gb200-eks-ubuntu-training.yaml { service: eks, accelerator: gb200, os: ubuntu, intent: training }  Specificity: 4
+  1. base.yaml              { }  (all "any")                                    Specificity: 0
+  2. eks.yaml               { service: eks }                                    Specificity: 1
+  3. eks-training.yaml      { service: eks, intent: training }                  Specificity: 2
+  4. gb200-eks-training.yaml { service: eks, accelerator: gb200, intent: training }  Specificity: 3
+  5. gb200-eks-ubuntu-training.yaml { service: eks, accelerator: gb200, os: ubuntu, intent: training }  Specificity: 4
 
 Result: All matching recipes are applied in order of specificity
 ```
@@ -660,25 +699,29 @@ flowchart TD
     
     Match1 --> Match2["eks-training.yaml<br/>criteria: { service: eks, intent: training }<br/>✅ MATCH (specificity: 2)"]
     
-    Match2 --> Match3["gb200-eks-ubuntu-training.yaml<br/>criteria: { service: eks, accelerator: gb200, intent: training }<br/>✅ MATCH (specificity: 3)"]
+    Match2 --> Match3["gb200-eks-training.yaml<br/>criteria: { service: eks, accelerator: gb200, intent: training }<br/>✅ MATCH (specificity: 3)"]
     
-    Match3 --> Resolve["Resolve Inheritance Chains"]
+    Match3 --> Match4["gb200-eks-ubuntu-training.yaml<br/>criteria: { service: eks, accelerator: gb200, os: ubuntu, intent: training }<br/>✅ MATCH (specificity: 4)"]
+    
+    Match4 --> Resolve["Resolve Inheritance Chains"]
     
     Resolve --> Chain1["Chain: base → eks"]
     Resolve --> Chain2["Chain: base → eks → eks-training"]
-    Resolve --> Chain3["Chain: base → eks → eks-training → gb200-eks-ubuntu-training"]
+    Resolve --> Chain3["Chain: base → eks → eks-training → gb200-eks-training"]
+    Resolve --> Chain4["Chain: base → eks → eks-training → gb200-eks-training → gb200-eks-ubuntu-training"]
     
     Chain1 --> Merge["Merge All (deduplicated)"]
     Chain2 --> Merge
     Chain3 --> Merge
+    Chain4 --> Merge
     
-    Merge --> Merged["Merged Spec<br/>base + eks + eks-training + gb200-eks-ubuntu-training"]
+    Merge --> Merged["Merged Spec<br/>base + eks + eks-training + gb200-eks-training + gb200-eks-ubuntu-training"]
     
     Merged --> Validate["Validate Dependencies"]
     
     Validate --> Sort["Topological Sort"]
     
-    Sort --> Result["RecipeResult<br/>• componentRefs: [cert-manager, gpu-operator, ...]<br/>• deploymentOrder: [cert-manager, gpu-operator, ...]<br/>• constraints: [K8s.server.version >= 1.32, ...]<br/>• appliedOverlays: [base, eks, eks-training, gb200-eks-training]"]
+    Sort --> Result["RecipeResult<br/>• componentRefs: [cert-manager, gpu-operator, ...]<br/>• deploymentOrder: [cert-manager, gpu-operator, ...]<br/>• constraints: [K8s.server.version >= 1.32, ...]<br/>• appliedOverlays: [base, eks, eks-training, gb200-eks-training, gb200-eks-ubuntu-training]"]
 ```
 
 ## Usage Examples

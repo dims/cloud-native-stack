@@ -1,11 +1,11 @@
 kind: recipeMetadata
 apiVersion: cns.nvidia.com/v1alpha1
 metadata:
-  name: gb200-eks-training
+  name: gb200-eks-ubuntu-training
 
 spec:
-  # Inherits from eks-training recipe (EKS + training settings)
-  base: eks-training
+  # Inherits from gb200-eks-training recipe (EKS + Ubuntu + training settings)
+  base: gb200-eks-training
 
   criteria:
     service: eks
@@ -26,21 +26,6 @@ spec:
       value: ">= 6.8"
 
   componentRefs:
-
-    # GB200-specific GPU Operator overrides (inherits valuesFile from eks-training)
-    - name: gpu-operator
-      type: Helm
-      version: v25.3.3
-      overrides:
-        driver:
-          version: 580.82.07
-          kernelModuleConfig:
-            name: "kernel-module-params"
-        cdi:
-          enabled: true
-          default: false
-        gdrcopy:
-          enabled: true
 
     # Override with Ubuntu customization for Skyhook
     - name: skyhook

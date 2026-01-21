@@ -4,12 +4,14 @@ metadata:
   timestamp: "2026-01-12T21:53:03Z"
   version: v0.12.3-next
   appliedOverlays:
-    - h100-eks-training
+    - base
+    - eks
+    - eks-training
 criteria:
   service: eks
   accelerator: h100
   intent: training
-  os: ubuntu
+  os: any
 constraints:
   - name: K8s.server.version
     value: '>= 1.30'

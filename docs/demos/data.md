@@ -21,24 +21,21 @@ cnsctl -h
 View embedded recipe files structure:
 
 ```shell
-ls -la pkg/recipe/data/
+tree -L 1 pkg/recipe/data/
 ```
 
 Expected structure:
 
 ```
 pkg/recipe/data/
-├── base.yaml                      # Root recipe
-├── eks.yaml                       # EKS-specific
-├── eks-training.yaml              # EKS + training
-├── gb200-eks-ubuntu-training.yaml # GB200 leaf recipe
-├── h100-eks-ubuntu-training.yaml  # H100 leaf recipe
-└── components/                    # Values files
-    ├── cert-manager/
-    ├── gpu-operator/
-    ├── network-operator/
-    ├── nvsentinel/
-    └── skyhook/
+├── base.yaml
+├── components
+├── eks-training.yaml
+├── eks.yaml
+├── gb200-eks-training.yaml
+├── gb200-eks-ubuntu-training.yaml
+├── h100-ubuntu-inference.yaml
+└── README.md
 ```
 
 ## Multi-Level Inheritance
@@ -61,7 +58,13 @@ View EKS training recipe (inherits from eks):
 cat pkg/recipe/data/eks-training.yaml | yq .
 ```
 
-View leaf recipe (inherits from eks-training):
+View GB200 EKS training recipe (inherits from eks-training):
+
+```shell
+cat pkg/recipe/data/gb200-eks-training.yaml | yq .
+```
+
+View leaf recipe (inherits from gb200-eks-training):
 
 ```shell
 cat pkg/recipe/data/gb200-eks-ubuntu-training.yaml | yq .
@@ -76,7 +79,9 @@ base.yaml
             │
             └── eks-training.yaml (service: eks, intent: training)
                     │
-                    └── gb200-eks-ubuntu-training.yaml (full criteria)
+                    └── gb200-eks-training.yaml (service: eks, accelerator: gb200, intent: training)
+                            │
+                            └── gb200-eks-ubuntu-training.yaml (full criteria)
 ```
 
 ## Criteria Matching
@@ -84,46 +89,75 @@ base.yaml
 ### Broad Query (matches multiple overlays)
 
 ```shell
-cnsctl recipe --service eks
+cnsctl recipe --service eks | yq .metadata
 ```
 
 This matches:
-- `eks.yaml` (specificity: 1)
+
+```yaml
+  appliedOverlays:
+    - base
+    - eks
+```
 
 ### More Specific Query
 
 ```shell
-cnsctl recipe --service eks --intent training
+cnsctl recipe \
+    --service eks \
+    --intent training \
+    | yq .metadata
 ```
 
 This matches:
-- `eks.yaml` (specificity: 1)
-- `eks-training.yaml` (specificity: 2)
+
+```yaml
+  appliedOverlays:
+    - base
+    - eks
+    - eks-training
+```
 
 ### Fully Specific Query
 
 ```shell
 cnsctl recipe \
-  --service eks \
-  --accelerator gb200 \
-  --os ubuntu \
-  --intent training
+    --service eks \
+    --accelerator gb200 \
+    --intent training \
+    | yq .metadata
 ```
 
-This matches and merges (in order):
-- `eks.yaml` (specificity: 1)
-- `eks-training.yaml` (specificity: 2)
-- `gb200-eks-ubuntu-training.yaml` (specificity: 4)
+This matches:
 
-View applied overlays in output:
+```yaml
+  appliedOverlays:
+    - base
+    - eks
+    - eks-training
+    - gb200-eks-training
+```
+
+### Full Criteria Query (with OS)
 
 ```shell
 cnsctl recipe \
-  --service eks \
-  --accelerator gb200 \
-  --os ubuntu \
-  --intent training \
-  --format yaml | yq .metadata.appliedOverlays
+    --service eks \
+    --accelerator gb200 \
+    --intent training \
+    --os ubuntu \
+    | yq .metadata
+```
+
+This matches all 5 levels:
+
+```yaml
+  appliedOverlays:
+    - base
+    - eks
+    - eks-training
+    - gb200-eks-training
+    - gb200-eks-ubuntu-training
 ```
 
 ## Component Configuration

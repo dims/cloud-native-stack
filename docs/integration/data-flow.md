@@ -195,23 +195,31 @@ When a query matches a leaf recipe that has a `spec.base` reference, the system 
 │ Inheritance Resolution                                      │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│  Query: {service: eks, accelerator: h100, intent: training} |
+│  Query: {service: eks, accelerator: gb200, os: ubuntu,      │
+│          intent: training}                                  │
 │                                                             │
-│  1. Find matching leaf recipe: h100-eks-training            │
+│  1. Find matching recipes (by specificity):                 │
+│     - eks (specificity: 1)                                  │
+│     - eks-training (specificity: 2)                         │
+│     - gb200-eks-training (specificity: 3)                   │
+│     - gb200-eks-ubuntu-training (specificity: 4)            │
 │                                                             │
-│  2. Resolve inheritance chain:                              │
-│     h100-eks-training.spec.base = "eks-training"            │
+│  2. Resolve inheritance chain for each:                     │
+│     gb200-eks-ubuntu-training.spec.base = "gb200-eks-training"
+│     gb200-eks-training.spec.base = "eks-training"           │
 │     eks-training.spec.base = "eks"                          │
 │     eks.spec.base = "" (implicit base)                      │
 │                                                             │
 │  3. Build chain (root to leaf):                             │
-│     [base] → [eks] → [eks-training] → [h100-eks-training]   |
+│     [base] → [eks] → [eks-training] → [gb200-eks-training]  │
+│           → [gb200-eks-ubuntu-training]                     │
 │                                                             │
-│  4. Merge in order:                                         │
+│  4. Merge in order (later overrides earlier):               │
 │     result = base                                           │
 │     result = merge(result, eks)                             │
 │     result = merge(result, eks-training)                    │
-│     result = merge(result, h100-eks-training)               │
+│     result = merge(result, gb200-eks-training)              │
+│     result = merge(result, gb200-eks-ubuntu-training)       │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -225,15 +233,18 @@ When a query matches a leaf recipe that has a `spec.base` reference, the system 
 │  1. Load base measurements (universal config)          │
 │     └─ From embedded base.yaml                         │
 │                                                        │
-│  2. Match query to overlays (leaf recipes)             │
-│     ├─ h100-eks-training (full match)                  │
-│     └─ Resolve inheritance chain                       │
+│  2. Match query to overlays (by criteria)              │
+│     ├─ Query matches recipes where:                    │
+│     │   - Recipe "any" field = wildcard (matches any)  │
+│     │   - Query "any" field = only matches recipe "any"│
+│     └─ Resolve inheritance chain for each match        │
 │                                                        │
 │  3. Merge inheritance chain in order                   │
 │     ├─ Base values (from base.yaml)                    │
 │     ├─ + eks (EKS-specific settings)                   │
 │     ├─ + eks-training (training optimizations)         │
-│     └─ + h100-eks-training (H100 overrides)            │
+│     ├─ + gb200-eks-training (GB200 overrides)          │
+│     └─ + gb200-eks-ubuntu-training (Ubuntu specifics)  │
 │                                                        │
 │  4. Strip context (if !context)                        │
 │     └─ Remove context maps from all subtypes           │
@@ -294,7 +305,8 @@ metadata:
     - base
     - eks
     - eks-training
-    - h100-eks-training
+    - gb200-eks-training
+    - gb200-eks-ubuntu-training
 ```
 
 ## Stage 3: Validate (Constraint Checking)

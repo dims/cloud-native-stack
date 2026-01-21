@@ -22,7 +22,7 @@ Recipe metadata files define component configurations for GPU-accelerated Kubern
 
 - **Base values** (`base.yaml`) provide default configurations
 - **Intermediate recipes** (e.g., `eks.yaml`, `eks-training.yaml`) capture shared configurations
-- **Leaf recipes** (e.g., `h100-eks-training.yaml`) provide hardware-specific overrides
+- **Leaf recipes** (e.g., `gb200-eks-ubuntu-training.yaml`) provide hardware-specific overrides
 - **Inline overrides** allow per-recipe customization without creating new files
 
 Recipe files are located in `pkg/recipe/data/` and are embedded into the CLI binary and API server at compile time.
@@ -39,23 +39,23 @@ Recipes support multi-level inheritance through the `spec.base` field. This enab
 kind: recipeMetadata
 apiVersion: cns.nvidia.com/v1alpha1
 metadata:
-  name: h100-eks-training
+  name: gb200-eks-ubuntu-training
 
 spec:
   base: eks-training  # Inherits from eks-training (which inherits from eks)
   
   criteria:
     service: eks
-    accelerator: h100
+    accelerator: gb200
     os: ubuntu
     intent: training
     
-  # Only H100-specific overrides here
+  # Only GB200-specific overrides here
   componentRefs:
     - name: gpu-operator
       overrides:
         driver:
-          version: 570.133.20
+          version: 580.82.07
 ```
 
 ### Inheritance Chain Example
@@ -67,14 +67,14 @@ base.yaml (foundation)
             │
             └── eks-training.yaml (training optimizations)
                     │
-                    ├── h100-eks-training.yaml (H100 overrides)
-                    │
-                    └── gb200-eks-training.yaml (GB200 overrides)
+                    └── gb200-eks-training.yaml (GB200 + training overrides)
+                            │
+                            └── gb200-eks-ubuntu-training.yaml (full criteria: OS + all specifics)
 ```
 
 ### Creating an Intermediate Recipe
 
-Intermediate recipes have **partial criteria** and are not matched directly by user queries. They capture shared configurations for a category:
+Intermediate recipes have **partial criteria** and are not matched directly by generic user queries (unless the query also has matching criteria). They capture shared configurations for a category:
 
 ```yaml
 # eks.yaml - Intermediate recipe for all EKS deployments
@@ -122,18 +122,40 @@ spec:
 Leaf recipes have **complete criteria** (all required fields) and are matched by user queries:
 
 ```yaml
-# h100-eks-training.yaml - Full specification for H100 + EKS + training
+# gb200-eks-training.yaml - Intermediate: GB200 + EKS + training
 kind: recipeMetadata
 apiVersion: cns.nvidia.com/v1alpha1
 metadata:
-  name: h100-eks-training
+  name: gb200-eks-training
 
 spec:
   base: eks-training  # Inherits from eks-training
   
   criteria:
     service: eks
-    accelerator: h100
+    accelerator: gb200
+    intent: training  # Partial criteria (no OS)
+
+  componentRefs:
+    - name: gpu-operator
+      overrides:
+        driver:
+          version: 580.82.07  # GB200-specific driver
+```
+
+```yaml
+# gb200-eks-ubuntu-training.yaml - Full specification
+kind: recipeMetadata
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: gb200-eks-ubuntu-training
+
+spec:
+  base: gb200-eks-training  # Inherits from gb200-eks-training
+  
+  criteria:
+    service: eks
+    accelerator: gb200
     os: ubuntu
     intent: training  # Complete criteria
 
@@ -147,7 +169,7 @@ spec:
     - name: gpu-operator
       overrides:
         driver:
-          version: 570.133.20
+          version: 580.82.07
 ```
 
 ### Inheritance Merge Order
@@ -158,7 +180,7 @@ When resolving a leaf recipe, the system merges in order from root to leaf:
 1. base.yaml (lowest precedence)
 2. eks.yaml
 3. eks-training.yaml
-4. h100-eks-training.yaml (highest precedence)
+4. gb200-eks-ubuntu-training.yaml (highest precedence)
 ```
 
 **Merge rules:**
@@ -334,7 +356,6 @@ File names are for human readability only—the recipe engine matches based on `
 | Base recipe | `base.yaml` | `base.yaml` |
 | Intermediate recipe (service) | `{service}.yaml` | `eks.yaml`, `gke.yaml` |
 | Intermediate recipe (intent) | `{service}-{intent}.yaml` | `eks-training.yaml`, `gke-inference.yaml` |
-| Leaf recipe (full) | `{gpu}-{service}-{os}-{intent}.yaml` | `h100-eks-ubuntu-training.yaml` |
 | Component values (base) | `base.yaml` or `values.yaml` | `components/gpu-operator/base.yaml` |
 | Component values (overlay) | `values-{service}-{intent}.yaml` | `components/gpu-operator/values-eks-training.yaml` |
 
@@ -744,7 +765,10 @@ cnsctl recipe --service eks --accelerator gb200 --format json | jq '.metadata.ap
 **Output:**
 ```json
 [
-  "service=eks, accelerator=gb200, intent=training"
+  "base",
+  "eks",
+  "eks-training",
+  "gb200-eks-training"
 ]
 ```
 
