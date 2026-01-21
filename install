@@ -77,10 +77,17 @@ get_binary_name() {
 github_curl() {
   local url="$1"
   local output_file="${2:-}"
-  local curl_opts=(-s -w "%{http_code}")
+  local curl_opts=(-w "%{http_code}")
   
   [[ -n "${GITHUB_TOKEN:-}" ]] && curl_opts+=(-H "Authorization: token $GITHUB_TOKEN")
-  [[ -n "$output_file" ]] && curl_opts+=(-Lo "$output_file")
+  
+  if [[ -n "$output_file" ]]; then
+    # Show progress bar for file downloads (can be large)
+    curl_opts+=(-# -Lo "$output_file")
+  else
+    # Silent for API calls
+    curl_opts+=(-s)
+  fi
   
   curl "${curl_opts[@]}" "$url"
 }
