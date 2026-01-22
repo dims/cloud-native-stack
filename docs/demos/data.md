@@ -20,7 +20,9 @@ cnsctl -h
 
 > Rule-based configuration engine over Metadata composes optimized REcipes for given set of criteria
 
-Will demo: 
+![](images/data.png)
+
+Demo: 
 
 1. **Base recipe** - Universal component definitions and constraints applicable to every recipe
 2. **Environment-specific overlays** - Config optimization based on query criteria 
@@ -245,7 +247,7 @@ make e2e
 
 Integrity of the metadata is paramount!
 
-![](docs/demos/images/recipe.png)
+![](images/recipe.png)
 
 ## Links
 
