@@ -16,6 +16,20 @@ Test CLI:
 cnsctl -h
 ```
 
+## Intro 
+
+> Rule-based configuration engine over Metadata composes optimized REcipes for given set of criteria
+
+Will demo: 
+
+1. **Base recipe** - Universal component definitions and constraints applicable to every recipe
+2. **Environment-specific overlays** - Config optimization based on query criteria 
+3. **Inheritance chains** - Resolving overlays via intermediate recipes
+4. **Merging strategy** - Components, constraints, and values are merged with overlay precedence
+5. **Computing deployment order** - Topological sort of components based on dependency references
+
+> Terminology (see [glossary](https://github.com/mchmarny/cloud-native-stack/blob/main/docs/OVERVIEW.md))
+
 ## Recipe Data (Design time == files in git)
 
 View embedded recipe files structure:
