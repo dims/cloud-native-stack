@@ -1,3 +1,8 @@
+/*
+Copyright © 2025 NVIDIA Corporation
+SPDX-License-Identifier: Apache-2.0
+*/
+
 package bundler
 
 import (
@@ -5,178 +10,92 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"sync"
+	"strconv"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
+	corev1 "k8s.io/api/core/v1"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/types"
-
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/argocd"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
-	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/registry"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/result"
-	deployerRegistry "github.com/NVIDIA/cloud-native-stack/pkg/deployer/registry"
-	deployerTypes "github.com/NVIDIA/cloud-native-stack/pkg/deployer/types"
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/umbrella"
 	"github.com/NVIDIA/cloud-native-stack/pkg/errors"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
-
-	// Import bundler packages for auto-registration via init()
-	_ "github.com/NVIDIA/cloud-native-stack/pkg/component/certmanager"
-	_ "github.com/NVIDIA/cloud-native-stack/pkg/component/gpuoperator"
-	_ "github.com/NVIDIA/cloud-native-stack/pkg/component/networkoperator"
-	_ "github.com/NVIDIA/cloud-native-stack/pkg/component/nvsentinel"
-	_ "github.com/NVIDIA/cloud-native-stack/pkg/component/skyhook"
-
-	// Import deployer packages for auto-registration via init()
-	_ "github.com/NVIDIA/cloud-native-stack/pkg/deployer/provider/argocd"
-	_ "github.com/NVIDIA/cloud-native-stack/pkg/deployer/provider/flux"
-	_ "github.com/NVIDIA/cloud-native-stack/pkg/deployer/provider/script"
 )
 
-// DefaultBundler provides default options for bundling operations.
+// DefaultBundler generates Helm umbrella charts from recipes.
 //
-// Thread-safety: DefaultBundler is safe for concurrent reads (multiple goroutines
-// calling Make() concurrently). However, bundlers retrieved from the registry may
-// be shared instances. If ConfigurableBundler.Configure() modifies bundler state,
-// concurrent Make() calls may have race conditions. Ensure bundlers are either
-// stateless or use synchronization for shared mutable state.
+// The umbrella chart approach produces a single Helm chart with dependencies
+// that can be deployed using standard Helm commands:
+//
+//	helm dependency update
+//	helm install cns-stack . -f values.yaml
+//
+// Thread-safety: DefaultBundler is safe for concurrent use.
 type DefaultBundler struct {
-	// BundlerTypes specifies which bundlers to execute.
-	// If empty, all registered bundlers are executed.
-	BundlerTypes []types.BundleType
-
-	// FailFast stops execution on first bundler error.
-	// Default is false (continues and collects all errors).
-	FailFast bool
-
-	// Config provides bundler-specific configuration.
+	// Config provides bundler-specific configuration including value overrides.
 	Config *config.Config
-
-	// Registry to retrieve bundlers from.
-	Registry *registry.Registry
-
-	// DeployerType specifies which deployment method to use.
-	// Default is DeployerTypeScript for manual deployment.
-	DeployerType deployerTypes.DeployerType
-
-	// DeployerRegistry to retrieve deployers from.
-	DeployerRegistry *deployerRegistry.Registry
 }
 
 // Option defines a functional option for configuring DefaultBundler.
 type Option func(*DefaultBundler)
 
-// WithBundlerTypes sets the bundler types to execute.
-// If not set, all registered bundlers are executed.
-// Nil or empty slice means all bundlers as well.
-func WithBundlerTypes(types []types.BundleType) Option {
-	return func(db *DefaultBundler) {
-		if len(types) > 0 {
-			db.BundlerTypes = types
-		}
-	}
-}
-
-// WithFailFast enables or disables fail-fast behavior.
-// If enabled, bundling stops on the first error encountered.
-// Default is false.
-func WithFailFast(failFast bool) Option {
-	return func(db *DefaultBundler) {
-		db.FailFast = failFast
-	}
-}
-
 // WithConfig sets the bundler configuration.
-// If nil, default configuration is used.
-// Note: This only updates the Config, it does NOT recreate the registry.
-// If you need to update both config and registry, call WithConfig before WithRegistry.
-func WithConfig(config *config.Config) Option {
+// The config contains value overrides, node selectors, tolerations, etc.
+func WithConfig(cfg *config.Config) Option {
 	return func(db *DefaultBundler) {
-		db.Config = config
-	}
-}
-
-// WithRegistry sets the registry to retrieve bundlers from.
-// This overrides the default registry created by New().
-func WithRegistry(registry *registry.Registry) Option {
-	return func(db *DefaultBundler) {
-		if registry != nil {
-			db.Registry = registry
-		}
-	}
-}
-
-// WithDeployer sets the deployment method to use for generating artifacts.
-// Default is DeployerTypeScript.
-func WithDeployer(deployerType deployerTypes.DeployerType) Option {
-	return func(db *DefaultBundler) {
-		if deployerType.IsValid() {
-			db.DeployerType = deployerType
+		if cfg != nil {
+			db.Config = cfg
 		}
 	}
 }
 
 // New creates a new DefaultBundler with the given options.
-// If no options are provided, default settings are used.
-//
-// Default behavior:
-//   - Creates a registry populated with all globally registered bundlers
-//   - Executes all registered bundlers (use WithBundlerTypes to filter)
-//   - Runs bundlers in parallel
-//   - Continues on errors (use WithFailFast to stop on first error)
-//   - Uses default configuration (use WithConfig to customize)
-//   - Uses script deployer for deployment artifacts (use WithDeployer to change)
 //
 // Example:
 //
-//	b := bundler.New(
-//		bundler.WithBundlerTypes([]types.BundleType{types.BundleTypeGpuOperator}),
-//		bundler.WithFailFast(true),
+//	b, err := bundler.New(
+//	    bundler.WithConfig(config.NewConfig(
+//	        config.WithValueOverrides(overrides),
+//	    )),
 //	)
 func New(opts ...Option) (*DefaultBundler, error) {
-	cfg := config.NewConfig()
-
-	// Create registry populated with all globally registered bundlers
-	// Bundlers register themselves via init() in their packages
-	reg := registry.NewFromGlobal(cfg)
-
-	// Create deployer registry populated with all globally registered deployers
-	// Deployers register themselves via init() in their packages
-	deployerReg := deployerRegistry.NewFromGlobal()
-
-	// Create DefaultBundler with defaults
 	db := &DefaultBundler{
-		Config:           cfg,
-		Registry:         reg,
-		DeployerType:     deployerTypes.DeployerTypeScript, // Default to script
-		DeployerRegistry: deployerReg,
+		Config: config.NewConfig(),
 	}
 
-	// Apply options
 	for _, opt := range opts {
 		opt(db)
-	}
-
-	// Validate deployer type upfront
-	if !db.DeployerType.IsValid() {
-		return nil, errors.New(errors.ErrCodeInvalidRequest,
-			fmt.Sprintf("invalid deployer type: %s", db.DeployerType))
-	}
-
-	// Verify deployer is registered
-	if _, ok := db.DeployerRegistry.Get(db.DeployerType); !ok {
-		return nil, errors.New(errors.ErrCodeInvalidRequest,
-			fmt.Sprintf("deployer type %s not found in registry", db.DeployerType))
 	}
 
 	return db, nil
 }
 
-// Make generates bundles from the given recipe into the specified directory.
-// It accepts various options to customize the bundling process.
-// Returns a result.Output summarizing the results of the bundling operation.
-// Errors encountered during the process are returned as well.
-// The input can be either a legacy Recipe (measurements-based) or RecipeResult (component references).
+// NewWithConfig creates a new DefaultBundler with the given config.
+// This is a convenience function equivalent to New(WithConfig(cfg)).
+func NewWithConfig(cfg *config.Config) (*DefaultBundler, error) {
+	return New(WithConfig(cfg))
+}
+
+// Make generates a deployment bundle from the given recipe.
+// By default, generates a Helm umbrella chart. If deployer is set to "argocd",
+// generates ArgoCD Application manifests.
+//
+// For umbrella chart output:
+//   - Chart.yaml: Helm chart metadata with dependencies
+//   - values.yaml: Combined values for all components
+//   - README.md: Deployment instructions
+//   - recipe.yaml: Copy of the input recipe
+//
+// For ArgoCD output:
+//   - app-of-apps.yaml: Parent ArgoCD Application
+//   - <component>/application.yaml: ArgoCD Application per component
+//   - <component>/values.yaml: Values for each component
+//   - README.md: Deployment instructions
+//
+// Returns a result.Output summarizing the generation results.
 func (b *DefaultBundler) Make(ctx context.Context, input recipe.RecipeInput, dir string) (*result.Output, error) {
 	start := time.Now()
 
@@ -185,26 +104,24 @@ func (b *DefaultBundler) Make(ctx context.Context, input recipe.RecipeInput, dir
 		return nil, errors.New(errors.ErrCodeInvalidRequest, "recipe input cannot be nil")
 	}
 
-	// For legacy measurements-based Recipe, validate structure
-	if r, ok := input.(*recipe.Recipe); ok {
-		if err := r.ValidateStructure(); err != nil {
-			return nil, errors.Wrap(errors.ErrCodeInvalidRequest, "recipe validation failed", err)
-		}
+	// Only support RecipeResult format (not legacy Recipe)
+	recipeResult, ok := input.(*recipe.RecipeResult)
+	if !ok {
+		return nil, errors.New(errors.ErrCodeInvalidRequest,
+			"bundle generation requires RecipeResult format")
 	}
 
-	// Validate configuration
-	if b.Config != nil {
-		if err := b.Config.Validate(); err != nil {
-			return nil, errors.Wrap(errors.ErrCodeInvalidRequest,
-				"invalid configuration", err)
-		}
+	if len(recipeResult.ComponentRefs) == 0 {
+		return nil, errors.New(errors.ErrCodeInvalidRequest,
+			"recipe must contain at least one component reference")
 	}
 
+	// Set default output directory
 	if dir == "" {
 		dir = "."
 	}
 
-	// Create output directory if it doesn't exist
+	// Create output directory
 	if dir != "." {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return nil, errors.Wrap(errors.ErrCodeInternal,
@@ -212,266 +129,437 @@ func (b *DefaultBundler) Make(ctx context.Context, input recipe.RecipeInput, dir
 		}
 	}
 
-	// Select bundlers to execute
-	bundlers := b.selectBundlers(input, b.BundlerTypes)
-	if len(bundlers) == 0 {
-		return nil, errors.New(errors.ErrCodeInvalidRequest, "no bundlers selected")
+	// Extract values for each component from the recipe
+	componentValues, err := b.extractComponentValues(ctx, recipeResult)
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrCodeInternal,
+			"failed to extract component values", err)
 	}
 
-	slog.Debug("starting bundle generation",
-		"bundler_count", len(bundlers),
+	// Route based on deployer
+	deployer := b.Config.Deployer()
+	if deployer == "argocd" {
+		return b.makeArgoCD(ctx, recipeResult, componentValues, dir, start)
+	}
+	return b.makeUmbrellaChart(ctx, recipeResult, componentValues, dir, start)
+}
+
+// makeUmbrellaChart generates a Helm umbrella chart.
+func (b *DefaultBundler) makeUmbrellaChart(ctx context.Context, recipeResult *recipe.RecipeResult, componentValues map[string]map[string]interface{}, dir string, start time.Time) (*result.Output, error) {
+	slog.Debug("generating umbrella chart",
+		"component_count", len(recipeResult.ComponentRefs),
 		"output_dir", dir,
 	)
 
-	// Generate bundles
-	output, err := b.makeParallel(ctx, input, dir, bundlers)
+	// Generate umbrella chart
+	generator := umbrella.NewGenerator()
+	generatorInput := &umbrella.GeneratorInput{
+		RecipeResult:    recipeResult,
+		ComponentValues: componentValues,
+		Version:         b.Config.Version(),
+	}
+
+	output, err := generator.Generate(ctx, generatorInput, dir)
 	if err != nil {
-		return output, err
+		return nil, errors.Wrap(errors.ErrCodeInternal,
+			"failed to generate umbrella chart", err)
 	}
 
-	output.TotalDuration = time.Since(start)
-	output.OutputDir = dir
-
-	// Create root bundle artifacts (recipe file + README)
-	if err := b.createRootArtifacts(ctx, input, dir); err != nil {
-		return output, errors.Wrap(errors.ErrCodeInternal,
-			"failed to create root artifacts", err)
+	// Write recipe file
+	recipeSize, err := b.writeRecipeFile(recipeResult, dir)
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrCodeInternal,
+			"failed to write recipe file", err)
 	}
 
-	slog.Debug("bundle generation complete", "summary", output.Summary())
+	// Build result output - includes umbrella chart files + recipe.yaml
+	resultOutput := &result.Output{
+		Results:       make([]*result.Result, 0),
+		Errors:        make([]result.BundleError, 0),
+		TotalDuration: time.Since(start),
+		TotalSize:     output.TotalSize + recipeSize,
+		TotalFiles:    len(output.Files) + 1, // +1 for recipe.yaml
+		OutputDir:     dir,
+	}
 
-	return output, nil
+	// Add a single result for the umbrella chart
+	umbrellaResult := &result.Result{
+		Type:     "umbrella-chart",
+		Success:  true,
+		Files:    output.Files,
+		Size:     output.TotalSize,
+		Duration: output.Duration,
+	}
+	resultOutput.Results = append(resultOutput.Results, umbrellaResult)
+
+	slog.Debug("umbrella chart generation complete",
+		"files", len(output.Files),
+		"size_bytes", output.TotalSize,
+		"duration", output.Duration,
+	)
+
+	return resultOutput, nil
 }
 
-// makeParallel executes bundlers concurrently using buffered channels
-// and WaitGroup to prevent deadlocks.
-func (b *DefaultBundler) makeParallel(ctx context.Context, input recipe.RecipeInput, dir string, bundlers map[types.BundleType]registry.Bundler) (*result.Output, error) {
-	output := &result.Output{
-		Results: make([]*result.Result, 0, len(bundlers)),
-		Errors:  make([]result.BundleError, 0),
-	}
-
-	// Use buffered channels to prevent blocking on writes
-	resultChan := make(chan *result.Result, len(bundlers))
-	errorChan := make(chan result.BundleError, len(bundlers))
-
-	var wg sync.WaitGroup
-	wg.Add(len(bundlers))
-
-	// Track if we should stop early due to FailFast
-	var firstError error
-	var firstErrorMu sync.Mutex
-
-	for bundlerType, bundler := range bundlers {
-		// Capture loop variables for goroutine
-		bundlerType := bundlerType
-		bundler := bundler
-
-		go func() {
-			defer wg.Done()
-
-			// Check if we should skip due to FailFast
-			if b.FailFast {
-				firstErrorMu.Lock()
-				hasError := firstError != nil
-				firstErrorMu.Unlock()
-				if hasError {
-					return
-				}
-			}
-
-			res, err := b.executeBundler(ctx, bundlerType, bundler, input, dir)
-
-			// Non-blocking writes to buffered channels
-			resultChan <- res
-
-			if err != nil {
-				errorChan <- result.BundleError{
-					BundlerType: bundlerType,
-					Error:       err.Error(),
-				}
-
-				if b.FailFast {
-					firstErrorMu.Lock()
-					if firstError == nil {
-						firstError = err
-					}
-					firstErrorMu.Unlock()
-				}
-			}
-		}()
-	}
-
-	// Close channels after all goroutines complete
-	go func() {
-		wg.Wait()
-		close(resultChan)
-		close(errorChan)
-	}()
-
-	// Collect results
-	for result := range resultChan {
-		output.Results = append(output.Results, result)
-		if result.Success {
-			output.TotalSize += result.Size
-			output.TotalFiles += len(result.Files)
-		}
-	}
-
-	// Collect errors
-	for bundleErr := range errorChan {
-		output.Errors = append(output.Errors, bundleErr)
-	}
-
-	// Return first error if FailFast is enabled
-	if b.FailFast && firstError != nil {
-		return output, errors.Wrap(errors.ErrCodeInternal, "bundler execution failed", firstError)
-	}
-
-	// When FailFast is false, collect errors but don't return error
-	// This allows clients to inspect output.Errors for failures
-	return output, nil
-}
-
-// executeBundler executes a single bundler and records metrics.
-func (b *DefaultBundler) executeBundler(ctx context.Context, bundlerType types.BundleType, bundler registry.Bundler,
-	input recipe.RecipeInput, dir string) (*result.Result, error) {
-
-	start := time.Now()
-
-	// Check if bundler implements ValidatableBundler interface
-	// Type assertion is type-safe and 10-100x faster than reflection
-	if validator, ok := bundler.(registry.ValidatableBundler); ok {
-		if err := validator.Validate(ctx, input); err != nil {
-			recordValidationFailure(bundlerType)
-			return result.New(bundlerType), errors.Wrap(errors.ErrCodeInvalidRequest,
-				fmt.Sprintf("validation failed for bundler %s", bundlerType), err)
-		}
-	}
-
-	// Add context metadata to logging
-	slog.Debug("executing bundler",
-		"bundler_type", bundlerType,
+// makeArgoCD generates ArgoCD Application manifests.
+func (b *DefaultBundler) makeArgoCD(ctx context.Context, recipeResult *recipe.RecipeResult, componentValues map[string]map[string]interface{}, dir string, start time.Time) (*result.Output, error) {
+	slog.Debug("generating argocd applications",
+		"component_count", len(recipeResult.ComponentRefs),
 		"output_dir", dir,
 	)
 
-	// Execute the bundler
-	res, err := bundler.Make(ctx, input, dir)
-	if err != nil {
-		recordBundleGenerated(bundlerType, false)
-		recordBundleError(bundlerType, "execution_error")
-		// Ensure we always return a valid result, even on error
-		if res == nil {
-			res = result.New(bundlerType)
-		}
-		return res, fmt.Errorf("bundler %s failed: %w", bundlerType, err)
+	// Generate ArgoCD applications
+	generator := argocd.NewGenerator()
+	generatorInput := &argocd.GeneratorInput{
+		RecipeResult:    recipeResult,
+		ComponentValues: componentValues,
+		Version:         b.Config.Version(),
+		RepoURL:         b.Config.RepoURL(),
 	}
 
-	res.Duration = time.Since(start)
+	output, err := generator.Generate(ctx, generatorInput, dir)
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrCodeInternal,
+			"failed to generate argocd applications", err)
+	}
 
-	// Record metrics
-	recordBundleGenerated(bundlerType, res.Success)
-	recordBundleDuration(bundlerType, res.Duration.Seconds())
-	recordBundleSize(bundlerType, res.Size)
-	recordBundleFiles(bundlerType, len(res.Files))
+	// Build result output
+	resultOutput := &result.Output{
+		Results:       make([]*result.Result, 0),
+		Errors:        make([]result.BundleError, 0),
+		TotalDuration: time.Since(start),
+		TotalSize:     output.TotalSize,
+		TotalFiles:    len(output.Files),
+		OutputDir:     dir,
+	}
 
-	slog.Debug("bundler completed",
-		"bundler_type", bundlerType,
-		"files", len(res.Files),
-		"size_bytes", res.Size,
-		"duration", res.Duration.Round(time.Millisecond),
+	// Add a single result for the ArgoCD applications
+	argocdResult := &result.Result{
+		Type:     "argocd-applications",
+		Success:  true,
+		Files:    output.Files,
+		Size:     output.TotalSize,
+		Duration: output.Duration,
+	}
+	resultOutput.Results = append(resultOutput.Results, argocdResult)
+
+	slog.Debug("argocd applications generation complete",
+		"files", len(output.Files),
+		"size_bytes", output.TotalSize,
+		"duration", output.Duration,
 	)
 
-	return res, nil
+	return resultOutput, nil
 }
 
-// selectBundlers selects which bundlers to execute based on options.
-func (b *DefaultBundler) selectBundlers(input recipe.RecipeInput, bundleTypes []types.BundleType) map[types.BundleType]registry.Bundler {
-	// If specific bundler types are requested, use them
-	if len(bundleTypes) > 0 {
-		selected := make(map[types.BundleType]registry.Bundler)
-		for _, t := range bundleTypes {
-			if bundler, ok := b.Registry.Get(t); ok {
-				selected[t] = bundler
+// extractComponentValues extracts and processes values for each component in the recipe.
+// It loads base values from the recipe, applies user overrides, and applies node selectors.
+func (b *DefaultBundler) extractComponentValues(ctx context.Context, recipeResult *recipe.RecipeResult) (map[string]map[string]interface{}, error) {
+	componentValues := make(map[string]map[string]interface{})
+
+	for _, ref := range recipeResult.ComponentRefs {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		// Get base values from recipe
+		values, err := recipeResult.GetValuesForComponent(ref.Name)
+		if err != nil {
+			slog.Warn("failed to get values for component, using empty map",
+				"component", ref.Name,
+				"error", err,
+			)
+			values = make(map[string]interface{})
+		}
+
+		// Apply user value overrides from --set flags
+		if overrides := b.getValueOverridesForComponent(ref.Name); len(overrides) > 0 {
+			if applyErr := applyMapOverrides(values, overrides); applyErr != nil {
+				slog.Warn("failed to apply some value overrides",
+					"component", ref.Name,
+					"error", applyErr,
+				)
 			}
 		}
-		return selected
+
+		// Apply node selectors and tolerations based on component type
+		b.applyNodeSchedulingOverrides(ref.Name, values)
+
+		componentValues[ref.Name] = values
 	}
 
-	// Otherwise, filter bundlers based on components in the recipe
-	// Get component names from recipe
-	componentNames := make(map[string]bool)
-	if recipeResult, ok := input.(*recipe.RecipeResult); ok {
-		for _, ref := range recipeResult.ComponentRefs {
-			componentNames[ref.Name] = true
-		}
-	}
-
-	// If no components found (legacy Recipe), return all bundlers
-	if len(componentNames) == 0 {
-		return b.Registry.GetAll()
-	}
-
-	// Match bundlers to components by name
-	selected := make(map[types.BundleType]registry.Bundler)
-	for bundlerType, bundler := range b.Registry.GetAll() {
-		// Convert bundler type to component name (e.g., "gpu-operator" -> "gpu-operator")
-		if componentNames[string(bundlerType)] {
-			selected[bundlerType] = bundler
-		}
-	}
-
-	return selected
+	return componentValues, nil
 }
 
-// createRootArtifacts generates root-level bundle artifacts:
-// 1. Copies the recipe file to the bundle directory
-// 2. Uses the configured deployer to generate deployment artifacts and README
-func (b *DefaultBundler) createRootArtifacts(ctx context.Context, input recipe.RecipeInput, dir string) error {
-	recipeResult, ok := input.(*recipe.RecipeResult)
-	if !ok {
-		// Legacy Recipe format - skip root artifacts
+// getValueOverridesForComponent returns value overrides for a specific component.
+// Checks for both hyphenated (gpu-operator) and non-hyphenated (gpuoperator) keys.
+func (b *DefaultBundler) getValueOverridesForComponent(componentName string) map[string]string {
+	if b.Config == nil {
 		return nil
 	}
 
-	// Write recipe file to bundle directory
-	if err := b.writeRecipeFile(recipeResult, dir); err != nil {
-		return fmt.Errorf("failed to write recipe file: %w", err)
+	allOverrides := b.Config.ValueOverrides()
+	if allOverrides == nil {
+		return nil
 	}
 
-	// Get deployer from registry (already validated in New())
-	deployer, ok := b.DeployerRegistry.Get(b.DeployerType)
-	if !ok {
-		return fmt.Errorf("deployer type %s not found in registry", b.DeployerType)
+	// Check exact name
+	if overrides, ok := allOverrides[componentName]; ok {
+		return overrides
 	}
 
-	// Generate deployment artifacts using the configured deployer
-	artifacts, err := deployer.Generate(ctx, recipeResult, dir)
-	if err != nil {
-		return fmt.Errorf("failed to generate deployment artifacts with %s deployer: %w", b.DeployerType, err)
+	// Check non-hyphenated version (e.g., gpuoperator for gpu-operator)
+	nonHyphenated := removeHyphens(componentName)
+	if nonHyphenated != componentName {
+		if overrides, ok := allOverrides[nonHyphenated]; ok {
+			return overrides
+		}
 	}
-
-	slog.Debug("generated deployment artifacts",
-		"deployer_type", b.DeployerType,
-		"files", len(artifacts.Files),
-		"duration", artifacts.Duration,
-	)
 
 	return nil
 }
 
-// writeRecipeFile serializes the recipe to the bundle directory
-func (b *DefaultBundler) writeRecipeFile(recipeResult *recipe.RecipeResult, dir string) error {
+// applyNodeSchedulingOverrides applies node selectors and tolerations to component values.
+// Different components use different paths for these settings.
+func (b *DefaultBundler) applyNodeSchedulingOverrides(componentName string, values map[string]interface{}) {
+	if b.Config == nil {
+		return
+	}
+
+	// Define component-specific paths for node scheduling
+	type schedulingPaths struct {
+		systemNodeSelector      []string
+		systemTolerations       []string
+		acceleratedNodeSelector []string
+		acceleratedTolerations  []string
+	}
+
+	componentPaths := map[string]schedulingPaths{
+		"gpu-operator": {
+			systemNodeSelector:      []string{"operator.nodeSelector", "node-feature-discovery.gc.nodeSelector", "node-feature-discovery.master.nodeSelector"},
+			systemTolerations:       []string{"operator.tolerations", "node-feature-discovery.gc.tolerations", "node-feature-discovery.master.tolerations"},
+			acceleratedNodeSelector: []string{"daemonsets.nodeSelector", "node-feature-discovery.worker.nodeSelector"},
+			acceleratedTolerations:  []string{"daemonsets.tolerations", "node-feature-discovery.worker.tolerations"},
+		},
+		"network-operator": {
+			systemNodeSelector:      []string{"operator.nodeSelector"},
+			acceleratedNodeSelector: []string{"daemonsets.nodeSelector"},
+		},
+		"cert-manager": {
+			systemNodeSelector: []string{"controller.nodeSelector"},
+			systemTolerations:  []string{"controller.tolerations"},
+		},
+	}
+
+	paths, ok := componentPaths[componentName]
+	if !ok {
+		return // Unknown component, skip
+	}
+
+	// Apply system node selector
+	if nodeSelector := b.Config.SystemNodeSelector(); len(nodeSelector) > 0 && len(paths.systemNodeSelector) > 0 {
+		applyNodeSelectorOverrides(values, nodeSelector, paths.systemNodeSelector...)
+	}
+
+	// Apply system tolerations
+	if tolerations := b.Config.SystemNodeTolerations(); len(tolerations) > 0 && len(paths.systemTolerations) > 0 {
+		applyTolerationsOverrides(values, tolerations, paths.systemTolerations...)
+	}
+
+	// Apply accelerated node selector
+	if nodeSelector := b.Config.AcceleratedNodeSelector(); len(nodeSelector) > 0 && len(paths.acceleratedNodeSelector) > 0 {
+		applyNodeSelectorOverrides(values, nodeSelector, paths.acceleratedNodeSelector...)
+	}
+
+	// Apply accelerated tolerations
+	if tolerations := b.Config.AcceleratedNodeTolerations(); len(tolerations) > 0 && len(paths.acceleratedTolerations) > 0 {
+		applyTolerationsOverrides(values, tolerations, paths.acceleratedTolerations...)
+	}
+}
+
+// writeRecipeFile serializes the recipe to the bundle directory.
+func (b *DefaultBundler) writeRecipeFile(recipeResult *recipe.RecipeResult, dir string) (int64, error) {
 	recipeData, err := yaml.Marshal(recipeResult)
 	if err != nil {
-		return fmt.Errorf("failed to serialize recipe: %w", err)
+		return 0, fmt.Errorf("failed to serialize recipe: %w", err)
 	}
 
 	recipePath := fmt.Sprintf("%s/recipe.yaml", dir)
 	if err := os.WriteFile(recipePath, recipeData, 0600); err != nil {
-		return fmt.Errorf("failed to write recipe file: %w", err)
+		return 0, fmt.Errorf("failed to write recipe file: %w", err)
 	}
 
 	slog.Debug("wrote recipe file", "path", recipePath)
+	return int64(len(recipeData)), nil
+}
+
+// removeHyphens removes hyphens from a string.
+func removeHyphens(s string) string {
+	result := make([]byte, 0, len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] != '-' {
+			result = append(result, s[i])
+		}
+	}
+	return string(result)
+}
+
+// applyMapOverrides applies overrides to a map[string]interface{} using dot-notation paths.
+// Handles nested maps by traversing the path segments and creating nested maps as needed.
+func applyMapOverrides(target map[string]interface{}, overrides map[string]string) error {
+	if target == nil {
+		return fmt.Errorf("target map cannot be nil")
+	}
+
+	if len(overrides) == 0 {
+		return nil
+	}
+
+	var errs []string
+	for path, value := range overrides {
+		if err := setMapValueByPath(target, path, value); err != nil {
+			errs = append(errs, fmt.Sprintf("%s=%s: %v", path, value, err))
+		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("failed to apply map overrides: %s", strings.Join(errs, "; "))
+	}
+
 	return nil
+}
+
+// setMapValueByPath sets a value in a nested map using dot-notation path.
+// Creates nested maps as needed. Converts string values to bools/numbers when appropriate.
+func setMapValueByPath(target map[string]interface{}, path, value string) error {
+	parts := strings.Split(path, ".")
+	current := target
+
+	// Traverse/create the path up to the last segment
+	for i := 0; i < len(parts)-1; i++ {
+		part := parts[i]
+		if next, ok := current[part]; ok {
+			// If the value exists, it must be a map
+			if nextMap, ok := next.(map[string]interface{}); ok {
+				current = nextMap
+			} else {
+				return fmt.Errorf("path segment %q exists but is not a map (type: %T)", part, next)
+			}
+		} else {
+			// Create a new nested map
+			newMap := make(map[string]interface{})
+			current[part] = newMap
+			current = newMap
+		}
+	}
+
+	// Set the final value
+	lastPart := parts[len(parts)-1]
+	current[lastPart] = convertMapValue(value)
+
+	return nil
+}
+
+// convertMapValue converts a string value to an appropriate Go type.
+// Handles bools ("true"/"false") and numbers.
+func convertMapValue(value string) interface{} {
+	// Try bool conversion
+	if value == "true" {
+		return true
+	}
+	if value == "false" {
+		return false
+	}
+
+	// Try integer conversion
+	if i, err := strconv.ParseInt(value, 10, 64); err == nil {
+		return i
+	}
+
+	// Try float conversion
+	if f, err := strconv.ParseFloat(value, 64); err == nil {
+		return f
+	}
+
+	// Return as string
+	return value
+}
+
+// applyNodeSelectorOverrides applies node selector values to the specified paths in a values map.
+func applyNodeSelectorOverrides(values map[string]interface{}, nodeSelector map[string]string, paths ...string) {
+	if len(nodeSelector) == 0 || len(paths) == 0 {
+		return
+	}
+
+	for _, path := range paths {
+		// Convert node selector to interface map for YAML compatibility
+		selectorMap := make(map[string]interface{})
+		for k, v := range nodeSelector {
+			selectorMap[k] = v
+		}
+		_ = setMapValueByPath(values, path, "")
+		setNestedMapValue(values, path, selectorMap)
+	}
+}
+
+// applyTolerationsOverrides applies tolerations to the specified paths in a values map.
+func applyTolerationsOverrides(values map[string]interface{}, tolerations []corev1.Toleration, paths ...string) {
+	if len(tolerations) == 0 || len(paths) == 0 {
+		return
+	}
+
+	// Convert tolerations to interface slice
+	tolerationsList := make([]interface{}, 0, len(tolerations))
+	for _, t := range tolerations {
+		tolMap := make(map[string]interface{})
+		if t.Key != "" {
+			tolMap["key"] = t.Key
+		}
+		if t.Operator != "" {
+			tolMap["operator"] = string(t.Operator)
+		}
+		if t.Value != "" {
+			tolMap["value"] = t.Value
+		}
+		if t.Effect != "" {
+			tolMap["effect"] = string(t.Effect)
+		}
+		if t.TolerationSeconds != nil {
+			tolMap["tolerationSeconds"] = *t.TolerationSeconds
+		}
+		tolerationsList = append(tolerationsList, tolMap)
+	}
+
+	for _, path := range paths {
+		setNestedMapValue(values, path, tolerationsList)
+	}
+}
+
+// setNestedMapValue sets a value at a nested path in a map.
+func setNestedMapValue(target map[string]interface{}, path string, value interface{}) {
+	parts := strings.Split(path, ".")
+	current := target
+
+	// Traverse/create the path up to the last segment
+	for i := 0; i < len(parts)-1; i++ {
+		part := parts[i]
+		if next, ok := current[part]; ok {
+			if nextMap, ok := next.(map[string]interface{}); ok {
+				current = nextMap
+			} else {
+				// Existing value is not a map, create new map
+				newMap := make(map[string]interface{})
+				current[part] = newMap
+				current = newMap
+			}
+		} else {
+			newMap := make(map[string]interface{})
+			current[part] = newMap
+			current = newMap
+		}
+	}
+
+	// Set the final value
+	lastPart := parts[len(parts)-1]
+	current[lastPart] = value
 }

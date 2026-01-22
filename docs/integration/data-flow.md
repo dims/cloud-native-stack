@@ -724,7 +724,8 @@ spec:
 │ Complete Bundle + Deploy Flow                                │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
-│  cnsctl bundle -r recipe.yaml --deployer argocd -o ./out     │
+│  cnsctl bundle -r recipe.yaml --deployer argocd \            │
+│    --repo https://github.com/my-org/my-repo.git -o ./out     │
 │                                                              │
 │  1. Parse recipe                                             │
 │     └─ Extract componentRefs + deploymentOrder               │
@@ -741,7 +742,7 @@ spec:
 │     ├─ cert-manager/argocd/application.yaml (wave: 0)        │
 │     ├─ gpu-operator/argocd/application.yaml (wave: 1)        │
 │     └─ network-operator/argocd/application.yaml (wave: 2)    │
-│     └─ app-of-apps.yaml (bundle root)                        │
+│     └─ app-of-apps.yaml (bundle root, uses --repo URL)       │
 │                                                              │
 │  5. Generate checksums                                       │
 │     └─ checksums.txt for each component                      │

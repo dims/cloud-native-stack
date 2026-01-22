@@ -553,8 +553,9 @@ When the `--deployer` flag is set, bundlers generate standard artifacts that dep
 The deployer is specified at bundle generation time:
 
 ```bash
-# Generate bundles with ArgoCD deployer
-cnsctl bundle -r recipe.yaml -o ./bundles --deployer argocd
+# Generate bundles with ArgoCD deployer (use --repo to set Git repository URL)
+cnsctl bundle -r recipe.yaml -o ./bundles --deployer argocd \
+  --repo https://github.com/my-org/my-gitops-repo.git
 
 # Generate bundles with Flux deployer
 cnsctl bundle -r recipe.yaml -o ./bundles --deployer flux

@@ -200,7 +200,7 @@ curl -s "https://cns.dgxc.io/v1/recipe?accelerator=h100&service=eks" | \
 
 # Advanced: with value overrides and ArgoCD deployer
 curl -s "https://cns.dgxc.io/v1/recipe?accelerator=h100&service=eks" | \
-  curl -X POST "https://cns.dgxc.io/v1/bundle?bundlers=gpu-operator&deployer=argocd&set=gpuoperator:gds.enabled=true&set=gpuoperator:driver.version=570.86.16" \
+  curl -X POST "https://cns.dgxc.io/v1/bundle?bundlers=gpu-operator&deployer=argocd&repo=https://github.com/my-org/my-gitops-repo.git&set=gpuoperator:gds.enabled=true" \
     -H "Content-Type: application/json" -d @- -o bundles.zip
 
 # With node scheduling for system and GPU nodes

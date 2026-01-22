@@ -2,50 +2,55 @@
 Copyright © 2025 NVIDIA Corporation
 SPDX-License-Identifier: Apache-2.0
 */
+
 package cli
 
 import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
-	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/registry"
-	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/types"
-	deployerRegistry "github.com/NVIDIA/cloud-native-stack/pkg/deployer/registry"
-	deployerTypes "github.com/NVIDIA/cloud-native-stack/pkg/deployer/types"
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/result"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
 	"github.com/NVIDIA/cloud-native-stack/pkg/snapshotter"
 	"github.com/urfave/cli/v3"
 )
 
+// deployerArgoCD is the ArgoCD deployer type.
+const deployerArgoCD = "argocd"
+
 func bundleCmd() *cli.Command {
 	return &cli.Command{
 		Name:                  "bundle",
 		EnableShellCompletion: true,
-		Usage:                 "Generate artifact bundle from a given recipe",
-		Description: `Generates a bundle of artifacts from a given recipe parameters including:
-  - Kubernetes manifests
-  - Helm charts
-  - Installation scripts
-  - Configuration files
+		Usage:                 "Generate deployment bundle from a given recipe",
+		Description: `Generates a deployment bundle from a given recipe. By default, this creates
+a Helm umbrella chart. Use --deployer argocd to generate ArgoCD Applications.
+
+# Default Output (Helm Umbrella Chart)
+
+  - Chart.yaml: Helm chart metadata with component dependencies
+  - values.yaml: Combined values for all components
+  - README.md: Deployment instructions
+  - recipe.yaml: Copy of the input recipe for reference
+
+# ArgoCD Output (--deployer argocd)
+
+  - app-of-apps.yaml: Parent ArgoCD Application
+  - <component>/application.yaml: ArgoCD Application per component
+  - <component>/values.yaml: Values for each component
+  - README.md: Deployment instructions
 
 # Examples
 
-Generate bundle with default settings (script deployer):
+Generate Helm umbrella chart (default):
   cnsctl bundle --recipe recipe.yaml --output ./my-bundle
 
-Generate bundle for ArgoCD GitOps deployment:
-  cnsctl bundle --recipe recipe.yaml --deployer argocd --output ./argocd-bundle
-
-Generate bundle for Flux GitOps deployment:
-  cnsctl bundle --recipe recipe.yaml --deployer flux --output ./flux-bundle
-
-Generate only specific components:
-  cnsctl bundle --recipe recipe.yaml --bundlers gpu-operator,cert-manager
+Generate ArgoCD App of Apps:
+  cnsctl bundle --recipe recipe.yaml --output ./my-bundle --deployer argocd
 
 Override values in generated bundle:
   cnsctl bundle --recipe recipe.yaml --set gpuoperator:driver.version=570.133.20
@@ -53,7 +58,21 @@ Override values in generated bundle:
 Set node selectors for GPU workloads:
   cnsctl bundle --recipe recipe.yaml \
     --accelerated-node-selector nodeGroup=gpu-nodes \
-    --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule`,
+    --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule
+
+# Deployment (Helm)
+
+After generating the Helm bundle, deploy using:
+  cd my-bundle
+  helm dependency update
+  helm install cns-stack . -n cns-system --create-namespace
+
+# Deployment (ArgoCD)
+
+After generating the ArgoCD bundle:
+  1. Push the generated files to your GitOps repository
+  2. Apply the app-of-apps.yaml to your ArgoCD cluster:
+     kubectl apply -f app-of-apps.yaml`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "recipe",
@@ -62,18 +81,11 @@ Set node selectors for GPU workloads:
 				Usage: `Path/URI to previously generated recipe from which to build the bundle. 
 	Supports: file paths, HTTP/HTTPS URLs, or ConfigMap URIs (cm://namespace/name).`,
 			},
-			&cli.StringSliceFlag{
-				Name:    "bundlers",
-				Aliases: []string{"b"},
-				Usage: fmt.Sprintf(`Types of bundlers to execute (supported: %s). 
-	If not specified, all supported bundlers are executed.`,
-					strings.Join(types.SupportedBundleTypesAsStrings(), ", ")),
-			},
 			&cli.StringFlag{
 				Name:    "output",
 				Aliases: []string{"o"},
 				Value:   ".",
-				Usage:   "output directory path",
+				Usage:   "Output directory path for the generated Helm umbrella chart",
 			},
 			&cli.StringSliceFlag{
 				Name:  "set",
@@ -96,18 +108,29 @@ Set node selectors for GPU workloads:
 				Usage: "Toleration for accelerated/GPU nodes (format: key=value:effect, can be repeated)",
 			},
 			&cli.StringFlag{
-				Name:  "deployer",
-				Value: string(deployerTypes.DeployerTypeScript),
-				Usage: fmt.Sprintf("Deployment method for generated components (supported: %s)",
-					strings.Join(deployerTypesToStrings(deployerTypes.AllDeployerTypes()), ", ")),
+				Name:    "deployer",
+				Aliases: []string{"d"},
+				Value:   "",
+				Usage:   "Deployment method: '' (default Helm umbrella chart) or 'argocd' (App of Apps pattern)",
+			},
+			&cli.StringFlag{
+				Name:  "repo",
+				Value: "",
+				Usage: "Git repository URL for ArgoCD applications (only used with --deployer argocd)",
 			},
 			kubeconfigFlag,
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			recipeFilePath := cmd.String("recipe")
 			outputDir := cmd.String("output")
-			bundlerTypesStr := cmd.StringSlice("bundlers")
 			kubeconfig := cmd.String("kubeconfig")
+			deployer := cmd.String("deployer")
+			repoURL := cmd.String("repo")
+
+			// Validate deployer flag
+			if deployer != "" && deployer != deployerArgoCD {
+				return fmt.Errorf("invalid --deployer value: %q (must be '' or 'argocd')", deployer)
+			}
 
 			// Parse value overrides from --set flags
 			valueOverrides, err := config.ParseValueOverrides(cmd.StringSlice("set"))
@@ -135,100 +158,86 @@ Set node selectors for GPU workloads:
 				return fmt.Errorf("invalid --accelerated-node-toleration: %w", err)
 			}
 
-			// Parse and validate deployer type
-			deployerTypeStr := cmd.String("deployer")
-			deployerType := deployerTypes.DeployerType(deployerTypeStr)
-			if !deployerType.IsValid() {
-				// Get list of valid types from registry
-				deployerReg := deployerRegistry.NewFromGlobal()
-				registeredTypes := deployerReg.Types()
-				return fmt.Errorf("invalid deployer type '%s': must be one of %s",
-					deployerTypeStr, strings.Join(deployerTypesToStrings(registeredTypes), ", "))
-			}
-
-			// Parse bundler types
-			var bundlerTypes []types.BundleType
-			for _, t := range bundlerTypesStr {
-				bt, parseErr := types.ParseType(t)
-				if parseErr != nil {
-					return fmt.Errorf("invalid bundler type '%s': %w", t, parseErr)
-				}
-				bundlerTypes = append(bundlerTypes, bt)
+			outputType := "umbrella chart"
+			if deployer == deployerArgoCD {
+				outputType = "ArgoCD applications"
 			}
 			slog.Info("generating bundle",
-				slog.String("recipeFilePath", recipeFilePath),
-				slog.String("outputDir", outputDir),
-				slog.Any("bundlerTypes", bundlerTypes),
-				slog.String("deployerType", string(deployerType)),
+				slog.String("type", outputType),
+				slog.String("recipe", recipeFilePath),
+				slog.String("output", outputDir),
 			)
 
+			// Load recipe from file/URL/ConfigMap
 			rec, err := serializer.FromFileWithKubeconfig[recipe.RecipeResult](recipeFilePath, kubeconfig)
 			if err != nil {
 				slog.Error("failed to load recipe file", "error", err, "path", recipeFilePath)
 				return err
 			}
 
-			// Create bundler registry from global with config
-			reg := registry.NewFromGlobal(
-				config.NewConfig(
-					config.WithVersion(version),
-					config.WithValueOverrides(valueOverrides),
-					config.WithSystemNodeSelector(systemNodeSelector),
-					config.WithSystemNodeTolerations(systemNodeTolerations),
-					config.WithAcceleratedNodeSelector(acceleratedNodeSelector),
-					config.WithAcceleratedNodeTolerations(acceleratedNodeTolerations),
-				),
+			// Create bundler with config
+			cfg := config.NewConfig(
+				config.WithVersion(version),
+				config.WithDeployer(deployer),
+				config.WithRepoURL(repoURL),
+				config.WithValueOverrides(valueOverrides),
+				config.WithSystemNodeSelector(systemNodeSelector),
+				config.WithSystemNodeTolerations(systemNodeTolerations),
+				config.WithAcceleratedNodeSelector(acceleratedNodeSelector),
+				config.WithAcceleratedNodeTolerations(acceleratedNodeTolerations),
 			)
 
-			// Create bundler instance
-			b, err := bundler.New(
-				// If bundler types are not specified, all supported bundlers are used.
-				// An empty or nil slice means all bundlers as well.
-				bundler.WithBundlerTypes(bundlerTypes),
-				bundler.WithRegistry(reg),
-				bundler.WithDeployer(deployerType),
-			)
+			b, err := bundler.NewWithConfig(cfg)
 			if err != nil {
 				slog.Error("failed to create bundler", "error", err)
 				return err
 			}
 
+			// Generate bundle
 			out, err := b.Make(ctx, rec, outputDir)
 			if err != nil {
 				slog.Error("bundle generation failed", "error", err)
 				return err
 			}
 
-			slog.Info("bundle generation completed",
-				"success", out.SuccessCount(),
-				"errors", len(out.Errors),
+			slog.Info("bundle generated",
+				"type", outputType,
+				"files", out.TotalFiles,
+				"size_bytes", out.TotalSize,
 				"duration_sec", out.TotalDuration.Seconds(),
-				"summary", out.Summary(),
+				"output_dir", out.OutputDir,
 			)
 
-			// Return error if any bundlers failed
-			if out.HasErrors() {
-				// Log each bundler error for debugging
-				for _, bundleErr := range out.Errors {
-					slog.Error("bundler failed",
-						"bundler_type", bundleErr.BundlerType,
-						"error", bundleErr.Error,
-					)
-				}
-				return fmt.Errorf("bundle generation completed with errors: %d/%d bundlers failed",
-					len(out.Errors), len(out.Results))
-			}
+			// Print deployment instructions
+			printBundleDeploymentInstructions(deployer, repoURL, out)
 
 			return nil
 		},
 	}
 }
 
-// deployerTypesToStrings converts deployer types to string slice for help text
-func deployerTypesToStrings(types []deployerTypes.DeployerType) []string {
-	result := make([]string, len(types))
-	for i, t := range types {
-		result[i] = string(t)
+// printBundleDeploymentInstructions prints user-friendly deployment instructions.
+func printBundleDeploymentInstructions(deployer, repoURL string, out *result.Output) {
+	if deployer == deployerArgoCD {
+		fmt.Printf("\nArgoCD applications generated successfully!\n")
+		fmt.Printf("Output directory: %s\n", out.OutputDir)
+		fmt.Printf("Files generated: %d\n", out.TotalFiles)
+		fmt.Printf("\nTo deploy:\n")
+		fmt.Printf("  1. Push the generated files to your GitOps repository\n")
+		if repoURL == "" {
+			fmt.Printf("  2. Update app-of-apps.yaml with your repository URL\n")
+			fmt.Printf("  3. Apply to your cluster:\n")
+		} else {
+			fmt.Printf("  2. Apply to your cluster:\n")
+		}
+		fmt.Printf("     kubectl apply -f %s/app-of-apps.yaml\n", out.OutputDir)
+	} else {
+		fmt.Printf("\nUmbrella chart generated successfully!\n")
+		fmt.Printf("Output directory: %s\n", out.OutputDir)
+		fmt.Printf("Files generated: %d\n", out.TotalFiles)
+		fmt.Printf("\nTo deploy:\n")
+		fmt.Printf("  cd %s\n", out.OutputDir)
+		fmt.Printf("  helm dependency update\n")
+		fmt.Printf("  helm install cns-stack . -n cns-system --create-namespace\n")
 	}
-	return result
 }

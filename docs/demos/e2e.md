@@ -84,7 +84,8 @@ cnsctl bundle \
   --system-node-selector nodeGroup=system-pool \
   --accelerated-node-selector nodeGroup=customer-gpu \
   --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule \
-  --deployer argocd
+  --deployer argocd \
+  --repo https://github.com/my-org/my-gitops-repo.git
 ```
 
 Check bundle content: 

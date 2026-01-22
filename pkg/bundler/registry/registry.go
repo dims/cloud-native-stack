@@ -19,6 +19,16 @@ type Bundler interface {
 	Make(ctx context.Context, input recipe.RecipeInput, dir string) (*result.Result, error)
 }
 
+// ValuesExtractor defines the interface for extracting component values.
+// This is used by the umbrella chart generator to collect values from each bundler
+// without requiring file I/O. Bundlers should implement this interface.
+type ValuesExtractor interface {
+	// ExtractValues returns the processed values map for this component.
+	// This includes base values, overlay merging, and user overrides applied.
+	// Returns the component name and values map.
+	ExtractValues(ctx context.Context, input recipe.RecipeInput) (componentName string, values map[string]interface{}, err error)
+}
+
 // Factory is a function that creates a new Bundler instance.
 // Used for dynamic bundler registration via init() functions.
 type Factory func(cfg *config.Config) Bundler

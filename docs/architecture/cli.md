@@ -2893,6 +2893,11 @@ sequenceDiagram
 # Generate bundle with ArgoCD Applications
 cnsctl bundle -r recipe.yaml --deployer argocd -o ./bundles
 
+# ArgoCD with Git repository URL (sets repoURL in app-of-apps.yaml)
+cnsctl bundle -r recipe.yaml --deployer argocd \
+  --repo https://github.com/my-org/my-gitops-repo.git \
+  -o ./bundles
+
 # Generate bundle with Flux HelmReleases
 cnsctl bundle -r recipe.yaml --deployer flux -o ./bundles
 

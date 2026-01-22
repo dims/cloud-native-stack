@@ -48,6 +48,12 @@ type Config struct {
 
 	// acceleratedNodeTolerations contains tolerations for accelerated/GPU nodes.
 	acceleratedNodeTolerations []corev1.Toleration
+
+	// deployer specifies the deployment method: "helm" (default) or "argocd".
+	deployer string
+
+	// repoURL specifies the Git repository URL for ArgoCD applications.
+	repoURL string
 }
 
 // Getter methods for read-only access
@@ -144,6 +150,16 @@ func (c *Config) AcceleratedNodeTolerations() []corev1.Toleration {
 	result := make([]corev1.Toleration, len(c.acceleratedNodeTolerations))
 	copy(result, c.acceleratedNodeTolerations)
 	return result
+}
+
+// Deployer returns the deployment method ("helm" or "argocd").
+func (c *Config) Deployer() string {
+	return c.deployer
+}
+
+// RepoURL returns the Git repository URL for ArgoCD applications.
+func (c *Config) RepoURL() string {
+	return c.repoURL
 }
 
 // Validate checks if the Config has valid settings.
@@ -274,10 +290,25 @@ func WithAcceleratedNodeTolerations(tolerations []corev1.Toleration) Option {
 	}
 }
 
+// WithDeployer sets the deployment method ("helm" or "argocd").
+func WithDeployer(deployer string) Option {
+	return func(c *Config) {
+		c.deployer = deployer
+	}
+}
+
+// WithRepoURL sets the Git repository URL for ArgoCD applications.
+func WithRepoURL(repoURL string) Option {
+	return func(c *Config) {
+		c.repoURL = repoURL
+	}
+}
+
 // NewConfig returns a Config with default values.
 func NewConfig(options ...Option) *Config {
 	c := &Config{
 		compression:      false,
+		deployer:         "helm",
 		includeChecksums: true,
 		includeReadme:    true,
 		includeScripts:   true,

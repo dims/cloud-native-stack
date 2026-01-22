@@ -469,6 +469,7 @@ cnsctl bundle [flags]
 | `--bundlers` | `-b` | string[] | Bundler types to execute (repeatable) |
 | `--output` | `-o` | string | Output directory (default: current dir) |
 | `--deployer` | | string | Deployment method: script (default), argocd, flux |
+| `--repo` | | string | Git repository URL for ArgoCD applications (only used with `--deployer argocd`) |
 | `--set` | | string[] | Override values in bundle files (repeatable) |
 | `--system-node-selector` | | string[] | Node selector for system components (format: key=value, repeatable) |
 | `--system-node-toleration` | | string[] | Toleration for system components (format: key=value:effect, repeatable) |
@@ -587,6 +588,11 @@ cnsctl bundle -r recipe.yaml -b gpu-operator \
 
 # Generate ArgoCD Application manifests for GitOps
 cnsctl bundle -r recipe.yaml --deployer argocd -o ./bundles
+
+# ArgoCD with Git repository URL (avoids placeholder in app-of-apps.yaml)
+cnsctl bundle -r recipe.yaml --deployer argocd \
+  --repo https://github.com/my-org/my-gitops-repo.git \
+  -o ./bundles
 
 # Generate Flux HelmRelease resources for GitOps
 cnsctl bundle -r recipe.yaml --deployer flux -o ./bundles

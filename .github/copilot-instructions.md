@@ -444,6 +444,7 @@ cnsctl bundle -r recipe.yaml -b gpu-operator \
 # GitOps deployment with ArgoCD (sync-wave ordering)
 cnsctl bundle -r recipe.yaml -b gpu-operator,network-operator \
   --deployer argocd \
+  --repo https://github.com/my-org/my-gitops-repo.git \
   -o ./bundles
 
 # GitOps deployment with Flux (dependsOn ordering)

@@ -304,6 +304,7 @@ jobs:
             --recipe recipe.yaml \
             --bundlers gpu-operator,network-operator,cert-manager \
             --deployer argocd \
+            --repo https://github.com/${{ github.repository }}.git \
             --output ./bundles
       
       - name: Commit to GitOps repo

@@ -1,605 +1,482 @@
+/*
+Copyright © 2025 NVIDIA Corporation
+SPDX-License-Identifier: Apache-2.0
+*/
+
 package bundler
 
 import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/types"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
-	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/registry"
-	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/result"
-	"github.com/NVIDIA/cloud-native-stack/pkg/errors"
-	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 )
 
-var (
-	testReg = registry.NewRegistry()
-)
+func TestNew(t *testing.T) {
+	t.Run("default bundler", func(t *testing.T) {
+		bundler, err := New()
+		if err != nil {
+			t.Fatalf("New() error = %v", err)
+		}
+		if bundler == nil {
+			t.Fatal("New() returned nil bundler")
+		}
+		if bundler.Config == nil {
+			t.Fatal("New() bundler has nil config")
+		}
+	})
 
-func init() {
-	testReg.Register("mock", &mockBundler{})
-	testReg.Register("mock-configurable", &mockConfigurableBundler{})
-	testReg.Register("mock-fail", &mockBundler{shouldFail: true})
+	t.Run("with config", func(t *testing.T) {
+		cfg := config.NewConfig(
+			config.WithVersion("v1.0.0"),
+		)
+		bundler, err := New(WithConfig(cfg))
+		if err != nil {
+			t.Fatalf("New() error = %v", err)
+		}
+		if bundler.Config.Version() != "v1.0.0" {
+			t.Errorf("expected version v1.0.0, got %s", bundler.Config.Version())
+		}
+	})
+
+	t.Run("with nil config", func(t *testing.T) {
+		bundler, err := New(WithConfig(nil))
+		if err != nil {
+			t.Fatalf("New() error = %v", err)
+		}
+		// Should use default config when nil is passed
+		if bundler.Config == nil {
+			t.Fatal("Config should not be nil after passing nil")
+		}
+	})
 }
 
-// mockBundler for testing.
-type mockBundler struct {
-	shouldFail bool
-}
-
-func (m *mockBundler) Make(ctx context.Context, input recipe.RecipeInput, outputDir string) (*result.Result, error) {
-	res := result.New("mock")
-	if m.shouldFail {
-		return res, errors.New(errors.ErrCodeInternal, "mock bundler failed")
-	}
-	res.AddFile("test.txt", 100)
-	res.MarkSuccess()
-	return res, nil
-}
-
-// mockConfigurableBundler for testing configuration.
-type mockConfigurableBundler struct {
-	config *config.Config
-}
-
-func (m *mockConfigurableBundler) Make(ctx context.Context, input recipe.RecipeInput, outputDir string) (*result.Result, error) {
-	res := result.New("mock-configurable")
-	res.AddFile("test.txt", 100)
-	res.MarkSuccess()
-	return res, nil
-}
-
-func (m *mockConfigurableBundler) Configure(config *config.Config) error {
-	if config == nil {
-		return errors.New(errors.ErrCodeInvalidRequest, "config cannot be nil")
-	}
-	m.config = config
-	return nil
-}
-
-func TestDefaultBundler_Make(t *testing.T) {
-	ctx := context.Background()
-	tmpDir := t.TempDir()
-
-	// Create a test recipe
-	rec := &recipe.Recipe{
-		Measurements: []*measurement.Measurement{
-			{
-				Type: measurement.TypeK8s,
-				Subtypes: []measurement.Subtype{
-					{
-						Name: "cluster",
-						Data: map[string]measurement.Reading{
-							"version": measurement.Str("1.28.0"),
-						},
-					},
-				},
-			},
-		},
-	}
-
-	bundler, err := New(
-		WithRegistry(testReg),
-		WithBundlerTypes([]types.BundleType{"mock"}),
-	)
-	if err != nil {
-		t.Fatalf("New() error = %v", err)
-	}
-	output, err := bundler.Make(ctx, rec, tmpDir)
-	if err != nil {
-		t.Fatalf("Make() error = %v", err)
-	}
-
-	if output == nil {
-		t.Fatal("Make() returned nil output")
-		return
-	}
-
-	if len(output.Results) == 0 {
-		t.Error("Make() produced no results")
-	}
-
-	if output.OutputDir != tmpDir {
-		t.Errorf("OutputDir = %s, want %s", output.OutputDir, tmpDir)
-	}
-
-	if output.TotalFiles != 1 {
-		t.Errorf("TotalFiles = %d, want 1", output.TotalFiles)
-	}
-
-	if output.TotalSize != 100 {
-		t.Errorf("TotalSize = %d, want 100", output.TotalSize)
-	}
-}
-
-func TestDefaultBundler_MakeWithNilRecipe(t *testing.T) {
-	ctx := context.Background()
-	tmpDir := t.TempDir()
-
+func TestMake_NilInput(t *testing.T) {
 	bundler, err := New()
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
+
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
 	_, err = bundler.Make(ctx, nil, tmpDir)
 	if err == nil {
-		t.Error("Make() with nil recipe should return error")
+		t.Fatal("expected error for nil input, got nil")
+	}
+	if !strings.Contains(err.Error(), "nil") {
+		t.Errorf("expected error to mention nil, got: %v", err)
 	}
 }
 
-func TestDefaultBundler_MakeWithEmptyMeasurements(t *testing.T) {
-	ctx := context.Background()
-	tmpDir := t.TempDir()
-
-	rec := &recipe.Recipe{
-		Measurements: []*measurement.Measurement{},
-	}
-
+func TestMake_EmptyComponentRefs(t *testing.T) {
 	bundler, err := New()
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
-	_, err = bundler.Make(ctx, rec, tmpDir)
+
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	recipeResult := &recipe.RecipeResult{
+		ComponentRefs: []recipe.ComponentRef{},
+	}
+
+	_, err = bundler.Make(ctx, recipeResult, tmpDir)
 	if err == nil {
-		t.Error("Make() with empty measurements should return error")
+		t.Fatal("expected error for empty component refs, got nil")
+	}
+	if !strings.Contains(err.Error(), "component") {
+		t.Errorf("expected error to mention component, got: %v", err)
 	}
 }
 
-func TestDefaultBundler_MakeWithOptions(t *testing.T) {
-	ctx := context.Background()
-	tmpDir := t.TempDir()
-
-	rec := &recipe.Recipe{
-		Measurements: []*measurement.Measurement{
-			{
-				Type: measurement.TypeK8s,
-				Subtypes: []measurement.Subtype{
-					{
-						Name: "cluster",
-						Data: map[string]measurement.Reading{
-							"version": measurement.Str("1.28.0"),
-						},
-					},
-				},
-			},
-		},
-	}
-
-	config := config.NewConfig()
-
-	bundler, err := New(WithRegistry(testReg), WithBundlerTypes([]types.BundleType{"mock"}),
-		WithConfig(config),
-	)
-	if err != nil {
-		t.Fatalf("New() error = %v", err)
-	}
-	output, err := bundler.Make(ctx, rec, tmpDir)
-	if err != nil {
-		t.Fatalf("Make() error = %v", err)
-	}
-
-	if output == nil {
-		t.Fatal("Make() returned nil output")
-	}
-}
-
-func TestDefaultBundler_MakeCreatesDirectory(t *testing.T) {
-	ctx := context.Background()
-	tmpDir := filepath.Join(t.TempDir(), "nested", "dir")
-
-	rec := &recipe.Recipe{
-		Measurements: []*measurement.Measurement{
-			{
-				Type: measurement.TypeK8s,
-				Subtypes: []measurement.Subtype{
-					{
-						Name: "cluster",
-						Data: map[string]measurement.Reading{
-							"version": measurement.Str("1.28.0"),
-						},
-					},
-				},
-			},
-		},
-	}
-
-	bundler, err := New(
-		WithRegistry(testReg),
-		WithBundlerTypes([]types.BundleType{"mock"}),
-	)
-	if err != nil {
-		t.Fatalf("New() error = %v", err)
-	}
-	_, err = bundler.Make(ctx, rec, tmpDir)
-	if err != nil {
-		t.Fatalf("Make() error = %v", err)
-	}
-
-	// Verify directory was created
-	if _, err := os.Stat(tmpDir); os.IsNotExist(err) {
-		t.Error("Make() did not create output directory")
-	}
-}
-
-func TestDefaultBundler_MakeWithMultipleBundlers(t *testing.T) {
-	ctx := context.Background()
-	tmpDir := t.TempDir()
-
-	rec := &recipe.Recipe{
-		Measurements: []*measurement.Measurement{
-			{
-				Type: measurement.TypeK8s,
-				Subtypes: []measurement.Subtype{
-					{
-						Name: "cluster",
-						Data: map[string]measurement.Reading{
-							"version": measurement.Str("1.28.0"),
-						},
-					},
-				},
-			},
-		},
-	}
-
-	// Bundlers execute in parallel
-	bundler, err := New(
-		WithRegistry(testReg),
-	)
-	if err != nil {
-		t.Fatalf("New() error = %v", err)
-	}
-	output, err := bundler.Make(ctx, rec, tmpDir)
-	if err != nil {
-		t.Fatalf("Make() error = %v", err)
-	}
-
-	if output == nil {
-		t.Fatal("Make() returned nil output")
-		return
-	}
-
-	// Should have results from both bundlers
-	if len(output.Results) != testReg.Count() {
-		t.Errorf("Expected %d results, got %d", testReg.Count(), len(output.Results))
-	}
-}
-
-func TestDefaultBundler_MakeWithFailFast(t *testing.T) {
-	ctx := context.Background()
-	tmpDir := t.TempDir()
-
-	rec := &recipe.Recipe{
-		Measurements: []*measurement.Measurement{
-			{
-				Type: measurement.TypeK8s,
-				Subtypes: []measurement.Subtype{
-					{
-						Name: "cluster",
-						Data: map[string]measurement.Reading{
-							"version": measurement.Str("1.28.0"),
-						},
-					},
-				},
-			},
-		},
-	}
-
-	bundler, err := New(
-		WithRegistry(testReg),
-		WithBundlerTypes([]types.BundleType{"mock-fail", "mock"}),
-		WithFailFast(true),
-	)
-	if err != nil {
-		t.Fatalf("New() error = %v", err)
-	}
-	_, err = bundler.Make(ctx, rec, tmpDir)
-	if err == nil {
-		t.Error("Expected error with FailFast and failing bundler")
-	}
-}
-
-func TestDefaultBundler_MakeWithoutFailFast(t *testing.T) {
-	ctx := context.Background()
-	tmpDir := t.TempDir()
-
-	rec := &recipe.Recipe{
-		Measurements: []*measurement.Measurement{
-			{
-				Type: measurement.TypeK8s,
-				Subtypes: []measurement.Subtype{
-					{
-						Name: "cluster",
-						Data: map[string]measurement.Reading{
-							"version": measurement.Str("1.28.0"),
-						},
-					},
-				},
-			},
-		},
-	}
-
-	bundler, err := New(
-		WithRegistry(testReg),
-		WithBundlerTypes([]types.BundleType{"mock-fail", "mock"}),
-		WithFailFast(false),
-	)
-	if err != nil {
-		t.Fatalf("New() error = %v", err)
-	}
-	output, err := bundler.Make(ctx, rec, tmpDir)
-	if err != nil {
-		t.Fatalf("Make() error = %v", err)
-	}
-
-	// Should collect errors but continue execution
-	if !output.HasErrors() {
-		t.Error("Expected errors to be collected")
-	}
-
-	// Should still have results from successful bundler
-	if len(output.Results) == 0 {
-		t.Error("Expected at least one result")
-	}
-}
-
-func TestDefaultBundler_MakeWithConfiguration(t *testing.T) {
-	ctx := context.Background()
-	tmpDir := t.TempDir()
-
-	rec := &recipe.Recipe{
-		Measurements: []*measurement.Measurement{
-			{
-				Type: measurement.TypeK8s,
-				Subtypes: []measurement.Subtype{
-					{
-						Name: "cluster",
-						Data: map[string]measurement.Reading{
-							"version": measurement.Str("1.28.0"),
-						},
-					},
-				},
-			},
-		},
-	}
-
-	config := config.NewConfig()
-
-	bundler, err := New(WithRegistry(testReg), WithBundlerTypes([]types.BundleType{"mock-configurable"}),
-		WithConfig(config),
-	)
-	if err != nil {
-		t.Fatalf("New() error = %v", err)
-	}
-	output, err := bundler.Make(ctx, rec, tmpDir)
-	if err != nil {
-		t.Fatalf("Make() error = %v", err)
-	}
-
-	if output == nil {
-		t.Fatal("Make() returned nil output")
-	}
-}
-
-func TestDefaultBundler_MakeWithAllBundlers(t *testing.T) {
-	ctx := context.Background()
-	tmpDir := t.TempDir()
-
-	rec := &recipe.Recipe{
-		Measurements: []*measurement.Measurement{
-			{
-				Type: measurement.TypeK8s,
-				Subtypes: []measurement.Subtype{
-					{
-						Name: "cluster",
-						Data: map[string]measurement.Reading{
-							"version": measurement.Str("1.28.0"),
-						},
-					},
-				},
-			},
-		},
-	}
-
-	// No bundler types specified - should use all registered bundlers
+func TestMake_Success(t *testing.T) {
 	bundler, err := New()
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
-	output, err := bundler.Make(ctx, rec, tmpDir)
+
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	recipeResult := &recipe.RecipeResult{
+		APIVersion: "cns.nvidia.com/v1alpha1",
+		Kind:       "Recipe",
+		Criteria: &recipe.Criteria{
+			Service:     "eks",
+			Accelerator: "gb200",
+			Intent:      "training",
+			OS:          "ubuntu",
+		},
+		ComponentRefs: []recipe.ComponentRef{
+			{
+				Name:    "gpu-operator",
+				Version: "v25.3.3",
+				Type:    "helm",
+				Source:  "https://helm.ngc.nvidia.com/nvidia",
+			},
+			{
+				Name:    "network-operator",
+				Version: "v25.4.0",
+				Type:    "helm",
+				Source:  "https://helm.ngc.nvidia.com/nvidia",
+			},
+		},
+		DeploymentOrder: []string{"gpu-operator", "network-operator"},
+	}
+
+	output, err := bundler.Make(ctx, recipeResult, tmpDir)
 	if err != nil {
 		t.Fatalf("Make() error = %v", err)
 	}
 
 	if output == nil {
 		t.Fatal("Make() returned nil output")
-		return
 	}
 
-	// Should have results from all registered bundlers
-	if len(output.Results) == 0 {
-		t.Error("Expected results from registered bundlers")
+	// Verify files were created
+	expectedFiles := []string{"Chart.yaml", "values.yaml", "README.md", "recipe.yaml"}
+	for _, filename := range expectedFiles {
+		path := filepath.Join(tmpDir, filename)
+		if _, statErr := os.Stat(path); os.IsNotExist(statErr) {
+			t.Errorf("expected file %s was not created", filename)
+		}
+	}
+
+	// Verify Chart.yaml has dependencies
+	chartContent, err := os.ReadFile(filepath.Join(tmpDir, "Chart.yaml"))
+	if err != nil {
+		t.Fatalf("failed to read Chart.yaml: %v", err)
+	}
+	chartStr := string(chartContent)
+	if !strings.Contains(chartStr, "dependencies:") {
+		t.Error("Chart.yaml should contain dependencies section")
+	}
+	if !strings.Contains(chartStr, "gpu-operator") {
+		t.Error("Chart.yaml should reference gpu-operator")
+	}
+	if !strings.Contains(chartStr, "network-operator") {
+		t.Error("Chart.yaml should reference network-operator")
+	}
+
+	// Verify output summary
+	if output.TotalFiles < 4 {
+		t.Errorf("expected at least 4 files, got %d", output.TotalFiles)
 	}
 }
 
-func TestDefaultBundler_MakeWithEmptyDirectory(t *testing.T) {
-	ctx := context.Background()
+func TestMake_WithValueOverrides(t *testing.T) {
+	cfg := config.NewConfig(
+		config.WithValueOverrides(map[string]map[string]string{
+			"gpu-operator": {
+				"gds.enabled": "true",
+			},
+		}),
+	)
+	bundler, err := New(WithConfig(cfg))
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
 
-	rec := &recipe.Recipe{
-		Measurements: []*measurement.Measurement{
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	recipeResult := &recipe.RecipeResult{
+		APIVersion: "cns.nvidia.com/v1alpha1",
+		Kind:       "Recipe",
+		ComponentRefs: []recipe.ComponentRef{
 			{
-				Type: measurement.TypeK8s,
-				Subtypes: []measurement.Subtype{
-					{
-						Name: "cluster",
-						Data: map[string]measurement.Reading{
-							"version": measurement.Str("1.28.0"),
-						},
-					},
-				},
+				Name:    "gpu-operator",
+				Version: "v25.3.3",
+				Type:    "helm",
+				Source:  "https://helm.ngc.nvidia.com/nvidia",
 			},
 		},
 	}
 
-	// Empty dir should default to current directory
-	bundler, err := New(
-		WithRegistry(testReg),
-		WithBundlerTypes([]types.BundleType{"mock"}),
-	)
-	if err != nil {
-		t.Fatalf("New() error = %v", err)
-	}
-	output, err := bundler.Make(ctx, rec, "")
+	output, err := bundler.Make(ctx, recipeResult, tmpDir)
 	if err != nil {
 		t.Fatalf("Make() error = %v", err)
 	}
 
-	if output.OutputDir != "." {
-		t.Errorf("Expected output dir to be '.', got %s", output.OutputDir)
+	if output == nil {
+		t.Fatal("Make() returned nil output")
+	}
+
+	// Verify values.yaml was created
+	valuesPath := filepath.Join(tmpDir, "values.yaml")
+	if _, err := os.Stat(valuesPath); os.IsNotExist(err) {
+		t.Fatal("values.yaml was not created")
 	}
 }
 
-func TestDefaultBundler_MakeWithNoBundlers(t *testing.T) {
+func TestMake_WithNodeSelectors(t *testing.T) {
+	cfg := config.NewConfig(
+		config.WithSystemNodeSelector(map[string]string{
+			"nodeGroup": "system-pool",
+		}),
+		config.WithAcceleratedNodeSelector(map[string]string{
+			"nvidia.com/gpu.present": "true",
+		}),
+	)
+	bundler, err := New(WithConfig(cfg))
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 
-	rec := &recipe.Recipe{
-		Measurements: []*measurement.Measurement{
+	recipeResult := &recipe.RecipeResult{
+		APIVersion: "cns.nvidia.com/v1alpha1",
+		Kind:       "Recipe",
+		ComponentRefs: []recipe.ComponentRef{
 			{
-				Type: measurement.TypeK8s,
-				Subtypes: []measurement.Subtype{
-					{
-						Name: "cluster",
-						Data: map[string]measurement.Reading{
-							"version": measurement.Str("1.28.0"),
-						},
-					},
-				},
+				Name:    "gpu-operator",
+				Version: "v25.3.3",
+				Type:    "helm",
+				Source:  "https://helm.ngc.nvidia.com/nvidia",
 			},
 		},
 	}
 
-	// Specify non-existent bundler type
-	bundler, err := New(WithBundlerTypes([]types.BundleType{"non-existent"}))
+	output, err := bundler.Make(ctx, recipeResult, tmpDir)
+	if err != nil {
+		t.Fatalf("Make() error = %v", err)
+	}
+
+	if output == nil {
+		t.Fatal("Make() returned nil output")
+	}
+}
+
+func TestMake_WithTolerations(t *testing.T) {
+	cfg := config.NewConfig(
+		config.WithSystemNodeTolerations([]corev1.Toleration{
+			{
+				Key:      "dedicated",
+				Operator: corev1.TolerationOpEqual,
+				Value:    "system",
+				Effect:   corev1.TaintEffectNoSchedule,
+			},
+		}),
+	)
+	bundler, err := New(WithConfig(cfg))
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
-	_, err = bundler.Make(ctx, rec, tmpDir)
-	if err == nil {
-		t.Error("Expected error when no bundlers are selected")
-	}
-}
 
-func TestBundleOutput_Summary(t *testing.T) {
-	output := &result.Output{
-		TotalFiles: 5,
-		TotalSize:  1024,
-		Results: []*result.Result{
-			{Success: true},
-			{Success: true},
-			{Success: false},
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	recipeResult := &recipe.RecipeResult{
+		APIVersion: "cns.nvidia.com/v1alpha1",
+		Kind:       "Recipe",
+		ComponentRefs: []recipe.ComponentRef{
+			{
+				Name:    "gpu-operator",
+				Version: "v25.3.3",
+				Type:    "helm",
+				Source:  "https://helm.ngc.nvidia.com/nvidia",
+			},
 		},
 	}
 
-	summary := output.Summary()
-	if summary == "" {
-		t.Error("Summary() returned empty string")
+	output, err := bundler.Make(ctx, recipeResult, tmpDir)
+	if err != nil {
+		t.Fatalf("Make() error = %v", err)
+	}
+
+	if output == nil {
+		t.Fatal("Make() returned nil output")
 	}
 }
 
-func TestBundleOutput_HasErrors(t *testing.T) {
+func TestMake_ContextCancellation(t *testing.T) {
+	bundler, err := New()
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	tmpDir := t.TempDir()
+
+	recipeResult := &recipe.RecipeResult{
+		APIVersion: "cns.nvidia.com/v1alpha1",
+		Kind:       "Recipe",
+		ComponentRefs: []recipe.ComponentRef{
+			{
+				Name:    "gpu-operator",
+				Version: "v25.3.3",
+				Type:    "helm",
+				Source:  "https://helm.ngc.nvidia.com/nvidia",
+			},
+		},
+	}
+
+	_, err = bundler.Make(ctx, recipeResult, tmpDir)
+	if err == nil {
+		t.Fatal("expected error for cancelled context, got nil")
+	}
+}
+
+func TestMake_DefaultOutputDir(t *testing.T) {
+	bundler, err := New()
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	ctx := context.Background()
+
+	recipeResult := &recipe.RecipeResult{
+		APIVersion: "cns.nvidia.com/v1alpha1",
+		Kind:       "Recipe",
+		ComponentRefs: []recipe.ComponentRef{
+			{
+				Name:    "gpu-operator",
+				Version: "v25.3.3",
+				Type:    "helm",
+				Source:  "https://helm.ngc.nvidia.com/nvidia",
+			},
+		},
+	}
+
+	// Use current working directory
+	originalDir, _ := os.Getwd()
+	tmpDir := t.TempDir()
+	defer os.Chdir(originalDir)
+	os.Chdir(tmpDir)
+
+	output, err := bundler.Make(ctx, recipeResult, "")
+	if err != nil {
+		t.Fatalf("Make() error = %v", err)
+	}
+
+	if output == nil {
+		t.Fatal("Make() returned nil output")
+	}
+}
+
+func TestRemoveHyphens(t *testing.T) {
 	tests := []struct {
-		name   string
-		output *result.Output
-		want   bool
+		input    string
+		expected string
 	}{
-		{
-			name: "no errors",
-			output: &result.Output{
-				Errors: []result.BundleError{},
-			},
-			want: false,
-		},
-		{
-			name: "with errors",
-			output: &result.Output{
-				Errors: []result.BundleError{
-					{BundlerType: "test", Error: "test error"},
-				},
-			},
-			want: true,
-		},
+		{"gpu-operator", "gpuoperator"},
+		{"network-operator", "networkoperator"},
+		{"cert-manager", "certmanager"},
+		{"skyhook", "skyhook"},
+		{"", ""},
+		{"a-b-c-d", "abcd"},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.output.HasErrors(); got != tt.want {
-				t.Errorf("HasErrors() = %v, want %v", got, tt.want)
+		t.Run(tt.input, func(t *testing.T) {
+			result := removeHyphens(tt.input)
+			if result != tt.expected {
+				t.Errorf("removeHyphens(%q) = %q, want %q", tt.input, result, tt.expected)
 			}
 		})
 	}
 }
 
-func TestBundleResult_AddFile(t *testing.T) {
-	result := result.New("test")
-	result.AddFile("/path/to/file", 100)
-
-	if len(result.Files) != 1 {
-		t.Errorf("AddFile() did not add file, got %d files", len(result.Files))
-	}
-
-	if result.Size != 100 {
-		t.Errorf("AddFile() size = %d, want 100", result.Size)
-	}
-}
-
-func TestValidateRecipeStructure(t *testing.T) {
+func TestConvertMapValue(t *testing.T) {
 	tests := []struct {
-		name    string
-		recipe  *recipe.Recipe
-		wantErr bool
+		input    string
+		expected interface{}
 	}{
-		{
-			name:    "nil recipe",
-			recipe:  nil,
-			wantErr: true,
-		},
-		{
-			name: "empty measurements",
-			recipe: &recipe.Recipe{
-				Measurements: []*measurement.Measurement{},
-			},
-			wantErr: true,
-		},
-		{
-			name: "valid recipe",
-			recipe: &recipe.Recipe{
-				Measurements: []*measurement.Measurement{
-					{
-						Type: measurement.TypeK8s,
-						Subtypes: []measurement.Subtype{
-							{
-								Name: "cluster",
-								Data: map[string]measurement.Reading{
-									"version": measurement.Str("1.28.0"),
-								},
-							},
-						},
-					},
-				},
-			},
-			wantErr: false,
-		},
+		{"true", true},
+		{"false", false},
+		{"123", int64(123)},
+		{"3.14", 3.14},
+		{"hello", "hello"},
+		{"", ""},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.recipe.ValidateStructure()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ValidateRecipeStructure() error = %v, wantErr %v", err, tt.wantErr)
+		t.Run(tt.input, func(t *testing.T) {
+			result := convertMapValue(tt.input)
+			if result != tt.expected {
+				t.Errorf("convertMapValue(%q) = %v (%T), want %v (%T)",
+					tt.input, result, result, tt.expected, tt.expected)
 			}
 		})
 	}
+}
+
+func TestSetMapValueByPath(t *testing.T) {
+	t.Run("simple path", func(t *testing.T) {
+		m := make(map[string]interface{})
+		err := setMapValueByPath(m, "key", "value")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if m["key"] != "value" {
+			t.Errorf("expected key=value, got %v", m["key"])
+		}
+	})
+
+	t.Run("nested path", func(t *testing.T) {
+		m := make(map[string]interface{})
+		err := setMapValueByPath(m, "a.b.c", "value")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		a := m["a"].(map[string]interface{})
+		b := a["b"].(map[string]interface{})
+		if b["c"] != "value" {
+			t.Errorf("expected a.b.c=value, got %v", b["c"])
+		}
+	})
+
+	t.Run("boolean conversion", func(t *testing.T) {
+		m := make(map[string]interface{})
+		err := setMapValueByPath(m, "enabled", "true")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if m["enabled"] != true {
+			t.Errorf("expected enabled=true, got %v", m["enabled"])
+		}
+	})
+}
+
+func TestApplyMapOverrides(t *testing.T) {
+	t.Run("nil target", func(t *testing.T) {
+		err := applyMapOverrides(nil, map[string]string{"key": "value"})
+		if err == nil {
+			t.Fatal("expected error for nil target")
+		}
+	})
+
+	t.Run("empty overrides", func(t *testing.T) {
+		m := make(map[string]interface{})
+		err := applyMapOverrides(m, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("multiple overrides", func(t *testing.T) {
+		m := make(map[string]interface{})
+		err := applyMapOverrides(m, map[string]string{
+			"a":   "1",
+			"b.c": "2",
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if m["a"] != int64(1) {
+			t.Errorf("expected a=1, got %v", m["a"])
+		}
+	})
 }

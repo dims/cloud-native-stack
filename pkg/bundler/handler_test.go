@@ -151,14 +151,16 @@ func TestBundleEndpointEmptyComponentRefs(t *testing.T) {
 	}
 }
 
-// TestBundleEndpointInvalidBundlerType tests handling of invalid bundler types in query param.
-func TestBundleEndpointInvalidBundlerType(t *testing.T) {
+// TestBundleEndpointIgnoresBundlersParam tests that the bundlers query param is silently ignored.
+// In the umbrella chart approach, we generate charts for all components in the recipe,
+// not specific bundler types.
+func TestBundleEndpointIgnoresBundlersParam(t *testing.T) {
 	b, err := New()
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
 
-	// Recipe with valid components, invalid bundler in query param
+	// Recipe with valid components, bundlers param should be ignored
 	body := `{
 		"apiVersion": "cns.nvidia.com/v1alpha1",
 		"kind": "Recipe",
@@ -167,34 +169,22 @@ func TestBundleEndpointInvalidBundlerType(t *testing.T) {
 		]
 	}`
 
+	// bundlers param should be silently ignored
 	req := httptest.NewRequest(http.MethodPost, "/v1/bundle?bundlers=invalid-bundler", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
 	b.HandleBundles(w, req)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected status %d, got %d", http.StatusBadRequest, w.Code)
+	// Should still succeed - bundlers param is ignored
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d. Body: %s", http.StatusOK, w.Code, w.Body.String())
 	}
 
-	var resp map[string]interface{}
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
-
-	// Verify error includes valid bundler types
-	details, ok := resp["details"].(map[string]interface{})
-	if !ok {
-		t.Fatal("expected details in response")
-	}
-
-	valid, ok := details["valid"].([]interface{})
-	if !ok {
-		t.Fatal("expected valid bundler list in details")
-	}
-
-	if len(valid) == 0 {
-		t.Error("expected at least one valid bundler type")
+	// Verify content type is zip
+	contentType := w.Header().Get("Content-Type")
+	if contentType != "application/zip" {
+		t.Errorf("Content-Type = %q, want %q", contentType, "application/zip")
 	}
 }
 
@@ -205,7 +195,7 @@ func TestBundleEndpointValidRequest(t *testing.T) {
 		t.Fatalf("New() error = %v", err)
 	}
 
-	// Create a valid recipe (direct RecipeResult in body, bundlers in query param)
+	// Create a valid recipe (direct RecipeResult in body)
 	body := `{
 		"apiVersion": "cns.nvidia.com/v1alpha1",
 		"kind": "Recipe",
@@ -224,13 +214,13 @@ func TestBundleEndpointValidRequest(t *testing.T) {
 				"name": "gpu-operator",
 				"version": "v25.3.3",
 				"type": "helm",
-				"repository": "https://helm.ngc.nvidia.com/nvidia",
+				"source": "https://helm.ngc.nvidia.com/nvidia",
 				"valuesFile": "components/gpu-operator/values.yaml"
 			}
 		]
 	}`
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/bundle?bundlers=gpu-operator", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/v1/bundle", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -271,9 +261,24 @@ func TestBundleEndpointValidRequest(t *testing.T) {
 		t.Fatalf("failed to read zip: %v", err)
 	}
 
-	// Verify at least one file in zip
-	if len(zipReader.File) == 0 {
-		t.Error("expected at least one file in zip archive")
+	// Verify expected files in zip (umbrella chart files + recipe)
+	expectedFiles := map[string]bool{
+		"Chart.yaml":  false,
+		"values.yaml": false,
+		"README.md":   false,
+		"recipe.yaml": false,
+	}
+
+	for _, f := range zipReader.File {
+		if _, ok := expectedFiles[f.Name]; ok {
+			expectedFiles[f.Name] = true
+		}
+	}
+
+	for name, found := range expectedFiles {
+		if !found {
+			t.Errorf("expected file %q not found in zip archive", name)
+		}
 	}
 
 	// Log files for debugging
@@ -313,7 +318,8 @@ func TestBundleEndpointAllBundlers(t *testing.T) {
 	}
 }
 
-// TestBundleRequestQueryParamParsing tests bundlers query param parsing.
+// TestBundleRequestQueryParamParsing tests that bundlers query param is ignored.
+// In umbrella chart mode, all components from recipe are included.
 func TestBundleRequestQueryParamParsing(t *testing.T) {
 	b, err := New()
 	if err != nil {
@@ -327,26 +333,26 @@ func TestBundleRequestQueryParamParsing(t *testing.T) {
 		wantStatus int
 	}{
 		{
-			name:       "single bundler",
+			name:       "bundlers param ignored",
 			queryParam: "bundlers=gpu-operator",
 			body:       `{"apiVersion": "v1", "kind": "Recipe", "componentRefs": [{"name": "gpu-operator", "version": "v1"}]}`,
 			wantStatus: http.StatusOK,
 		},
 		{
-			name:       "multiple bundlers",
-			queryParam: "bundlers=gpu-operator,network-operator",
+			name:       "invalid bundlers param ignored",
+			queryParam: "bundlers=invalid-bundler",
 			body:       `{"apiVersion": "v1", "kind": "Recipe", "componentRefs": [{"name": "gpu-operator", "version": "v1"}]}`,
 			wantStatus: http.StatusOK,
 		},
 		{
-			name:       "empty bundlers param (all bundlers)",
+			name:       "no bundlers param",
 			queryParam: "",
 			body:       `{"apiVersion": "v1", "kind": "Recipe", "componentRefs": [{"name": "gpu-operator", "version": "v1"}]}`,
 			wantStatus: http.StatusOK,
 		},
 		{
-			name:       "bundlers with spaces trimmed",
-			queryParam: "bundlers=gpu-operator,%20network-operator",
+			name:       "value override param",
+			queryParam: "set=gpuoperator:driver.enabled=true",
 			body:       `{"apiVersion": "v1", "kind": "Recipe", "componentRefs": [{"name": "gpu-operator", "version": "v1"}]}`,
 			wantStatus: http.StatusOK,
 		},
@@ -372,14 +378,14 @@ func TestBundleRequestQueryParamParsing(t *testing.T) {
 	}
 }
 
-// TestZipResponseContainsExpectedFiles validates zip structure.
+// TestZipResponseContainsExpectedFiles validates zip structure for umbrella chart.
 func TestZipResponseContainsExpectedFiles(t *testing.T) {
 	b, err := New()
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
 
-	// Recipe direct in body, bundlers as query param
+	// Recipe direct in body
 	body := `{
 		"apiVersion": "cns.nvidia.com/v1alpha1",
 		"kind": "Recipe",
@@ -393,7 +399,7 @@ func TestZipResponseContainsExpectedFiles(t *testing.T) {
 		]
 	}`
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/bundle?bundlers=gpu-operator", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/v1/bundle", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -408,21 +414,29 @@ func TestZipResponseContainsExpectedFiles(t *testing.T) {
 		t.Fatalf("failed to read zip: %v", err)
 	}
 
-	// Check for expected files/directories
-	foundGpuOperator := false
+	// Check for expected umbrella chart files at root level
+	expectedFiles := map[string]bool{
+		"Chart.yaml":  false,
+		"values.yaml": false,
+		"README.md":   false,
+		"recipe.yaml": false,
+	}
+
 	for _, f := range zipReader.File {
-		if strings.HasPrefix(f.Name, "gpu-operator/") || f.Name == "gpu-operator" {
-			foundGpuOperator = true
-			break
+		if _, ok := expectedFiles[f.Name]; ok {
+			expectedFiles[f.Name] = true
 		}
 	}
 
-	if !foundGpuOperator {
-		t.Error("expected gpu-operator directory in zip")
-		t.Log("Files in zip:")
-		for _, f := range zipReader.File {
-			t.Logf("  - %s", f.Name)
+	for name, found := range expectedFiles {
+		if !found {
+			t.Errorf("expected file %q not found in zip", name)
 		}
+	}
+
+	t.Log("Files in zip:")
+	for _, f := range zipReader.File {
+		t.Logf("  - %s", f.Name)
 	}
 }
 
@@ -433,7 +447,7 @@ func TestZipCanBeExtracted(t *testing.T) {
 		t.Fatalf("New() error = %v", err)
 	}
 
-	// Recipe direct in body, bundlers as query param
+	// Recipe direct in body
 	body := `{
 		"apiVersion": "cns.nvidia.com/v1alpha1",
 		"kind": "Recipe",
@@ -447,7 +461,7 @@ func TestZipCanBeExtracted(t *testing.T) {
 		]
 	}`
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/bundle?bundlers=gpu-operator", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/v1/bundle", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 

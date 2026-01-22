@@ -126,49 +126,34 @@ test_fail() {
 # VERIFICATION HELPERS
 # ============================================================================
 
-# Verify values.yaml contains expected content
-verify_values_yaml() {
-  local values_file=$1
+# Verify umbrella chart structure (new architecture)
+# The bundle command generates a Helm umbrella chart with:
+#   - Chart.yaml (with dependencies)
+#   - values.yaml (combined values for all components)
+#   - README.md
+#   - recipe.yaml (copy of the input recipe)
+verify_umbrella_chart() {
+  local bundle_dir=$1
   local test_name=$2
   
-  if [ ! -f "$values_file" ]; then
-    test_fail "$test_name" "values.yaml not found"
-    return 1
-  fi
-  
-  # Check for metadata header
-  if ! grep -q "Generated from Cloud Native Stack Recipe" "$values_file"; then
-    test_fail "$test_name" "Missing metadata header in values.yaml"
-    return 1
-  fi
-  
-  return 0
-}
-
-# Verify bundle structure for a component
-verify_bundle() {
-  local bundle_dir=$1
-  local component=$2
-  local test_name=$3
-  
-  local component_dir="${bundle_dir}/${component}"
-  
-  if [ ! -d "$component_dir" ]; then
-    test_fail "$test_name" "Component directory not found: ${component}"
-    return 1
-  fi
-  
   # Check for required files
-  local required_files=("values.yaml" "checksums.txt" "README.md")
+  local required_files=("Chart.yaml" "values.yaml" "README.md" "recipe.yaml")
   for file in "${required_files[@]}"; do
-    if [ ! -f "${component_dir}/${file}" ]; then
-      test_fail "$test_name" "Missing file: ${component}/${file}"
+    if [ ! -f "${bundle_dir}/${file}" ]; then
+      test_fail "$test_name" "Missing file: ${file}"
       return 1
     fi
   done
   
-  # Verify values.yaml content
-  if ! verify_values_yaml "${component_dir}/values.yaml" "$test_name"; then
+  # Verify Chart.yaml has dependencies
+  if ! grep -q "dependencies:" "${bundle_dir}/Chart.yaml"; then
+    test_fail "$test_name" "Chart.yaml missing dependencies section"
+    return 1
+  fi
+  
+  # Verify values.yaml has content
+  if [ ! -s "${bundle_dir}/values.yaml" ]; then
+    test_fail "$test_name" "values.yaml is empty"
     return 1
   fi
   
@@ -189,6 +174,61 @@ verify_pattern_in_values() {
   
   if ! grep -q "$pattern" "$values_file"; then
     test_fail "$test_name" "Pattern '${pattern}' not found in values.yaml"
+    return 1
+  fi
+  
+  test_pass "$test_name"
+  return 0
+}
+
+# Verify ArgoCD App of Apps structure
+# The --deployer argocd generates:
+#   - app-of-apps.yaml (parent Application)
+#   - README.md
+#   - <component>/application.yaml (per-component)
+#   - <component>/values.yaml (per-component)
+verify_argocd_structure() {
+  local bundle_dir=$1
+  local test_name=$2
+  
+  # Check for required root files
+  if [ ! -f "${bundle_dir}/app-of-apps.yaml" ]; then
+    test_fail "$test_name" "Missing file: app-of-apps.yaml"
+    return 1
+  fi
+  
+  if [ ! -f "${bundle_dir}/README.md" ]; then
+    test_fail "$test_name" "Missing file: README.md"
+    return 1
+  fi
+  
+  # Verify app-of-apps.yaml has ArgoCD Application kind
+  if ! grep -q "kind: Application" "${bundle_dir}/app-of-apps.yaml"; then
+    test_fail "$test_name" "app-of-apps.yaml missing 'kind: Application'"
+    return 1
+  fi
+  
+  # Check that at least one component directory exists with application.yaml
+  local found_component=false
+  for dir in "${bundle_dir}"/*/; do
+    if [ -d "$dir" ] && [ -f "${dir}application.yaml" ]; then
+      found_component=true
+      # Verify component has values.yaml
+      if [ ! -f "${dir}values.yaml" ]; then
+        test_fail "$test_name" "Component directory missing values.yaml"
+        return 1
+      fi
+      # Verify component application.yaml has sync-wave annotation
+      if ! grep -q "argocd.argoproj.io/sync-wave" "${dir}application.yaml"; then
+        test_fail "$test_name" "Component application.yaml missing sync-wave annotation"
+        return 1
+      fi
+      break
+    fi
+  done
+  
+  if [ "$found_component" = false ]; then
+    test_fail "$test_name" "No component directories with application.yaml found"
     return 1
   fi
   
@@ -320,16 +360,16 @@ test_all_recipe_data_files() {
       continue
     fi
     
-    # Test: At least one component was generated
-    local component_count
-    component_count=$(find "$bundle_dir" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
-    
-    if [ "$component_count" -eq 0 ]; then
-      test_fail "cli-workflow/${basename}/has-output" "No components generated"
+    # Test: Verify umbrella chart structure
+    if ! verify_umbrella_chart "$bundle_dir" "cli-workflow/${basename}/umbrella-chart"; then
       continue
     fi
     
-    test_pass "cli-workflow/${basename} (${component_count} components)"
+    # Count dependencies in Chart.yaml (indicates number of components)
+    local dep_count
+    dep_count=$(grep -c "^  - name:" "${bundle_dir}/Chart.yaml" 2>/dev/null || echo "0")
+    
+    test_pass "cli-workflow/${basename} (${dep_count} dependencies)"
   done
   
   msg ""
@@ -418,9 +458,14 @@ run_bundle_tests() {
   else
     test_pass "bundle/basic/generation"
     
-    # Verify expected components
-    verify_bundle "$basic_dir" "gpu-operator" "bundle/basic/gpu-operator"
-    verify_bundle "$basic_dir" "skyhook" "bundle/basic/skyhook"
+    # Verify umbrella chart structure
+    verify_umbrella_chart "$basic_dir" "bundle/basic/umbrella-chart"
+    
+    # Verify expected components in Chart.yaml dependencies
+    verify_pattern_in_values "${basic_dir}/Chart.yaml" \
+      "gpu-operator" "bundle/basic/has-gpu-operator-dep"
+    verify_pattern_in_values "${basic_dir}/Chart.yaml" \
+      "skyhook" "bundle/basic/has-skyhook-dep"
   fi
   
   # -------------------------------------------------------------------------
@@ -439,11 +484,11 @@ run_bundle_tests() {
   else
     test_pass "bundle/system-selector/generation"
     
-    # Verify node selector in gpu-operator (operator.nodeSelector)
-    verify_pattern_in_values "${sys_selector_dir}/gpu-operator/values.yaml" \
-      "nodeGroup" "bundle/system-selector/gpu-operator-has-nodeGroup"
-    verify_pattern_in_values "${sys_selector_dir}/gpu-operator/values.yaml" \
-      "system-pool" "bundle/system-selector/gpu-operator-has-system-pool"
+    # Verify node selector in combined values.yaml
+    verify_pattern_in_values "${sys_selector_dir}/values.yaml" \
+      "nodeGroup" "bundle/system-selector/has-nodeGroup"
+    verify_pattern_in_values "${sys_selector_dir}/values.yaml" \
+      "system-pool" "bundle/system-selector/has-system-pool"
   fi
   
   # -------------------------------------------------------------------------
@@ -462,11 +507,11 @@ run_bundle_tests() {
   else
     test_pass "bundle/accel-selector/generation"
     
-    # Verify accelerated node selector in skyhook
-    verify_pattern_in_values "${accel_selector_dir}/skyhook/values.yaml" \
-      "accelerator" "bundle/accel-selector/skyhook-has-accelerator"
-    verify_pattern_in_values "${accel_selector_dir}/skyhook/values.yaml" \
-      "nvidia-gpu" "bundle/accel-selector/skyhook-has-nvidia-gpu"
+    # Verify accelerated node selector in combined values.yaml
+    verify_pattern_in_values "${accel_selector_dir}/values.yaml" \
+      "accelerator" "bundle/accel-selector/has-accelerator"
+    verify_pattern_in_values "${accel_selector_dir}/values.yaml" \
+      "nvidia-gpu" "bundle/accel-selector/has-nvidia-gpu"
   fi
   
   # -------------------------------------------------------------------------
@@ -484,11 +529,11 @@ run_bundle_tests() {
   else
     test_pass "bundle/system-toleration/generation"
     
-    # Verify system toleration in gpu-operator (operator.tolerations)
-    verify_pattern_in_values "${sys_toleration_dir}/gpu-operator/values.yaml" \
-      "dedicated" "bundle/system-toleration/gpu-operator-has-dedicated"
-    verify_pattern_in_values "${sys_toleration_dir}/gpu-operator/values.yaml" \
-      "system-workload" "bundle/system-toleration/gpu-operator-has-system-workload"
+    # Verify system toleration in combined values.yaml
+    verify_pattern_in_values "${sys_toleration_dir}/values.yaml" \
+      "dedicated" "bundle/system-toleration/has-dedicated"
+    verify_pattern_in_values "${sys_toleration_dir}/values.yaml" \
+      "system-workload" "bundle/system-toleration/has-system-workload"
   fi
   
   # -------------------------------------------------------------------------
@@ -506,13 +551,9 @@ run_bundle_tests() {
   else
     test_pass "bundle/accel-toleration/generation"
     
-    # Verify accelerated toleration in gpu-operator (daemonsets.tolerations)
-    verify_pattern_in_values "${accel_toleration_dir}/gpu-operator/values.yaml" \
-      "nvidia.com/gpu" "bundle/accel-toleration/gpu-operator-has-nvidia-gpu"
-    
-    # Verify accelerated toleration in skyhook
-    verify_pattern_in_values "${accel_toleration_dir}/skyhook/values.yaml" \
-      "nvidia.com/gpu" "bundle/accel-toleration/skyhook-has-nvidia-gpu"
+    # Verify accelerated toleration in combined values.yaml
+    verify_pattern_in_values "${accel_toleration_dir}/values.yaml" \
+      "nvidia.com/gpu" "bundle/accel-toleration/has-nvidia-gpu"
   fi
   
   # -------------------------------------------------------------------------
@@ -524,21 +565,17 @@ run_bundle_tests() {
   local override_dir="${OUTPUT_DIR}/bundles/value-override"
   mkdir -p "$override_dir"
   
-  # Note: Only test gpu-operator overrides. Skyhook validates customization names
-  # and only accepts 'ubuntu' as a valid customization, not arbitrary test values.
+  # Test value overrides for gpu-operator (under gpuoperator: key in values.yaml)
   if ! "${CNSCTL_BIN}" bundle -r "$recipe_file" -o "$override_dir" \
     --set gpu-operator:driver.version=999.99.99 \
-    --set gpu-operator:cdi.enabled=true \
-    --set cert-manager:installCRDs=true 2>&1; then
+    --set gpu-operator:cdi.enabled=true 2>&1; then
     test_fail "bundle/value-override/generation" "Bundle generation failed"
   else
     test_pass "bundle/value-override/generation"
     
-    # Verify value overrides
-    verify_pattern_in_values "${override_dir}/gpu-operator/values.yaml" \
-      "999.99.99" "bundle/value-override/gpu-operator-driver-version"
-    verify_pattern_in_values "${override_dir}/cert-manager/values.yaml" \
-      "installCRDs" "bundle/value-override/cert-manager-installCRDs"
+    # Verify value overrides in combined values.yaml
+    verify_pattern_in_values "${override_dir}/values.yaml" \
+      "999.99.99" "bundle/value-override/driver-version"
   fi
   
   # -------------------------------------------------------------------------
@@ -560,31 +597,47 @@ run_bundle_tests() {
   else
     test_pass "bundle/combined/generation"
     
-    # Verify all components exist
-    verify_bundle "$combined_dir" "gpu-operator" "bundle/combined/gpu-operator"
-    verify_bundle "$combined_dir" "skyhook" "bundle/combined/skyhook"
+    # Verify umbrella chart structure
+    verify_umbrella_chart "$combined_dir" "bundle/combined/umbrella-chart"
     
     # Verify system node selector
-    verify_pattern_in_values "${combined_dir}/gpu-operator/values.yaml" \
+    verify_pattern_in_values "${combined_dir}/values.yaml" \
       "nodeGroup" "bundle/combined/system-selector"
     
     # Verify system toleration
-    verify_pattern_in_values "${combined_dir}/gpu-operator/values.yaml" \
+    verify_pattern_in_values "${combined_dir}/values.yaml" \
       "dedicated" "bundle/combined/system-toleration"
     
-    # Verify accelerated node selector in skyhook
-    verify_pattern_in_values "${combined_dir}/skyhook/values.yaml" \
+    # Verify accelerated node selector
+    verify_pattern_in_values "${combined_dir}/values.yaml" \
       "accelerator" "bundle/combined/accel-selector"
     
-    # Verify accelerated toleration in both
-    verify_pattern_in_values "${combined_dir}/gpu-operator/values.yaml" \
-      "nvidia.com/gpu" "bundle/combined/gpu-operator-accel-toleration"
-    verify_pattern_in_values "${combined_dir}/skyhook/values.yaml" \
-      "nvidia.com/gpu" "bundle/combined/skyhook-accel-toleration"
+    # Verify accelerated toleration
+    verify_pattern_in_values "${combined_dir}/values.yaml" \
+      "nvidia.com/gpu" "bundle/combined/accel-toleration"
     
     # Verify value override
-    verify_pattern_in_values "${combined_dir}/gpu-operator/values.yaml" \
+    verify_pattern_in_values "${combined_dir}/values.yaml" \
       "888.88.88" "bundle/combined/value-override"
+  fi
+  
+  # -------------------------------------------------------------------------
+  # Test 8: ArgoCD Deployer
+  # -------------------------------------------------------------------------
+  msg ""
+  msg "--- Test 8: ArgoCD Deployer (--deployer argocd) ---"
+  
+  local argocd_dir="${OUTPUT_DIR}/bundles/argocd"
+  mkdir -p "$argocd_dir"
+  
+  if ! "${CNSCTL_BIN}" bundle -r "$recipe_file" -o "$argocd_dir" \
+    --deployer argocd 2>&1; then
+    test_fail "bundle/argocd/generation" "Bundle generation with --deployer argocd failed"
+  else
+    test_pass "bundle/argocd/generation"
+    
+    # Verify ArgoCD App of Apps structure
+    verify_argocd_structure "$argocd_dir" "bundle/argocd/structure"
   fi
 }
 

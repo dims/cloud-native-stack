@@ -354,6 +354,17 @@ paths:
             type: string
             enum: [script, argocd, flux]
             default: script
+        - name: repo
+          in: query
+          required: false
+          description: >
+            Git repository URL for GitOps deployments (used with deployer=argocd).
+            Sets the repository URL in the generated app-of-apps.yaml manifest.
+            If not provided, a placeholder URL is used that must be updated manually.
+          schema:
+            type: string
+            format: uri
+          example: "https://github.com/my-org/my-gitops-repo.git"
       requestBody:
         required: true
         description: The recipe (RecipeResult) to generate bundles from

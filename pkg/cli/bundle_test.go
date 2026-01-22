@@ -144,8 +144,22 @@ func TestBundleCmd(t *testing.T) {
 		}
 	}
 
-	requiredFlags := []string{"recipe", "r", "bundlers", "b", "output", "o", "set"}
+	// Note: --bundlers and --deployer flags removed in umbrella chart approach
+	requiredFlags := []string{"recipe", "r", "output", "o", "set"}
 	for _, flag := range requiredFlags {
+		if !flagNames[flag] {
+			t.Errorf("expected flag %q to be defined", flag)
+		}
+	}
+
+	// Verify node selector/toleration flags exist
+	nodeFlags := []string{
+		"system-node-selector",
+		"system-node-toleration",
+		"accelerated-node-selector",
+		"accelerated-node-toleration",
+	}
+	for _, flag := range nodeFlags {
 		if !flagNames[flag] {
 			t.Errorf("expected flag %q to be defined", flag)
 		}

@@ -1,19 +1,16 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: cns-bundle
+  name: cns-stack
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  sources:
-{{- range .Components }}
-    # {{ .Name }} Application
-    - repoURL: <YOUR_GIT_REPO>  # TODO: Replace with your GitOps repository URL
-      targetRevision: main       # TODO: Adjust branch/tag as needed
-      path: {{ .Path }}
-{{- end }}
+  source:
+    repoURL: {{ .RepoURL }}
+    targetRevision: {{ .TargetRevision }}
+    path: {{ .Path }}
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
