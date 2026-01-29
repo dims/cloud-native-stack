@@ -18,6 +18,7 @@ vendor/
 *.test
 tmp/
 test_outputs/
+temp-*.md
 
 # Coverage
 *.out
