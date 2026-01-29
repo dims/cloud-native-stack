@@ -85,7 +85,7 @@ components:
       - skyhook
     helm:
       defaultRepository: https://nvidia.github.io/skyhook
-      defaultChart: skyhook
+      defaultChart: skyhook-operator
     nodeScheduling:
       accelerated:
         nodeSelectorPaths:

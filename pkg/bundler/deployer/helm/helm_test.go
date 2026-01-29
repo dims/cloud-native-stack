@@ -214,6 +214,49 @@ func TestNormalizeVersion(t *testing.T) {
 	}
 }
 
+func TestResolveChartName(t *testing.T) {
+	tests := []struct {
+		name          string
+		componentName string
+		expected      string
+	}{
+		{
+			name:          "prometheus resolves to kube-prometheus-stack",
+			componentName: "prometheus",
+			expected:      "kube-prometheus-stack",
+		},
+		{
+			name:          "gpu-operator resolves to gpu-operator",
+			componentName: "gpu-operator",
+			expected:      "gpu-operator",
+		},
+		{
+			name:          "cert-manager resolves to cert-manager",
+			componentName: "cert-manager",
+			expected:      "cert-manager",
+		},
+		{
+			name:          "skyhook-operator resolves to skyhook-operator",
+			componentName: "skyhook-operator",
+			expected:      "skyhook-operator",
+		},
+		{
+			name:          "unknown component falls back to component name",
+			componentName: "unknown-component",
+			expected:      "unknown-component",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := resolveChartName(tt.componentName)
+			if result != tt.expected {
+				t.Errorf("resolveChartName(%q) = %q, want %q", tt.componentName, result, tt.expected)
+			}
+		})
+	}
+}
+
 func TestSortComponentsByDeploymentOrder(t *testing.T) {
 	components := []string{"gpu-operator", "cert-manager", "network-operator"}
 	deploymentOrder := []string{"cert-manager", "gpu-operator", "network-operator"}

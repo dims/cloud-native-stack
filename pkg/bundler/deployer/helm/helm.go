@@ -203,27 +203,29 @@ func (g *Generator) generateChartYAML(ctx context.Context, input *GeneratorInput
 			continue
 		}
 		dep := Dependency{
-			Name:       ref.Name,
+			Name:       resolveChartName(ref.Name),
 			Version:    ref.Version,
 			Repository: ref.Source,
 		}
 		// Add condition for optional enabling/disabling
+		// Use component name (not chart name) for condition to match values.yaml structure
 		dep.Condition = fmt.Sprintf("%s.enabled", ref.Name)
 		deps = append(deps, dep)
 	}
 
 	// Add any components not in deployment order (shouldn't happen, but be safe)
 	for _, ref := range input.RecipeResult.ComponentRefs {
+		chartName := resolveChartName(ref.Name)
 		found := false
 		for _, d := range deps {
-			if d.Name == ref.Name {
+			if d.Name == chartName {
 				found = true
 				break
 			}
 		}
 		if !found {
 			deps = append(deps, Dependency{
-				Name:       ref.Name,
+				Name:       chartName,
 				Version:    ref.Version,
 				Repository: ref.Source,
 				Condition:  fmt.Sprintf("%s.enabled", ref.Name),
@@ -441,6 +443,29 @@ func normalizeVersion(v string) string {
 		return "0.1.0"
 	}
 	return v
+}
+
+// resolveChartName returns the Helm chart name for a component.
+// It looks up the component in the registry and extracts the chart name from DefaultChart.
+// The chart name is the part after the last "/" in DefaultChart (e.g., "prometheus-community/kube-prometheus-stack" -> "kube-prometheus-stack").
+// Falls back to the component name if not found in registry or no DefaultChart is set.
+func resolveChartName(componentName string) string {
+	registry, err := recipe.GetComponentRegistry()
+	if err != nil {
+		return componentName
+	}
+
+	config := registry.Get(componentName)
+	if config == nil || config.Helm.DefaultChart == "" {
+		return componentName
+	}
+
+	// Extract chart name from DefaultChart (part after last "/")
+	defaultChart := config.Helm.DefaultChart
+	if idx := strings.LastIndex(defaultChart, "/"); idx >= 0 {
+		return defaultChart[idx+1:]
+	}
+	return defaultChart
 }
 
 // SortComponentsByDeploymentOrder sorts component names according to deployment order.
