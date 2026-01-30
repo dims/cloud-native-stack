@@ -3,7 +3,7 @@
 ## Install
 
 ```shell
-curl -sfL https://raw.githubusercontent.com/mchmarny/eidos/main/install | bash -s --
+curl -sfL https://raw.githubusercontent.com/NVIDIA/eidos/main/install | bash -s --
 ```
 
 Test CLI:
@@ -84,7 +84,7 @@ Make Snapshot:
 eidos snapshot \
     --deploy-agent \
     --namespace gpu-operator \
-    --image ghcr.io/mchmarny/eidos:latest \
+    --image ghcr.io/NVIDIA/eidos:latest \
     --node-selector nodeGroup=customer-gpu
 ```
 
@@ -186,7 +186,7 @@ Bundle as an OCI image:
 ```shell
 eidos bundle \
   --recipe recipe.yaml \
-  --output oci://ghcr.io/mchmarny/eidos-bundle \
+  --output oci://ghcr.io/NVIDIA/eidos-bundle \
   --deployer argocd \
   --image-refs .digest
 ```
@@ -194,19 +194,19 @@ eidos bundle \
 Review manifest: 
 
 ```shell
-crane manifest "ghcr.io/mchmarny/eidos-bundle@$(cat .digest)" | jq .
+crane manifest "ghcr.io/NVIDIA/eidos-bundle@$(cat .digest)" | jq .
 ```
 
 Unpack the image: 
 
 ```shell
-skopeo copy "docker://ghcr.io/mchmarny/eidos-bundle@$(cat .digest)" oci:image-oci
+skopeo copy "docker://ghcr.io/NVIDIA/eidos-bundle@$(cat .digest)" oci:image-oci
 mkdir -p ./eidos-unpacked
 oras pull --oci-layout "image-oci@$(cat .digest)" -o ./eidos-unpacked
 ```
 
 ## Links
 
-* [Installation Guide](https://github.com/mchmarny/eidos/blob/main/docs/user-guide/installation.md)
-* [CLI Reference](https://github.com/mchmarny/eidos/blob/main/docs/user-guide/cli-reference.md)
-* [API Reference](https://github.com/mchmarny/eidos/blob/main/docs/user-guide/api-reference.md)
+* [Installation Guide](https://github.com/NVIDIA/eidos/blob/main/docs/user-guide/installation.md)
+* [CLI Reference](https://github.com/NVIDIA/eidos/blob/main/docs/user-guide/cli-reference.md)
+* [API Reference](https://github.com/NVIDIA/eidos/blob/main/docs/user-guide/api-reference.md)

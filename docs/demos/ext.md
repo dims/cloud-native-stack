@@ -3,7 +3,7 @@
 ## Install
 
 ```shell
-curl -sfL https://raw.githubusercontent.com/mchmarny/eidos/main/install | bash -s --
+curl -sfL https://raw.githubusercontent.com/NVIDIA/eidos/main/install | bash -s --
 ```
 
 Test CLI:
@@ -47,7 +47,7 @@ eidos bundle \
   --output ./bundle \
   --data ./examples/data \
   --deployer argocd \
-  --output oci://ghcr.io/mchmarny/eidos-bundle \
+  --output oci://ghcr.io/NVIDIA/eidos-bundle \
   --system-node-selector nodeGroup=system-pool \
   --accelerated-node-selector nodeGroup=customer-gpu \
   --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule
@@ -66,6 +66,6 @@ eidos --debug recipe \
 
 ## Links
 
-* [Installation Guide](https://github.com/mchmarny/eidos/blob/main/docs/user-guide/installation.md)
-* [CLI Reference](https://github.com/mchmarny/eidos/blob/main/docs/user-guide/cli-reference.md)
-* [Data Reference](https://github.com/mchmarny/eidos/blob/main/pkg/recipe/data/README.md)
+* [Installation Guide](https://github.com/NVIDIA/eidos/blob/main/docs/user-guide/installation.md)
+* [CLI Reference](https://github.com/NVIDIA/eidos/blob/main/docs/user-guide/cli-reference.md)
+* [Data Reference](https://github.com/NVIDIA/eidos/blob/main/pkg/recipe/data/README.md)

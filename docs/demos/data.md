@@ -7,7 +7,7 @@ This demo walks through the recipe metadata system, showing how multi-level inhe
 Install CLI:
 
 ```shell
-curl -sfL https://raw.githubusercontent.com/mchmarny/eidos/main/install | bash -s --
+curl -sfL https://raw.githubusercontent.com/NVIDIA/eidos/main/install | bash -s --
 ```
 
 Test CLI:
@@ -30,7 +30,7 @@ Demo:
 4. **Merging strategy** - Components, constraints, and values are merged with overlay precedence
 5. **Computing deployment order** - Topological sort of components based on dependency references
 
-> Terminology (see [glossary](https://github.com/mchmarny/eidos/blob/main/docs/OVERVIEW.md))
+> Terminology (see [glossary](https://github.com/NVIDIA/eidos/blob/main/docs/OVERVIEW.md))
 
 ## Recipe Data (Design time == files in git)
 
@@ -239,14 +239,14 @@ Integrity of the metadata is paramount!
 
 ### Demo
 
-- [This Demo](https://github.com/mchmarny/eidos/blob/main/docs/demos/data.md) - Full architecture documentation
+- [This Demo](https://github.com/NVIDIA/eidos/blob/main/docs/demos/data.md) - Full architecture documentation
 
 ### Documentation
-- [Data Architecture](https://github.com/mchmarny/eidos/blob/main/docs/architecture/data.md) - Full architecture documentation
-- [Recipe Development Guide](https://github.com/mchmarny/eidos/blob/main/docs/integration/recipe-development.md) - Adding/modifying recipes
-- [CLI Reference](https://github.com/mchmarny/eidos/blob/main/docs/user-guide/cli-reference.md) - Recipe command options
+- [Data Architecture](https://github.com/NVIDIA/eidos/blob/main/docs/architecture/data.md) - Full architecture documentation
+- [Recipe Development Guide](https://github.com/NVIDIA/eidos/blob/main/docs/integration/recipe-development.md) - Adding/modifying recipes
+- [CLI Reference](https://github.com/NVIDIA/eidos/blob/main/docs/user-guide/cli-reference.md) - Recipe command options
 
 ### Source Code
-- [Recipe Data Files](https://github.com/mchmarny/eidos/tree/main/pkg/recipe/data) - YAML recipe definitions
-- [Metadata Store](https://github.com/mchmarny/eidos/blob/main/pkg/recipe/metadata_store.go) - Inheritance resolution
-- [Criteria Matching](https://github.com/mchmarny/eidos/blob/main/pkg/recipe/criteria.go) - Matching algorithm
+- [Recipe Data Files](https://github.com/NVIDIA/eidos/tree/main/pkg/recipe/data) - YAML recipe definitions
+- [Metadata Store](https://github.com/NVIDIA/eidos/blob/main/pkg/recipe/metadata_store.go) - Inheritance resolution
+- [Criteria Matching](https://github.com/NVIDIA/eidos/blob/main/pkg/recipe/criteria.go) - Matching algorithm

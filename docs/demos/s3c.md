@@ -24,13 +24,13 @@ Eidos (Eidos) provides supply chain security artifacts:
 Get latest release tag:
 
 ```shell
-TAG=$(curl -s https://api.github.com/repos/mchmarny/eidos/releases/latest | jq -r '.tag_name')
+TAG=$(curl -s https://api.github.com/repos/NVIDIA/eidos/releases/latest | jq -r '.tag_name')
 echo "Using tag: $TAG"
 ```
 Resolve tag to immutable digest:
 
 ```shell
-IMAGE="ghcr.io/mchmarny/eidos"
+IMAGE="ghcr.io/NVIDIA/eidos"
 DIGEST=$(crane digest "${IMAGE}:${TAG}")
 echo "Resolved digest: $DIGEST"
 IMAGE_DIGEST="${IMAGE}@${DIGEST}"
@@ -43,15 +43,15 @@ IMAGE_DIGEST="${IMAGE}@${DIGEST}"
 Verify using digest:
 
 ```shell
-gh attestation verify oci://${IMAGE_DIGEST} --owner mchmarny
+gh attestation verify oci://${IMAGE_DIGEST} --owner NVIDIA
 ```
 
 Verify the eidosd image:
 
 ```shell
-IMAGE_API="ghcr.io/mchmarny/eidosd"
+IMAGE_API="ghcr.io/NVIDIA/eidosd"
 DIGEST_API=$(crane digest "${IMAGE_API}:${TAG}")
-gh attestation verify oci://${IMAGE_API}@${DIGEST_API} --owner mchmarny
+gh attestation verify oci://${IMAGE_API}@${DIGEST_API} --owner NVIDIA
 ```
 
 **Method 2: Cosign (SBOM Attestations)**
@@ -62,7 +62,7 @@ Verify SBOM attestation using digest:
 cosign verify-attestation \
   --type spdxjson \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  --certificate-identity-regexp 'https://github.com/mchmarny/eidos/.github/workflows/.*' \
+  --certificate-identity-regexp 'https://github.com/NVIDIA/eidos/.github/workflows/.*' \
   ${IMAGE_DIGEST} > predicate.json
 ```
 
@@ -85,7 +85,7 @@ echo "Using version: $VERSION"
 
 Download SBOM:
 ```shell
-curl -Ls https://github.com/mchmarny/eidos/releases/download/${TAG}/eidos_${VERSION}_linux_arm64.sbom.json -o sbom.json
+curl -Ls https://github.com/NVIDIA/eidos/releases/download/${TAG}/eidos_${VERSION}_linux_arm64.sbom.json -o sbom.json
 ```
 
 View SBOM
@@ -136,13 +136,13 @@ metadata:
   name: eidos-images-require-attestation
 spec:
   images:
-  - glob: "ghcr.io/mchmarny/eidos*"
+  - glob: "ghcr.io/NVIDIA/eidos*"
   authorities:
   - keyless:
       url: https://fulcio.sigstore.dev
       identities:
       - issuerRegExp: ".*\.github\.com.*"
-        subjectRegExp: "https://github.com/mchmarny/eidos/.*"
+        subjectRegExp: "https://github.com/NVIDIA/eidos/.*"
     attestations:
     - name: build-provenance
       predicateType: https://slsa.dev/provenance/v1
@@ -171,14 +171,14 @@ spec:
           - Pod
     verifyImages:
     - imageReferences:
-      - "ghcr.io/mchmarny/eidos*"
+      - "ghcr.io/NVIDIA/eidos*"
       attestations:
       - predicateType: https://slsa.dev/provenance/v1
         attestors:
         - entries:
           - keyless:
               issuer: https://token.actions.githubusercontent.com
-              subject: https://github.com/mchmarny/eidos/.github/workflows/*
+              subject: https://github.com/NVIDIA/eidos/.github/workflows/*
 ```
 
 **Test Policy Enforcement:**
@@ -186,13 +186,13 @@ spec:
 Get latest release tag:
 
 ```shell
-TAG=$(curl -s https://api.github.com/repos/mchmarny/eidos/releases/latest | jq -r '.tag_name')
+TAG=$(curl -s https://api.github.com/repos/NVIDIA/eidos/releases/latest | jq -r '.tag_name')
 ```
 
 This should succeed (image with valid attestation):
 
 ```shell
-kubectl run test-valid --image=ghcr.io/mchmarny/eidos:${TAG}
+kubectl run test-valid --image=ghcr.io/NVIDIA/eidos:${TAG}
 ```
 This should fail (unsigned image):
 
@@ -217,15 +217,15 @@ All Eidos releases are built using GitHub Actions with full transparency:
 List all releases with attestations:
 
 ```shell
-gh api repos/mchmarny/eidos/releases | \
+gh api repos/NVIDIA/eidos/releases | \
   jq -r '.[] | "\(.tag_name): \(.html_url)"'
 ```
 
 View specific build logs:
 
 ```shell
-gh run list --repo mchmarny/eidos --workflow=on-tag.yaml
-gh run view 21076668418 --repo mchmarny/eidos --log
+gh run list --repo NVIDIA/eidos --workflow=on-tag.yaml
+gh run view 21076668418 --repo NVIDIA/eidos --log
 ```
 
 **Verify in Transparency Log (Rekor):**
@@ -233,7 +233,7 @@ gh run view 21076668418 --repo mchmarny/eidos --log
 Search Rekor for attestations:
 
 ```shell
-rekor-cli search --sha $(crane digest ghcr.io/mchmarny/eidos:${TAG})
+rekor-cli search --sha $(crane digest ghcr.io/NVIDIA/eidos:${TAG})
 ```
 
 Get entry details:
@@ -244,4 +244,4 @@ rekor-cli get --uuid <entry-uuid>
 
 ## Links
 
-* [Security](https://github.com/mchmarny/eidos/blob/main/SECURITY.md)
+* [Security](https://github.com/NVIDIA/eidos/blob/main/SECURITY.md)
