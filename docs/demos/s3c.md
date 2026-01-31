@@ -30,7 +30,7 @@ echo "Using tag: $TAG"
 Resolve tag to immutable digest:
 
 ```shell
-IMAGE="ghcr.io/nvidia/eidos/eidos"
+IMAGE="ghcr.io/nvidia/eidos"
 DIGEST=$(crane digest "${IMAGE}:${TAG}")
 echo "Resolved digest: $DIGEST"
 IMAGE_DIGEST="${IMAGE}@${DIGEST}"
@@ -49,7 +49,7 @@ gh attestation verify oci://${IMAGE_DIGEST} --owner NVIDIA
 Verify the eidosd image:
 
 ```shell
-IMAGE_API="ghcr.io/nvidia/eidos/eidosd"
+IMAGE_API="ghcr.io/nvidia/eidosd"
 DIGEST_API=$(crane digest "${IMAGE_API}:${TAG}")
 gh attestation verify oci://${IMAGE_API}@${DIGEST_API} --owner NVIDIA
 ```
@@ -136,7 +136,7 @@ metadata:
   name: eidos-images-require-attestation
 spec:
   images:
-  - glob: "ghcr.io/nvidia/eidos/eidos*"
+  - glob: "ghcr.io/nvidia/eidos*"
   authorities:
   - keyless:
       url: https://fulcio.sigstore.dev
@@ -171,7 +171,7 @@ spec:
           - Pod
     verifyImages:
     - imageReferences:
-      - "ghcr.io/nvidia/eidos/eidos*"
+      - "ghcr.io/nvidia/eidos*"
       attestations:
       - predicateType: https://slsa.dev/provenance/v1
         attestors:
@@ -192,7 +192,7 @@ TAG=$(curl -s https://api.github.com/repos/NVIDIA/eidos/releases/latest | jq -r 
 This should succeed (image with valid attestation):
 
 ```shell
-kubectl run test-valid --image=ghcr.io/nvidia/eidos/eidos:${TAG}
+kubectl run test-valid --image=ghcr.io/nvidia/eidos:${TAG}
 ```
 This should fail (unsigned image):
 
@@ -233,7 +233,7 @@ gh run view 21076668418 --repo NVIDIA/eidos --log
 Search Rekor for attestations:
 
 ```shell
-rekor-cli search --sha $(crane digest ghcr.io/nvidia/eidos/eidos:${TAG})
+rekor-cli search --sha $(crane digest ghcr.io/nvidia/eidos:${TAG})
 ```
 
 Get entry details:
