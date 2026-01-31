@@ -84,7 +84,7 @@ Make Snapshot:
 eidos snapshot \
     --deploy-agent \
     --namespace gpu-operator \
-    --image ghcr.io/NVIDIA/eidos:latest \
+    --image ghcr.io/nvidia/eidos/eidos:latest \
     --node-selector nodeGroup=customer-gpu
 ```
 

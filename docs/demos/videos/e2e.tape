@@ -54,7 +54,7 @@ Type "    --deploy-agent \"
 Enter
 Type "    --namespace gpu-operator \"
 Enter
-Type "    --image ghcr.io/NVIDIA/eidos:latest \"
+Type "    --image ghcr.io/nvidia/eidos/eidos:latest \"
 Enter
 Type "    --node-selector nodeGroup=customer-gpu"
 Enter
